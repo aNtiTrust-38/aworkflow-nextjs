@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# tdd-rules-cursor.md
+.tdd-rules-cursor.md

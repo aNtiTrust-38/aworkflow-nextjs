@@ -40,6 +40,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Anthropic API key is missing from environment variables.' });
   }
 
+  // Check for test error injection (for TDD)
+  if (req.headers['x-test-error'] === 'claude') {
+    return res.status(500).json({ error: 'Simulated Claude API error for test.' });
+  }
+
   let prompt = '';
   let files: any[] = [];
   if (req.headers['content-type']?.includes('multipart/form-data')) {

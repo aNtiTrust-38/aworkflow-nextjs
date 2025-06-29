@@ -82,4 +82,124 @@ describe('/api/research endpoint', () => {
     expect(typeof data.bibtex).toBe('string');
     expect(data.bibtex).toMatch(/@article/);
   });
+});
+
+describe('/api/research endpoint (real API integration)', () => {
+  it('returns normalized reference objects with required fields from all sources', async () => {
+    // TDD: This test expects real, normalized data from all sources
+    const res = await fetch('http://localhost:3000/api/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'transformer neural networks' }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data.references)).toBe(true);
+    data.references.forEach((ref: any) => {
+      expect(ref).toHaveProperty('title');
+      expect(ref).toHaveProperty('authors');
+      expect(ref).toHaveProperty('source');
+      expect(ref).toHaveProperty('citation');
+      expect(ref).toHaveProperty('year');
+      expect(ref).toHaveProperty('doi'); // May be null for ArXiv
+    });
+  });
+
+  it('deduplicates results across sources (by DOI or title+authors)', async () => {
+    // TDD: This test expects no duplicate papers in the final output
+    const res = await fetch('http://localhost:3000/api/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'deep learning' }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    const seen = new Set();
+    data.references.forEach((ref: any) => {
+      const key = ref.doi || (ref.title + ref.authors.join(','));
+      expect(seen.has(key)).toBe(false);
+      seen.add(key);
+    });
+  });
+
+  it('ranks results by relevance to the query', async () => {
+    // TDD: This test expects the most relevant results to appear first
+    const res = await fetch('http://localhost:3000/api/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'transformer neural networks' }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    // Expect the first result to be highly relevant (title or abstract contains query terms)
+    expect(
+      data.references[0].title.toLowerCase() +
+      (data.references[0].abstract || '').toLowerCase()
+    ).toMatch(/transformer|neural network/);
+  });
+
+  it('returns citations in correct APA and MLA formats (not stubs)', async () => {
+    // TDD: This test expects real citation formatting, not stubbed strings
+    const resAPA = await fetch('http://localhost:3000/api/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'artificial intelligence', format: 'APA' }),
+    });
+    const dataAPA = await resAPA.json();
+    expect(dataAPA.references[0].citation).toMatch(/\([A-Za-z]+, \d{4}\)/); // APA style
+
+    const resMLA = await fetch('http://localhost:3000/api/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'artificial intelligence', format: 'MLA' }),
+    });
+    const dataMLA = await resMLA.json();
+    expect(dataMLA.references[0].citation).toMatch(/[A-Za-z]+, [A-Za-z]+\. ".+"/); // MLA style
+  });
+
+  it('returns BibTeX export with all references and correct fields', async () => {
+    // TDD: This test expects real BibTeX export, not stub
+    const res = await fetch('http://localhost:3000/api/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'neural networks', export: 'bibtex' }),
+    });
+    const data = await res.json();
+    expect(data.bibtex).toBeDefined();
+    expect(typeof data.bibtex).toBe('string');
+    expect(data.bibtex).toMatch(/@article|@inproceedings/);
+    // Check that all references are present in BibTeX
+    data.references.forEach((ref: any) => {
+      expect(data.bibtex).toMatch(new RegExp(ref.title));
+    });
+  });
+
+  it('responds within 15 seconds and cost is < $0.50 per search', async () => {
+    // TDD: This test expects performance and cost constraints
+    const start = Date.now();
+    const res = await fetch('http://localhost:3000/api/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'large language models' }),
+    });
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(15000);
+    const data = await res.json();
+    expect(data.cost).toBeLessThan(0.5);
+  });
+
+  it('gracefully degrades if one or more sources fail', async () => {
+    // TDD: This test expects that if a source fails, others still return results
+    const res = await fetch('http://localhost:3000/api/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-test-error': 'simulate-arxiv-fail' },
+      body: JSON.stringify({ query: 'graph neural networks' }),
+    });
+    const data = await res.json();
+    // Should still return references from at least one source
+    expect(Array.isArray(data.references)).toBe(true);
+    expect(data.references.length).toBeGreaterThan(0);
+    // Should include error info for failed source
+    expect(data.errors || {}).toHaveProperty('ArXiv');
+  });
 }); 

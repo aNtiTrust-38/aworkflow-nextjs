@@ -74,19 +74,16 @@ The next milestone is to upgrade the `/api/outline` endpoint from a stub to a re
 - [x] Stage 2: /api/research returns references from all three sources (Semantic Scholar, CrossRef, ArXiv)
 - [x] Stage 2: /api/research supports error simulation and citation formatting (APA, MLA)
 - [x] Stage 2: /api/research supports BibTeX export for Zotero compatibility
+- [ ] Stage 2: Real API integration TDD RED phase (expanded tests for normalization, deduplication, ranking, error handling, citation formatting, BibTeX, performance, cost, graceful degradation)
+- [ ] Stage 2: Semantic Scholar integration (real API call, normalization, error handling) - initial implementation complete, but tests failing (TDD RED)
 
 ## Executor's Feedback or Assistance Requests
 
-- Created __tests__/research-api.test.ts with failing tests for all major Stage 2 scenarios (missing query, valid query, multi-source merge, error handling, citation formatting, Zotero export)
-- All tests fail as expected (endpoint not implemented)
-- Implemented /api/research endpoint skeleton (returns 501 Not Implemented)
-- Implemented 400 error for missing or invalid research query
-- Implemented 200 response with stubbed references for valid query
-- Expanded stub to include references from Semantic Scholar, CrossRef, and ArXiv
-- Added error simulation (500, 429) and citation formatting (APA, MLA) to stub
-- Implemented BibTeX export for Zotero compatibility
-- All TDD stub behaviors for Stage 2 are now implemented
-- Next step: PM review and approval before proceeding to real API integration
+- Ran `npx vitest run __tests__/research-api.test.ts` after Semantic Scholar integration
+- 2 tests passed (400 for missing query, error handling)
+- 11 tests failed (all others, including valid query, normalization, deduplication, ranking, citation formatting, BibTeX, performance, graceful degradation)
+- Most failures are due to 500 errors from the Semantic Scholar integration (likely API/network/formatting issues)
+- Next step: Debug/fix Semantic Scholar integration to ensure it returns 200 and valid data for a valid query, then rerun tests
 
 ## Lessons
 - Node.js test environment cannot natively handle browser File APIs for multipart uploads; use supertest or similar for future coverage.
@@ -240,7 +237,59 @@ _Executor: Proceed to update the Project Status Board and provide feedback upon 
 
 ---
 
-# Stage 2: Research Assistant – Planning
+# Stage 2: Real API Integration Planning (PLANNER)
+
+### Background and Motivation
+The goal of Stage 2 is to replace the stubbed `/api/research` endpoint with a robust, production-ready multi-source research assistant. This will enable real-time academic search and citation generation using Semantic Scholar, CrossRef, and ArXiv APIs. The integration must be TDD-compliant, cost-efficient, and resilient to API failures, while maintaining strict test coverage and code quality standards.
+
+### Key Challenges and Analysis
+- Handling heterogeneous API responses and normalizing data
+- Implementing rate limiting and error handling for each source
+- Ranking and deduplicating results across sources
+- Formatting citations in APA/MLA and exporting BibTeX
+- Ensuring all existing and new tests pass (no regressions)
+- Keeping response time < 15s and cost < $0.50/search
+- Graceful degradation if any source fails
+- Caching and cost optimization for repeated queries
+
+### High-level Task Breakdown (Stage 2: Real API Integration)
+- [ ] **TDD: Update/write failing tests for real API integration**
+  - Success: Tests expect real data shape, error handling, and multi-source merge
+- [ ] **Install and configure API clients (Semantic Scholar, CrossRef, ArXiv)**
+  - Success: Dependencies installed, API keys (if needed) handled securely
+- [ ] **Implement Semantic Scholar integration**
+  - Success: Real search, error/rate limit handling, normalized output
+- [ ] **Implement CrossRef integration**
+  - Success: Real search, error/rate limit handling, normalized output
+- [ ] **Implement ArXiv integration**
+  - Success: Real search, error/rate limit handling, normalized output
+- [ ] **Normalize and merge results from all sources**
+  - Success: Unified reference shape, all sources present, no duplicates
+- [ ] **Implement ranking algorithm for relevance/quality**
+  - Success: Results are ranked, most relevant first
+- [ ] **Deduplicate results across sources**
+  - Success: No duplicate papers in final output
+- [ ] **Format citations (APA/MLA) and BibTeX export**
+  - Success: Citations and BibTeX are correct for all references
+- [ ] **Graceful error handling and fallback**
+  - Success: If a source fails, others still return; user-friendly errors
+- [ ] **Performance and cost optimization**
+  - Success: Response < 15s, cost < $0.50/search, caching in place if needed
+- [ ] **All tests pass, coverage report generated**
+  - Success: No regressions, new tests for all new logic
+
+### Success Criteria (Stage 2)
+- Real academic search results from all three sources
+- Results properly ranked and deduplicated
+- Proper citation formatting (APA/MLA), BibTeX export
+- Graceful degradation on API failure
+- All tests pass, coverage maintained
+- Response time < 15s, cost < $0.50/search
+
+### Next Step
+- PM review and approval of this plan before any code or test changes.
+
+## Stage 2: Research Assistant – Planning
 
 ## Background and Motivation
 The next major feature is a Research Assistant that enables users to input research topics and receive ranked academic references from multiple sources (Semantic Scholar, CrossRef, ArXiv). This will automate the literature review process, improve citation quality, and streamline academic writing. The assistant must support proper citation formatting and Zotero export, and strictly follow TDD and two-agent protocols.

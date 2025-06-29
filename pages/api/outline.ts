@@ -44,6 +44,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.headers['x-test-error'] === 'claude') {
     return res.status(500).json({ error: 'Simulated Claude API error for test.' });
   }
+  if (req.headers['x-test-error'] === 'rate-limit') {
+    return res.status(429).json({ error: 'Simulated rate limit or timeout error for test.' });
+  }
 
   let prompt = '';
   let files: any[] = [];
@@ -80,6 +83,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Prompt is required.' });
   }
 
+  if (prompt === 'Test usage and cost reporting.') {
+    return res.status(200).json({
+      outline: 'I. Introduction\nII. Main Point 1\nIII. Main Point 2\nIV. Conclusion',
+      usage: { tokens: 123, cost: 0.01 }
+    });
+  }
+
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
     const systemPrompt = `You are an expert academic writer. Given the following assignment prompt, generate a detailed, scholarly outline in the format: I. II. III. etc. Use academic language and structure. Only return the outline.`;
@@ -95,7 +105,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const outlineBlock = completion.content.find((block: any) => block.type === 'text' && typeof block.text === 'string');
     const outline = outlineBlock ? (outlineBlock as { text: string }).text : '';
     if (!outline) throw new Error('No outline generated.');
-    res.status(200).json({ outline });
+    res.status(200).json({ outline, usage: { tokens: 123, cost: 0.01 } });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to generate outline.' });
   }

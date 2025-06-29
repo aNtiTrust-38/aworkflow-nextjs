@@ -3,15 +3,9 @@
 ## Background and Motivation
 This project aims to automate and streamline the academic paper writing process through a six-stage workflow, leveraging AI, citation network analysis, and multi-source research. The goal is to reduce manual effort, improve research quality, and maintain academic rigor, all within a cost-effective, single-user, local deployment environment.
 
-The goal is to upgrade the `/api/outline` endpoint from a stub to a real AI-powered academic outline generator using Claude 3.5 Sonnet via the Anthropic SDK. This will allow users to submit assignment prompts (and optionally files) and receive structured, scholarly outlines suitable for academic writing. The current implementation is a hardcoded stub; the integration must be robust, secure, and follow strict TDD protocols.
+The next milestone is to upgrade the `/api/outline` endpoint from a stub to a real AI-powered academic outline generator using Claude 3.5 Sonnet via the Anthropic SDK. This must strictly follow the TDD protocol as defined in `.tdd-rules-cursor.md`.
 
 ## Key Challenges and Analysis
-- Integrating multiple AI providers (Claude, GPT-4o) with cost tracking and smart model selection
-- Multi-source research aggregation (Semantic Scholar, CrossRef, ArXiv, Google Scholar)
-- Local-first, secure deployment with Docker and Cloudflare Tunnel
-- File and reference management (PDFs, screenshots, Zotero)
-- Responsive, accessible UI for each workflow stage
-- Comprehensive TDD coverage (unit, integration, e2e)
 - Securely handling the Anthropic API key (never commit to repo)
 - Parsing multipart/form-data for prompt and optional files
 - Handling API errors, rate limits, and timeouts gracefully
@@ -19,47 +13,71 @@ The goal is to upgrade the `/api/outline` endpoint from a stub to a real AI-powe
 - Maintaining test coverage and passing all existing tests
 - Adhering to strict TDD and .tdd-rules-cursor.md protocols
 - Ensuring response time is < 30s and cost per outline is tracked
+- Properly mocking or skipping environment-dependent tests
 
-## High-level Task Breakdown (Phase 1: Foundation)
-- [ ] Design Next.js 14 (App Router) project structure with TypeScript and Tailwind
-  - Success: Project builds and runs, directory structure matches spec
-- [ ] Define initial Prisma schema for user, paper, reference, and file entities
-  - Success: Prisma migration runs, tables created, types generated
-- [ ] Set up NextAuth.js for local session authentication
-  - Success: User can log in/out locally, session persists
-- [ ] Configure Docker and docker-compose for app and PostgreSQL
-  - Success: `docker-compose up` starts app and db, app accessible at localhost:3000
-- [ ] Establish basic API route scaffolding for each workflow stage
-  - Success: API endpoints return 200 OK with placeholder data
-- [ ] Set up Vitest, Playwright, and React Testing Library
-  - Success: Example test runs and passes, test scripts in package.json
+## High-level Task Breakdown (Claude 3.5 Sonnet Integration)
+- [ ] **TDD: Write failing tests for /api/outline**
+  - Success: Tests fail, clearly describe expected behavior (see Test Scenarios)
+- [ ] **Install and configure Anthropic SDK**
+  - Success: `@anthropic-ai/sdk` present in dependencies, imported in endpoint
+- [ ] **Add ANTHROPIC_API_KEY to .env and .env.example**
+  - Success: Key is loaded from environment, never committed
+- [ ] **Parse prompt and files from POST requests (multipart/form-data)**
+  - Success: Endpoint extracts prompt and files, returns 400 if missing
+- [ ] **Call Anthropic Claude 3.5 Sonnet API**
+  - Success: Endpoint calls Claude with academic system prompt, receives outline
+- [ ] **Format and return academic outline**
+  - Success: Outline is string, well-structured (I., II., III.), academic tone
+- [ ] **Track/log token usage and cost**
+  - Success: Usage/cost info included in response (stub or real)
+- [ ] **Comprehensive error handling**
+  - Success: Handles missing key, API errors, rate limits, timeouts, returns user-friendly errors
+- [ ] **Update/expand integration tests for edge/error cases**
+  - Success: Tests cover valid, invalid, and error scenarios
+- [ ] **Test coverage report**
+  - Success: Coverage report generated, all tests pass
+
+## Test Scenarios (Claude 3.5 Sonnet Integration)
+- Returns 400 for missing prompt
+- Returns 200 and outline for valid prompt (with/without files)
+- Outline is string, well-structured, academic
+- Handles file uploads (PDF, DOCX, invalid types)
+- Handles missing API key (500 error)
+- Handles Claude API errors, rate limits, and timeouts
+- Tracks and returns usage/cost (stub or real)
+- All tests pass, coverage is adequate
+
+## TDD Status (Claude 3.5 Sonnet Integration)
+- Tests Written: 10
+- Tests Passing: 3
+- Tests Failing: 5
+- Tests Skipped: 2
+- Current Phase: RED (Failing tests confirmed)
+- Failed Tests:
+  - handles PDF and DOCX file uploads (timeout)
+  - rejects invalid file types (timeout)
+  - handles Claude API errors gracefully (expected 500, got 200)
+  - handles rate limits and timeouts gracefully (expected 429, got 200)
+  - returns usage and cost information in the response (timeout)
+- Next Test to Make Green: handles PDF and DOCX file uploads
 
 ## Project Status Board
-- [x] Foundation: Project structure, DB, Auth, Docker, Test setup
-  - [x] Next.js 14 project scaffolded with TypeScript, Tailwind CSS, ESLint, App Router, and src directory
-  - [x] Project builds and runs (`npm run dev` successful, accessible at http://localhost:3000)
-- [x] Define initial Prisma schema for user, paper, reference, and file entities
-  - [x] Prisma schema created and migrated (sqlite for local dev)
-  - [x] Types generated and imported in test
-  - [x] TDD test for type existence passes
-- [x] Set up NextAuth.js for local session authentication
-  - [x] NextAuth.js installed and configured with credentials provider
-  - [x] Sign-in page created
-  - [x] SessionProvider added to app
-  - [x] Integration test for login/logout passes
-- [ ] Configure Docker and docker-compose for app and PostgreSQL
-- [ ] Establish basic API route scaffolding for each workflow stage
-- [ ] Set up Vitest, Playwright, and React Testing Library
-- [x] Anthropic SDK installed
+- [x] TDD: Failing tests written for all scenarios (RED phase complete)
+- [ ] Anthropic SDK installed and imported
 - [ ] ANTHROPIC_API_KEY env setup
 - [ ] Request parsing implemented
-- [ ] Claude 3.5 Sonnet integration
+- [ ] Claude API call implemented
+- [ ] Outline formatting and academic prompt
+- [ ] Usage/cost tracking
 - [ ] Error handling complete
 - [ ] Response formatting complete
 - [ ] Tests updated and passing
-- [x] Update test timeout for valid prompt test
-- [x] Skip or fix missing API key test
-- [x] All tests pass reliably
+- [ ] Test coverage report generated
+
+## Next Steps
+- Begin with TDD: Write failing tests for all scenarios in `__tests__/outline-api.test.ts`.
+- Do not proceed to implementation until tests are written and confirmed failing (RED phase).
+- Reference `.tdd-rules-cursor.md` for every TDD cycle.
 
 ## Executor's Feedback or Assistance Requests
 - The valid prompt test now passes with a 30s timeout.

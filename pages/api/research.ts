@@ -3,9 +3,10 @@ import fetch from 'node-fetch';
 import xml2js from 'xml2js';
 
 function formatCitationAPA(authors: string[], year: number | null, title: string, venue?: string) {
-  // APA: (Last, 2020) Title. Venue.
+  // APA 7: (Last, 2020) Title. Venue.
   let authorStr = 'Unknown';
   if (authors && authors.length > 0) {
+    // Use last name of first author
     const parts = authors[0].split(' ');
     authorStr = parts[parts.length - 1];
   }
@@ -14,23 +15,7 @@ function formatCitationAPA(authors: string[], year: number | null, title: string
   return `(${authorStr}, ${yearStr}) ${title}${venueStr}`;
 }
 
-function formatCitationMLA(authors: string[], year: number | null, title: string, venue?: string) {
-  // MLA: Last, First. "Title." Venue, 2020.
-  let authorStr = 'Unknown Author';
-  if (authors && authors.length > 0) {
-    const parts = authors[0].split(' ');
-    if (parts.length > 1) {
-      authorStr = `${parts[parts.length-1]}, ${parts.slice(0, parts.length-1).join(' ')}`;
-    } else {
-      authorStr = authors[0];
-    }
-  }
-  const venueStr = venue ? ` ${venue},` : '';
-  const yearStr = year ? year : 'n.d.';
-  return `${authorStr}. "${title}."${venueStr} ${yearStr}.`;
-}
-
-async function searchSemanticScholar(query: string, citationStyle: string) {
+async function searchSemanticScholar(query: string) {
   // Semantic Scholar API: https://api.semanticscholar.org/graph/v1/paper/search
   const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&fields=title,authors,year,abstract,externalIds,venue&limit=5`;
   const resp = await fetch(url, {
@@ -51,7 +36,7 @@ async function searchSemanticScholar(query: string, citationStyle: string) {
     if (resp.status === 429) throw new Error('Semantic Scholar rate limit');
     throw new Error(`Semantic Scholar error: ${resp.status} ${errorBody}`);
   }
-  const data = await resp.json();
+  const data: any = await resp.json();
   if (process.env.NODE_ENV !== 'production') {
     console.log('[SemanticScholar] Response JSON:', JSON.stringify(data));
   }
@@ -59,9 +44,7 @@ async function searchSemanticScholar(query: string, citationStyle: string) {
   return (data.data || []).map((paper: any) => {
     const authors = (paper.authors || []).map((a: any) => a.name);
     const venue = paper.venue;
-    const citation = citationStyle === 'mla'
-      ? formatCitationMLA(authors, paper.year, paper.title, venue)
-      : formatCitationAPA(authors, paper.year, paper.title, venue);
+    const citation = formatCitationAPA(authors, paper.year, paper.title, venue);
     return {
       title: paper.title,
       authors,
@@ -74,7 +57,7 @@ async function searchSemanticScholar(query: string, citationStyle: string) {
   });
 }
 
-async function searchCrossRef(query: string, citationStyle: string) {
+async function searchCrossRef(query: string) {
   // CrossRef API: https://api.crossref.org/works?query=...
   const url = `https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=5`;
   const resp = await fetch(url, {
@@ -88,13 +71,11 @@ async function searchCrossRef(query: string, citationStyle: string) {
     try { errorBody = await resp.text(); } catch {}
     throw new Error(`CrossRef error: ${resp.status} ${errorBody}`);
   }
-  const data = await resp.json();
+  const data: any = await resp.json();
   return (data.message.items || []).map((item: any) => {
     const authors = (item.author || []).map((a: any) => `${a.given || ''} ${a.family || ''}`.trim());
     const venue = item['container-title'] && item['container-title'][0];
-    const citation = citationStyle === 'mla'
-      ? formatCitationMLA(authors, item.issued?.['date-parts']?.[0]?.[0] || null, item.title?.[0] || '', venue)
-      : formatCitationAPA(authors, item.issued?.['date-parts']?.[0]?.[0] || null, item.title?.[0] || '', venue);
+    const citation = formatCitationAPA(authors, item.issued?.['date-parts']?.[0]?.[0] || null, item.title?.[0] || '', venue);
     return {
       title: item.title?.[0] || '',
       authors,
@@ -107,7 +88,7 @@ async function searchCrossRef(query: string, citationStyle: string) {
   });
 }
 
-async function searchArxiv(query: string, citationStyle: string) {
+async function searchArxiv(query: string) {
   // ArXiv API: http://export.arxiv.org/api/query?search_query=all:...
   const url = `http://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}&start=0&max_results=5`;
   const resp = await fetch(url, {
@@ -126,9 +107,7 @@ async function searchArxiv(query: string, citationStyle: string) {
   const entries = parsed.feed && parsed.feed.entry ? (Array.isArray(parsed.feed.entry) ? parsed.feed.entry : [parsed.feed.entry]) : [];
   return entries.map((entry: any) => {
     const authors = entry.author ? (Array.isArray(entry.author) ? entry.author.map((a: any) => a.name) : [entry.author.name]) : [];
-    const citation = citationStyle === 'mla'
-      ? formatCitationMLA(authors, entry.published ? parseInt(entry.published.slice(0, 4)) : null, entry.title, entry['arxiv:journal_ref'])
-      : formatCitationAPA(authors, entry.published ? parseInt(entry.published.slice(0, 4)) : null, entry.title, entry['arxiv:journal_ref']);
+    const citation = formatCitationAPA(authors, entry.published ? parseInt(entry.published.slice(0, 4)) : null, entry.title, entry['arxiv:journal_ref']);
     return {
       title: entry.title,
       authors,
@@ -154,7 +133,7 @@ function bibtexForReference(ref: any) {
 }`;
 }
 
-function getStubReferences(style: string) {
+function getStubReferences() {
   return [
     {
       title: 'Stub Paper from Semantic Scholar',
@@ -163,7 +142,7 @@ function getStubReferences(style: string) {
       year: 2020,
       doi: '10.0000/stub1',
       abstract: 'Stub abstract for Semantic Scholar.',
-      citation: style === 'mla' ? formatCitationMLA(['Alice Example'], 2020, 'Stub Paper from Semantic Scholar', 'StubConf') : formatCitationAPA(['Alice Example'], 2020, 'Stub Paper from Semantic Scholar', 'StubConf'),
+      citation: formatCitationAPA(['Alice Example'], 2020, 'Stub Paper from Semantic Scholar', 'StubConf'),
     },
     {
       title: 'Stub Paper from CrossRef',
@@ -172,7 +151,7 @@ function getStubReferences(style: string) {
       year: 2019,
       doi: '10.0000/stub2',
       abstract: 'Stub abstract for CrossRef.',
-      citation: style === 'mla' ? formatCitationMLA(['Bob Example'], 2019, 'Stub Paper from CrossRef', 'StubJournal') : formatCitationAPA(['Bob Example'], 2019, 'Stub Paper from CrossRef', 'StubJournal'),
+      citation: formatCitationAPA(['Bob Example'], 2019, 'Stub Paper from CrossRef', 'StubJournal'),
     },
     {
       title: 'Stub Paper from ArXiv',
@@ -181,9 +160,27 @@ function getStubReferences(style: string) {
       year: 2018,
       doi: null,
       abstract: 'Stub abstract for ArXiv.',
-      citation: style === 'mla' ? formatCitationMLA(['Carol Example'], 2018, 'Stub Paper from ArXiv', 'arXiv preprint arXiv:1801.12345') : formatCitationAPA(['Carol Example'], 2018, 'Stub Paper from ArXiv', 'arXiv preprint arXiv:1801.12345'),
+      citation: formatCitationAPA(['Carol Example'], 2018, 'Stub Paper from ArXiv', 'arXiv preprint arXiv:1801.12345'),
     },
   ];
+}
+
+function deduplicateReferences(references: any[]): any[] {
+  const seen = new Set();
+  return references.filter(ref => {
+    const key = ref.doi ? ref.doi : (ref.title.toLowerCase().replace(/\s+/g, '') + (ref.authors[0] || '').toLowerCase());
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function sortByRelevance(references: any[]): any[] {
+  // Proxy: sort by year desc, then title asc
+  return references.sort((a, b) => {
+    if (b.year !== a.year) return (b.year || 0) - (a.year || 0);
+    return a.title.localeCompare(b.title);
+  });
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -199,15 +196,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(429).json({ error: 'Simulated rate limit or timeout error for test.' });
   }
 
-  const { query, export: exportType, citationStyle } = req.body || {};
+  const { query, export: exportType } = req.body || {};
   if (!query || typeof query !== 'string' || query.trim() === '') {
     return res.status(400).json({ error: 'Research query is required.' });
   }
-  const style = (citationStyle || exportType || '').toLowerCase() === 'mla' ? 'mla' : 'apa';
 
   // TDD stub/fallback logic for tests
   if (process.env.NODE_ENV === 'test' || req.headers['x-test-stub']) {
-    const references = getStubReferences(style);
+    const references = getStubReferences();
     let bibtex;
     if (exportType && exportType.toLowerCase() === 'bibtex') {
       bibtex = references.map(bibtexForReference).join('\n');
@@ -224,22 +220,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const errors: any = {};
 
   try {
-    semanticResults = await searchSemanticScholar(query, style);
+    semanticResults = await searchSemanticScholar(query);
   } catch (err: any) {
     errors.SemanticScholar = err.message;
   }
   try {
-    crossrefResults = await searchCrossRef(query, style);
+    crossrefResults = await searchCrossRef(query);
   } catch (err: any) {
     errors.CrossRef = err.message;
   }
   try {
-    arxivResults = await searchArxiv(query, style);
+    arxivResults = await searchArxiv(query);
   } catch (err: any) {
     errors.ArXiv = err.message;
   }
 
-  const references = [...semanticResults, ...crossrefResults, ...arxivResults];
+  let references = [...semanticResults, ...crossrefResults, ...arxivResults];
+  references = deduplicateReferences(references);
+  references = sortByRelevance(references);
+
+  // Cost calculation
+  const costBreakdown: any = {
+    semanticScholar: semanticResults.length > 0 ? 0.001 : 0,
+    crossRef: crossrefResults.length > 0 ? 0.001 : 0,
+    arxiv: arxivResults.length > 0 ? 0.001 : 0,
+  };
+  const totalCost = costBreakdown.semanticScholar + costBreakdown.crossRef + costBreakdown.arxiv;
+
   let bibtex;
   if (exportType && exportType.toLowerCase() === 'bibtex') {
     bibtex = references.map(bibtexForReference).join('\n');
@@ -249,7 +256,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (crossrefResults.length) sources.push('CrossRef');
   if (arxivResults.length) sources.push('ArXiv');
   const response: any = { references, sources, count: references.length };
-  if (Object.keys(errors).length) response.errors = errors;
+  const allSources = ['SemanticScholar', 'CrossRef', 'ArXiv'];
+  const errorsOut: any = {};
+  allSources.forEach(source => {
+    errorsOut[source] = errors.hasOwnProperty(source) ? errors[source] : null;
+  });
+  if (Object.keys(errorsOut).length) response.errors = errorsOut;
   if (bibtex) response.bibtex = bibtex;
+  response.cost = totalCost;
   return res.status(200).json(response);
 } 

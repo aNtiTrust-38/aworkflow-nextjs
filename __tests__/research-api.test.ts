@@ -12,7 +12,7 @@ describe('/api/research endpoint', () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.error).toMatch(/query/i);
-  });
+  }, 30000);
 
   it('returns 200 and ranked references for a valid query', async () => {
     const res = await fetch('http://localhost:3000/api/research', {
@@ -55,7 +55,7 @@ describe('/api/research endpoint', () => {
     expect([429, 500]).toContain(res.status);
     const data = await res.json();
     expect(data.error).toMatch(/error|rate limit|timeout/i);
-  });
+  }, 30000);
 
   it('returns citations in requested format (APA, MLA, etc.)', async () => {
     const res = await fetch('http://localhost:3000/api/research', {
@@ -68,7 +68,7 @@ describe('/api/research endpoint', () => {
     expect(Array.isArray(data.references)).toBe(true);
     expect(data.references[0]).toHaveProperty('citation');
     expect(data.references[0].citation).toMatch(/\(\d{4}\)/); // Year in citation
-  });
+  }, 30000);
 
   it('exports references in Zotero-compatible format (BibTeX)', async () => {
     const res = await fetch('http://localhost:3000/api/research', {
@@ -81,7 +81,7 @@ describe('/api/research endpoint', () => {
     expect(data.bibtex).toBeDefined();
     expect(typeof data.bibtex).toBe('string');
     expect(data.bibtex).toMatch(/@article/);
-  });
+  }, 30000);
 });
 
 describe('/api/research endpoint (real API integration)', () => {
@@ -103,7 +103,7 @@ describe('/api/research endpoint (real API integration)', () => {
       expect(ref).toHaveProperty('year');
       expect(ref).toHaveProperty('doi'); // May be null for ArXiv
     });
-  });
+  }, 30000);
 
   it('deduplicates results across sources (by DOI or title+authors)', async () => {
     // TDD: This test expects no duplicate papers in the final output
@@ -120,7 +120,7 @@ describe('/api/research endpoint (real API integration)', () => {
       expect(seen.has(key)).toBe(false);
       seen.add(key);
     });
-  });
+  }, 30000);
 
   it('ranks results by relevance to the query', async () => {
     // TDD: This test expects the most relevant results to appear first
@@ -136,7 +136,7 @@ describe('/api/research endpoint (real API integration)', () => {
       data.references[0].title.toLowerCase() +
       (data.references[0].abstract || '').toLowerCase()
     ).toMatch(/transformer|neural network/);
-  });
+  }, 30000);
 
   it('returns citations in correct APA and MLA formats (not stubs)', async () => {
     // TDD: This test expects real citation formatting, not stubbed strings
@@ -155,7 +155,7 @@ describe('/api/research endpoint (real API integration)', () => {
     });
     const dataMLA = await resMLA.json();
     expect(dataMLA.references[0].citation).toMatch(/[A-Za-z]+, [A-Za-z]+\. ".+"/); // MLA style
-  });
+  }, 30000);
 
   it('returns BibTeX export with all references and correct fields', async () => {
     // TDD: This test expects real BibTeX export, not stub
@@ -172,7 +172,7 @@ describe('/api/research endpoint (real API integration)', () => {
     data.references.forEach((ref: any) => {
       expect(data.bibtex).toMatch(new RegExp(ref.title));
     });
-  });
+  }, 30000);
 
   it('responds within 15 seconds and cost is < $0.50 per search', async () => {
     // TDD: This test expects performance and cost constraints
@@ -186,7 +186,7 @@ describe('/api/research endpoint (real API integration)', () => {
     expect(elapsed).toBeLessThan(15000);
     const data = await res.json();
     expect(data.cost).toBeLessThan(0.5);
-  });
+  }, 30000);
 
   it('gracefully degrades if one or more sources fail', async () => {
     // TDD: This test expects that if a source fails, others still return results
@@ -201,5 +201,5 @@ describe('/api/research endpoint (real API integration)', () => {
     expect(data.references.length).toBeGreaterThan(0);
     // Should include error info for failed source
     expect(data.errors || {}).toHaveProperty('ArXiv');
-  });
+  }, 30000);
 }); 

@@ -2,26 +2,32 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import fetch from 'node-fetch';
 import xml2js from 'xml2js';
 
-function formatCitationAPA(authors: string[], year: number, title: string, venue: string | undefined) {
-  // Example: (Smith, 2020). Title. Venue.
-  if (!authors || authors.length === 0) return '';
-  // Use only the first author's last name for the parenthetical citation
-  const firstAuthorLast = authors[0].split(' ').slice(-1)[0];
-  return `(${firstAuthorLast}, ${year}) ${title}${venue ? `. ${venue}.` : '.'}`;
+function formatCitationAPA(authors: string[], year: number | null, title: string, venue?: string) {
+  // APA: (Last, 2020) Title. Venue.
+  let authorStr = 'Unknown';
+  if (authors && authors.length > 0) {
+    const parts = authors[0].split(' ');
+    authorStr = parts[parts.length - 1];
+  }
+  const yearStr = year ? year : 'n.d.';
+  const venueStr = venue ? `. ${venue}.` : '';
+  return `(${authorStr}, ${yearStr}) ${title}${venueStr}`;
 }
 
-function formatCitationMLA(authors: string[], year: number, title: string, venue: string | undefined) {
-  // Example: Smith, John, and Jane Doe. "Title." Venue, 2020.
-  if (!authors || authors.length === 0) return '';
-  let authorStr = '';
-  if (authors.length === 1) {
-    authorStr = authors[0];
-  } else if (authors.length === 2) {
-    authorStr = authors.join(' and ');
-  } else if (authors.length > 2) {
-    authorStr = authors[0] + ', et al.';
+function formatCitationMLA(authors: string[], year: number | null, title: string, venue?: string) {
+  // MLA: Last, First. "Title." Venue, 2020.
+  let authorStr = 'Unknown Author';
+  if (authors && authors.length > 0) {
+    const parts = authors[0].split(' ');
+    if (parts.length > 1) {
+      authorStr = `${parts[parts.length-1]}, ${parts.slice(0, parts.length-1).join(' ')}`;
+    } else {
+      authorStr = authors[0];
+    }
   }
-  return `${authorStr}. \"${title}.\"${venue ? ` ${venue},` : ''} ${year || 'n.d.'}.`;
+  const venueStr = venue ? ` ${venue},` : '';
+  const yearStr = year ? year : 'n.d.';
+  return `${authorStr}. "${title}."${venueStr} ${yearStr}.`;
 }
 
 async function searchSemanticScholar(query: string, citationStyle: string) {

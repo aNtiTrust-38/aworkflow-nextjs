@@ -95,9 +95,24 @@ The next milestone is to upgrade the `/api/outline` endpoint from a stub to a re
 - Implement citation formatting logic for both APA and MLA styles.
 
 ## Current Status / Progress Tracking
-- Citation formatting logic (APA, MLA) is now implemented and used in all sources.
-- Most tests are now timing out, likely due to API rate limits or slowness (9/13 tests failed due to timeout).
-- Next step: Address test timeouts (increase timeout or add stubs/fallbacks for TDD progress).
+- xml2js and node-fetch installed
+- All test timeouts for API calls set to 30s
+- "returns normalized reference objects" test now passes
+- Citation formatting changes did not resolve regex failures for APA/MLA. Further adjustment needed to match test expectations exactly.
+- Next: Refine formatCitationAPA and formatCitationMLA to match test regex for both citation styles.
+
+## Project Status Board
+- [x] Dependencies installed
+- [x] Test timeouts updated
+- [x] One test passing for /api/research
+- [ ] All tests passing for /api/research
+
+## Executor's Feedback or Assistance Requests
+- Citation formatting for APA/MLA still does not match test regex. Need to review test regex and citation output more closely to ensure compliance.
+
+## Lessons
+- Always check test regex for citation formatting
+- TDD: Make one test pass at a time, then proceed to the next
 
 ## Background and Motivation
 - Ensure robust error handling and test coverage for /api/outline endpoint, even when multipart file upload is not directly testable in current environment.
@@ -347,4 +362,44 @@ The next major feature is a Research Assistant that enables users to input resea
 - Proper citation formatting (APA, MLA, etc.)
 - Export to Zotero for reference management
 - TDD test coverage for all research functionality
-- All existing tests continue to pass 
+- All existing tests continue to pass
+
+# Background and Motivation
+Stage 2 Real API Integration for /api/research. Goal: pass all tests, robust error handling, multi-source integration, citation formatting, cost calculation.
+
+# Key Challenges and Analysis
+- Real API calls can be slow or rate-limited
+- Citation formatting must match test expectations
+- Deduplication and merging logic must be robust
+
+# High-level Task Breakdown
+- [x] Install missing dependencies (xml2js, node-fetch)
+- [x] Update test timeouts to 30s for all real API tests
+- [ ] Make one test pass ("returns normalized reference objects")
+- [ ] Implement error handling for API failures
+- [ ] Complete multi-source integration and deduplication
+- [ ] Add citation formatting (APA, MLA)
+- [ ] Implement cost calculation and usage tracking
+- [ ] Pass all tests, one at a time (TDD)
+
+# Project Status Board
+- [x] Dependencies installed
+- [x] Test timeouts updated
+- [ ] One test passing for /api/research
+- [ ] All tests passing for /api/research
+
+# Current Status / Progress Tracking
+- xml2js and node-fetch installed
+- All test timeouts for API calls set to 30s
+- "returns normalized reference objects" test now passes
+- Citation formatting changes did not resolve regex failures for APA/MLA. Further adjustment needed to match test expectations exactly.
+- Next: Refine formatCitationAPA and formatCitationMLA to match test regex for both citation styles.
+
+# Executor's Feedback or Assistance Requests
+- No blockers. Ready to proceed with TDD: make one test pass for /api/research endpoint.
+
+# Lessons
+- Always update test timeouts for real API integration
+- Install all required dependencies before running tests
+- Read the file before editing
+- Include debug info in program output for easier troubleshooting 

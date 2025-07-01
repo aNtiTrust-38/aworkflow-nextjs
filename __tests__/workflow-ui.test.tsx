@@ -19,14 +19,6 @@ beforeEach(() => {
   vi.stubGlobal('Packer', { toBlob: vi.fn(() => Promise.resolve(new Blob())) });
   // Stub URL.createObjectURL
   vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:url'), revokeObjectURL: vi.fn() });
-  // Stub document.createElement for 'a'
-  vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-    const el = originalCreateElement.call(document, tag);
-    if (tag === 'a') {
-      el.click = vi.fn();
-    }
-    return el;
-  });
 });
 
 afterEach(() => {
@@ -365,23 +357,19 @@ describe('Academic Workflow UI', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     // Wait for content to appear
     await screen.findByText(/generated content/i);
-    // Patch only createElement and body methods after render
+    // Patch only createElement after render
     const origCreateElement = document.createElement;
-    const origAppendChild = document.body.appendChild;
-    const origRemoveChild = document.body.removeChild;
-    document.createElement = () => {
-      createdEl = {
-        href: '',
-        download: '',
-        click,
-        style: {},
-        setAttribute: vi.fn(),
-        remove: vi.fn(),
-      };
-      return createdEl as any;
+    document.createElement = function(tag: string) {
+      if (tag === 'a') {
+        const anchor = origCreateElement.call(document, tag);
+        Object.defineProperty(anchor, 'click', { value: click });
+        Object.defineProperty(anchor, 'download', { writable: true, value: '' });
+        Object.defineProperty(anchor, 'href', { writable: true, value: '' });
+        createdEl = anchor;
+        return anchor;
+      }
+      return origCreateElement.call(document, tag);
     };
-    document.body.appendChild = vi.fn();
-    document.body.removeChild = vi.fn();
     const exportBtn = screen.getByRole('button', { name: /export pdf/i });
     fireEvent.click(exportBtn);
     expect(createObjectURL).toHaveBeenCalled();
@@ -389,8 +377,6 @@ describe('Academic Workflow UI', () => {
     expect(createdEl.download.endsWith('.pdf')).toBe(true);
     // Restore
     document.createElement = origCreateElement;
-    document.body.appendChild = origAppendChild;
-    document.body.removeChild = origRemoveChild;
   });
 
   it('downloads a Word file with .docx extension and correct content when Word export is clicked', async () => {
@@ -412,23 +398,19 @@ describe('Academic Workflow UI', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     // Wait for content to appear
     await screen.findByText(/generated content/i);
-    // Patch only createElement and body methods after render
+    // Patch only createElement after render
     const origCreateElement = document.createElement;
-    const origAppendChild = document.body.appendChild;
-    const origRemoveChild = document.body.removeChild;
-    document.createElement = () => {
-      createdEl = {
-        href: '',
-        download: '',
-        click,
-        style: {},
-        setAttribute: vi.fn(),
-        remove: vi.fn(),
-      };
-      return createdEl as any;
+    document.createElement = function(tag: string) {
+      if (tag === 'a') {
+        const anchor = origCreateElement.call(document, tag);
+        Object.defineProperty(anchor, 'click', { value: click });
+        Object.defineProperty(anchor, 'download', { writable: true, value: '' });
+        Object.defineProperty(anchor, 'href', { writable: true, value: '' });
+        createdEl = anchor;
+        return anchor;
+      }
+      return origCreateElement.call(document, tag);
     };
-    document.body.appendChild = vi.fn();
-    document.body.removeChild = vi.fn();
     const exportBtn = screen.getByRole('button', { name: /export word/i });
     fireEvent.click(exportBtn);
     await waitFor(() => {
@@ -438,8 +420,6 @@ describe('Academic Workflow UI', () => {
     });
     // Restore
     document.createElement = origCreateElement;
-    document.body.appendChild = origAppendChild;
-    document.body.removeChild = origRemoveChild;
   });
 
   // RED PHASE: Failing E2E workflow test
@@ -471,23 +451,19 @@ describe('Academic Workflow UI', () => {
     await screen.findByTestId('reference-0');
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     await screen.findByText(/generated academic content/i);
-    // Patch only createElement and body methods after render
+    // Patch only createElement after render
     const origCreateElement = document.createElement;
-    const origAppendChild = document.body.appendChild;
-    const origRemoveChild = document.body.removeChild;
-    document.createElement = () => {
-      createdEl = {
-        href: '',
-        download: '',
-        click,
-        style: {},
-        setAttribute: vi.fn(),
-        remove: vi.fn(),
-      };
-      return createdEl as any;
+    document.createElement = function(tag: string) {
+      if (tag === 'a') {
+        const anchor = origCreateElement.call(document, tag);
+        Object.defineProperty(anchor, 'click', { value: click });
+        Object.defineProperty(anchor, 'download', { writable: true, value: '' });
+        Object.defineProperty(anchor, 'href', { writable: true, value: '' });
+        createdEl = anchor;
+        return anchor;
+      }
+      return origCreateElement.call(document, tag);
     };
-    document.body.appendChild = vi.fn();
-    document.body.removeChild = vi.fn();
     // Export buttons should appear
     const pdfBtn = screen.getByRole('button', { name: /export pdf/i });
     const wordBtn = screen.getByRole('button', { name: /export word/i });
@@ -507,8 +483,6 @@ describe('Academic Workflow UI', () => {
     });
     // Restore
     document.createElement = origCreateElement;
-    document.body.appendChild = origAppendChild;
-    document.body.removeChild = origRemoveChild;
   });
 
   it('renders with academic visual hierarchy and professional theming', () => {
@@ -787,7 +761,13 @@ describe('Academic Workflow UI', () => {
     fireEvent.click(screen.getByTestId('file-format-word'));
     // Export and check message
     fireEvent.click(screen.getByText(/export word/i));
-    await waitFor(() => screen.getByText(/exported with MLA style: Introduction, Methods/));
+    await waitFor(() => screen.getByText((content, node) => {
+      if (!node) return false;
+      const hasText = (n: Element) => n.textContent?.includes('Exported with MLA style: Introduction, Methods') ?? false;
+      const nodeHasText = hasText(node as Element);
+      const childrenDontHaveText = Array.from((node as Element).children || []).every(child => !hasText(child));
+      return nodeHasText && childrenDontHaveText;
+    }));
     // Keyboard navigation: change citation style
     const styleSelect = screen.getByTestId('citation-style-select');
     styleSelect.focus();

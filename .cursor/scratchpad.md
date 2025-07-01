@@ -83,11 +83,20 @@ The next milestone is to upgrade the `/api/outline` endpoint from a stub to a re
 - [ ] Graceful error handling for partial failures
 - [x] /api/research endpoint: All requirements and tests complete
 - [x] Planner review: All tests pass, APA 7 only, robust error reporting, multi-source tolerant to API failures. Project complete and ready for manual QA or deployment.
+- [x] Stage 3: Failing tests for /api/generate written (TDD: all fail as expected)
+- [x] Stage 3: Design API contract for content generation
+- [x] Stage 3: Implement /api/generate endpoint (stub)
+- [x] Stage 3: Integrate LLM for academic content generation (minimal, all tests pass except E2E)
+- [ ] Stage 3: In-text citation insertion logic (expand for multiple references/sections)
+- [ ] Stage 3: Reference linking and validation
+- [ ] Stage 3: Comprehensive error handling and cost tracking
+- [ ] Stage 3: Expand integration and E2E tests for new workflow
+- [ ] Stage 3: UI: Integrate content generation into workflow
+- [ ] Stage 3: Test coverage report
 
 ## Executor's Feedback or Assistance Requests
 
-- Citation formatting logic is implemented, but API slowness/rate limits are causing most tests to fail by timeout.
-- Recommend increasing test timeouts or adding stub/fallback logic for TDD progress.
+- All /api/generate endpoint tests now pass (except the E2E placeholder). Minimal LLM integration logic is in place, with error handling and usage reporting. Next step: expand content generation and citation logic for multiple sections and references, and implement reference linking/validation.
 
 ## Lessons
 - Always run `npx vitest` directly if no npm test script is present.
@@ -406,4 +415,102 @@ Stage 2 Real API Integration for /api/research. Goal: pass all tests, robust err
 - Always update test timeouts for real API integration
 - Install all required dependencies before running tests
 - Read the file before editing
-- Include debug info in program output for easier troubleshooting 
+- Include debug info in program output for easier troubleshooting
+
+## Stage 3 Planning: AI-Powered Content Generation
+
+### Background and Motivation
+With outline generation and research fully automated, the next logical step is to enable users to generate full academic paper sections from outlines and research. This will close the loop from prompt → outline → research → draft writing, providing the core value proposition of the platform.
+
+### Key Challenges and Analysis
+- Designing a flexible API for content generation (section-by-section, full draft, etc.)
+- Integrating with a suitable LLM (Claude, GPT-4, or other) for academic writing
+- Ensuring generated content is well-structured, academic, and properly cited
+- Handling in-text citation insertion and reference linking
+- Maintaining strict TDD: tests must be written before code
+- Preserving cost tracking and error handling standards
+- Ensuring all new endpoints/components have full test coverage (unit, integration, E2E)
+- UI/UX: Integrating content generation into the existing workflow
+
+### High-level Task Breakdown (Stage 3)
+- [ ] **TDD: Write failing tests for /api/generate endpoint**
+  - Success: Tests fail, clearly describe expected behavior (see Test Scenarios)
+- [ ] **Design API contract for content generation**
+  - Success: API accepts outline sections, research references, and returns generated content
+- [ ] **Implement /api/generate endpoint (stub)**
+  - Success: Returns 501 Not Implemented or stubbed response
+- [ ] **Integrate LLM for academic content generation**
+  - Success: Endpoint calls LLM, returns academic text for given section(s)
+- [ ] **In-text citation insertion logic**
+  - Success: Generated content includes properly formatted APA 7 in-text citations
+- [ ] **Reference linking and validation**
+  - Success: All in-text citations correspond to provided references
+- [ ] **Comprehensive error handling and cost tracking**
+  - Success: Handles LLM/API errors, rate limits, and tracks usage/cost
+- [ ] **Expand integration and E2E tests for new workflow**
+  - Success: Tests cover valid, invalid, and error scenarios
+- [ ] **UI: Integrate content generation into workflow**
+  - Success: Users can generate, review, and edit content from outline/research interface
+- [ ] **Test coverage report**
+  - Success: Coverage report generated, all tests pass
+
+### Test Scenarios (Stage 3)
+- Returns 400 for missing or invalid input (outline, references)
+- Returns 200 and generated content for valid input
+- Generated content is academic, well-structured, and includes in-text citations
+- Handles LLM/API errors, rate limits, and timeouts gracefully
+- Tracks and returns usage/cost in response
+- All tests pass, coverage is adequate
+- E2E: User can go from outline → research → content generation in UI
+
+### Success Criteria
+- All new endpoints/components have 100% unit and integration test coverage
+- E2E test covers full workflow (outline → research → content generation)
+- Generated content is academic, well-structured, and properly cited (APA 7)
+- All error scenarios are handled gracefully and reported to user
+- Cost tracking and usage reporting are present for all LLM calls
+- All tests pass and coverage report is generated
+
+---
+
+## Stage 3: /api/generate API Contract (Draft)
+
+### Endpoint
+POST /api/generate
+
+### Request Body (application/json)
+{
+  outline: [
+    { section: string, content: string }, // Required, at least one section
+    ...
+  ],
+  references: [
+    { id: string|number, citation: string, authors: string[], year: number, title: string, source: string }, // Required, at least one reference
+    ...
+  ]
+}
+
+### Response (200 OK)
+{
+  content: string, // Full academic text, with in-text citations (APA 7)
+  usage: {
+    tokens: number, // Total tokens used (LLM call)
+    cost: number    // Cost in USD (LLM call)
+  },
+  references: [
+    { id: string|number, citation: string, authors: string[], year: number, title: string, source: string },
+    ...
+  ]
+}
+
+### Error Responses
+- 400 Bad Request: { error: string } // Missing or invalid outline/references
+- 429 Too Many Requests: { error: string } // Rate limit or timeout
+- 500 Internal Server Error: { error: string } // LLM/API error
+
+### Notes
+- All in-text citations in `content` must correspond to a reference in the `references` array.
+- `usage` must be present in all successful responses (stub or real).
+- All fields are required unless otherwise noted.
+
+--- 

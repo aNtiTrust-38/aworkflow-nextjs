@@ -27,21 +27,22 @@ describe('Academic Workflow UI', () => {
   it('tracks current step and persists prompt input across steps', () => {
     render(<WorkflowUI />);
     // Initial state: Step 1
-    expect(screen.getByTestId('workflow-stepper')).toHaveTextContent(/step 1 of 4/i);
+    const stepButtons = screen.getAllByRole('button', { name: /step/i });
+    expect(stepButtons[0]).toHaveAttribute('aria-current', 'step');
     // Enter prompt
     const promptInput = screen.getByLabelText(/assignment prompt/i);
     fireEvent.change(promptInput, { target: { value: 'Test prompt' } });
     // Move to next step
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     // Stepper should update
-    expect(screen.getByTestId('workflow-stepper')).toHaveTextContent(/step 2 of 4/i);
+    expect(stepButtons[1]).toHaveAttribute('aria-current', 'step');
     // Prompt input should persist value
     expect(screen.getByLabelText(/assignment prompt/i)).toHaveValue('Test prompt');
     // Previous button should now be enabled
     expect(screen.getByRole('button', { name: /previous/i })).toBeEnabled();
     // Move back to previous step
     fireEvent.click(screen.getByRole('button', { name: /previous/i }));
-    expect(screen.getByTestId('workflow-stepper')).toHaveTextContent(/step 1 of 4/i);
+    expect(stepButtons[0]).toHaveAttribute('aria-current', 'step');
     // Prompt input should still have value
     expect(screen.getByLabelText(/assignment prompt/i)).toHaveValue('Test prompt');
   });
@@ -483,5 +484,85 @@ describe('Academic Workflow UI', () => {
     document.createElement = origCreateElement;
     document.body.appendChild = origAppendChild;
     document.body.removeChild = origRemoveChild;
+  });
+
+  it('renders with academic visual hierarchy and professional theming', () => {
+    render(<WorkflowUI />);
+    // Academic header should be present
+    expect(screen.getByTestId('academic-header')).toBeInTheDocument();
+    // Section titles should be visually distinct
+    expect(screen.getByTestId('section-title')).toBeInTheDocument();
+    // Stepper should have enhanced academic/professional class
+    expect(screen.getByTestId('workflow-stepper')).toHaveClass('academic-stepper');
+    // Typography and spacing classes should be present
+    const main = screen.getByTestId('workflow-main');
+    expect(main).toHaveClass('prose', 'prose-lg', 'mx-auto', 'my-8');
+  });
+
+  it('applies academic/professional theming (palette, typography, spacing)', () => {
+    render(<WorkflowUI />);
+    // Header should have academic color and font
+    const header = screen.getByTestId('academic-header');
+    expect(header).toHaveClass('text-academic-primary', 'font-serif');
+    // Stepper should have academic/professional color and spacing
+    const stepper = screen.getByTestId('workflow-stepper');
+    expect(stepper).toHaveClass('bg-academic-muted', 'rounded', 'px-4', 'py-2', 'mb-4');
+    // Main container should have academic background and padding
+    const main = screen.getByTestId('workflow-main');
+    expect(main).toHaveClass('bg-academic-bg', 'p-8', 'shadow-academic');
+  });
+
+  it('shows academic-themed loading spinner/progress indicator during all loading states', () => {
+    render(<WorkflowUI />);
+    // Step 2: Outline loading
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
+    expect(screen.getByTestId('loading-indicator')).toHaveClass('academic-spinner');
+    // Simulate step 3: Research loading
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
+    // Simulate step 4: Content generation loading
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
+  });
+
+  it('shows academic-themed, accessible error alert with recovery for all error states', async () => {
+    // Mock fetch to fail for /api/outline
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false })));
+    render(<WorkflowUI />);
+    // Simulate step 2: Outline error
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    // Wait for error alert to appear
+    await waitFor(() => {
+      expect(screen.getByTestId('error-alert')).toBeInTheDocument();
+      expect(screen.getByTestId('error-alert')).toHaveClass('academic-error');
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /dismiss/i })).toBeInTheDocument();
+      expect(screen.getByText(/try again|recover|reload/i)).toBeInTheDocument();
+    });
+    // Simulate dismiss
+    fireEvent.click(screen.getByRole('button', { name: /dismiss/i }));
+    expect(screen.queryByTestId('error-alert')).not.toBeInTheDocument();
+  });
+
+  it('shows a visible, accessible stepper with clickable steps and current step highlighting', async () => {
+    render(<WorkflowUI />);
+    // Stepper should have step buttons
+    let stepButtons = screen.getAllByRole('button', { name: /step/i });
+    expect(stepButtons.length).toBeGreaterThanOrEqual(4);
+    // Current step should be highlighted and have aria-current
+    expect(stepButtons[0]).toHaveAttribute('aria-current', 'step');
+    // Click next step
+    fireEvent.click(stepButtons[1]);
+    await waitFor(() => {
+      stepButtons = screen.getAllByRole('button', { name: /step/i });
+      expect(stepButtons[1]).toHaveAttribute('aria-current', 'step');
+    });
+    // All step buttons should have aria-label
+    stepButtons.forEach((btn, idx) => {
+      expect(btn).toHaveAttribute('aria-label', `Step ${idx + 1}`);
+    });
   });
 }); 

@@ -24,3 +24,50 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.text-academic-primary {
+  color: #2a2a72;
+}
+.bg-academic-muted {
+  background: #f4f6fa;
+}
+.bg-academic-bg {
+  background: #fffefb;
+}
+.shadow-academic {
+  box-shadow: 0 2px 16px 0 rgba(42, 42, 114, 0.08);
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.academic-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.academic-error {
+  background: #fff0f0;
+  color: #a94442;
+  border: 1px solid #f5c6cb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bg-academic-primary {
+  background: #2a2a72;
+}
+.step-btn {
+  transition: background 0.2s, color 0.2s;
+  border: 1px solid #2a2a72;
+}

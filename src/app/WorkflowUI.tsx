@@ -29,7 +29,8 @@ type WorkflowAction =
   | { type: 'SET_OUTLINE'; value: string }
   | { type: 'SET_ERROR'; value: string | null }
   | { type: 'SET_REFERENCES'; value: Reference[] }
-  | { type: 'SET_CONTENT'; value: string };
+  | { type: 'SET_CONTENT'; value: string }
+  | { type: 'SET_STEP'; value: number };
 
 const initialState: WorkflowState = {
   step: 1,
@@ -47,6 +48,8 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
       return { ...state, step: Math.min(state.step + 1, TOTAL_STEPS) };
     case 'PREV_STEP':
       return { ...state, step: Math.max(state.step - 1, 1) };
+    case 'SET_STEP':
+      return { ...state, step: Math.max(1, Math.min(action.value, TOTAL_STEPS)) };
     case 'SET_PROMPT':
       return { ...state, prompt: action.value };
     case 'SET_LOADING':
@@ -106,6 +109,7 @@ async function fetchGenerate(prompt: string, outline: string | null, references:
 const WorkflowUI: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [exportMessage, setExportMessage] = React.useState<string | null>(null);
+  const [showError, setShowError] = React.useState(true);
 
   const handleNext = async () => {
     if (state.step === 1) {
@@ -192,67 +196,127 @@ const WorkflowUI: React.FC = () => {
 
   return (
     <div>
-      <div data-testid="workflow-stepper">{`Step ${state.step} of ${TOTAL_STEPS}`}</div>
-      <label htmlFor="prompt">Assignment Prompt</label>
-      <textarea
-        id="prompt"
-        aria-label="Assignment Prompt"
-        value={state.prompt}
-        onChange={e => dispatch({ type: 'SET_PROMPT', value: e.target.value })}
-      />
-      <button
-        type="button"
-        disabled={state.step === 1}
-        onClick={() => dispatch({ type: 'PREV_STEP' })}
-      >
-        Previous
-      </button>
-      <button
-        type="button"
-        disabled={state.step === TOTAL_STEPS}
-        onClick={handleNext}
-      >
-        Next
-      </button>
-      {state.step === 2 && state.loading && <div>Loading outline...</div>}
-      {state.step === 2 && state.error && <div style={{ color: 'red' }}>{state.error}</div>}
-      {state.step === 2 && state.outline && (
-        <div>
-          {state.outline.split('\n').map((line, idx) => (
-            <div key={idx}>{line}</div>
+      {/* Academic header for professional theming */}
+      <header data-testid="academic-header" className="text-3xl font-bold text-center mb-6 tracking-tight font-serif text-academic-primary">Academic Paper Workflow</header>
+      <main data-testid="workflow-main" className="prose prose-lg mx-auto my-8 bg-academic-bg p-8 shadow-academic">
+        <div data-testid="workflow-stepper" className="academic-stepper bg-academic-muted rounded px-4 py-2 mb-4 flex gap-2 justify-center">
+          {[...Array(TOTAL_STEPS)].map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              aria-label={`Step ${idx + 1}`}
+              aria-current={state.step === idx + 1 ? 'step' : undefined}
+              className={`step-btn px-3 py-1 rounded ${state.step === idx + 1 ? 'bg-academic-primary text-white font-bold' : 'bg-white text-academic-primary border'}`}
+              onClick={() => dispatch({ type: 'SET_STEP', value: idx + 1 })}
+            >
+              {`Step ${idx + 1}`}
+            </button>
           ))}
         </div>
-      )}
-      {state.step === 3 && state.loading && <div>Loading research...</div>}
-      {state.step === 3 && state.error && <div style={{ color: 'red' }}>{state.error}</div>}
-      {state.step === 3 && state.references.length > 0 && (
-        <div>
-          {state.references.map((ref, idx) => (
-            <div key={idx} data-testid={`reference-${idx}`}>
-              <div>{ref.title}</div>
-              <div>{ref.authors.join(', ')}</div>
-              <div>{ref.year}</div>
-              <div>{ref.citation}</div>
-            </div>
-          ))}
-        </div>
-      )}
-      {state.step === 4 && state.loading && <div>Generating content...</div>}
-      {state.step === 4 && state.error && <div style={{ color: 'red' }}>{state.error}</div>}
-      {state.step === 4 && state.content && (
-        <div>
-          {state.content}
-          <div style={{ marginTop: 16 }}>
-            <button type="button" onClick={handleExportPDF}>
-              Export PDF
-            </button>
-            <button type="button" onClick={handleExportWord}>
-              Export Word
-            </button>
+        <div data-testid="section-title" className="text-xl font-semibold mt-4 mb-2">Assignment Prompt</div>
+        <label htmlFor="prompt" className="sr-only">Assignment Prompt</label>
+        <textarea
+          id="prompt"
+          aria-label="Assignment Prompt"
+          value={state.prompt}
+          onChange={e => dispatch({ type: 'SET_PROMPT', value: e.target.value })}
+        />
+        <button
+          type="button"
+          disabled={state.step === 1}
+          onClick={() => dispatch({ type: 'PREV_STEP' })}
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          disabled={state.step === TOTAL_STEPS}
+          onClick={handleNext}
+        >
+          Next
+        </button>
+        {state.step === 2 && state.loading && (
+          <div data-testid="loading-indicator" className="academic-spinner" role="status" aria-live="polite">
+            <span className="sr-only">Loading outline...</span>
+            <svg className="animate-spin h-6 w-6 text-academic-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
           </div>
-          {exportMessage && <div>{exportMessage}</div>}
-        </div>
-      )}
+        )}
+        {state.step === 2 && state.error && showError && (
+          <div data-testid="error-alert" className="academic-error" role="alert">
+            <span>{state.error}</span>
+            <button onClick={() => setShowError(false)} aria-label="Dismiss error">Dismiss</button>
+            <div className="text-sm mt-2">Please try again or reload the page to recover.</div>
+          </div>
+        )}
+        {state.step === 2 && state.outline && (
+          <div>
+            {state.outline.split('\n').map((line, idx) => (
+              <div key={idx}>{line}</div>
+            ))}
+          </div>
+        )}
+        {state.step === 3 && state.loading && (
+          <div data-testid="loading-indicator" className="academic-spinner" role="status" aria-live="polite">
+            <span className="sr-only">Loading research...</span>
+            <svg className="animate-spin h-6 w-6 text-academic-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+          </div>
+        )}
+        {state.step === 3 && state.error && showError && (
+          <div data-testid="error-alert" className="academic-error" role="alert">
+            <span>{state.error}</span>
+            <button onClick={() => setShowError(false)} aria-label="Dismiss error">Dismiss</button>
+            <div className="text-sm mt-2">Please try again or reload the page to recover.</div>
+          </div>
+        )}
+        {state.step === 3 && state.references.length > 0 && (
+          <div>
+            {state.references.map((ref, idx) => (
+              <div key={idx} data-testid={`reference-${idx}`}>
+                <div>{ref.title}</div>
+                <div>{ref.authors.join(', ')}</div>
+                <div>{ref.year}</div>
+                <div>{ref.citation}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {state.step === 4 && state.loading && (
+          <div data-testid="loading-indicator" className="academic-spinner" role="status" aria-live="polite">
+            <span className="sr-only">Generating content...</span>
+            <svg className="animate-spin h-6 w-6 text-academic-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+          </div>
+        )}
+        {state.step === 4 && state.error && showError && (
+          <div data-testid="error-alert" className="academic-error" role="alert">
+            <span>{state.error}</span>
+            <button onClick={() => setShowError(false)} aria-label="Dismiss error">Dismiss</button>
+            <div className="text-sm mt-2">Please try again or reload the page to recover.</div>
+          </div>
+        )}
+        {state.step === 4 && state.content && (
+          <div>
+            {state.content}
+            <div style={{ marginTop: 16 }}>
+              <button type="button" onClick={handleExportPDF}>
+                Export PDF
+              </button>
+              <button type="button" onClick={handleExportWord}>
+                Export Word
+              </button>
+            </div>
+            {exportMessage && <div>{exportMessage}</div>}
+          </div>
+        )}
+      </main>
     </div>
   );
 };

@@ -152,4 +152,23 @@ describe('/api/outline endpoint (TDD expansion)', () => {
     expect(data.usage).toHaveProperty('tokens');
     expect(data.usage).toHaveProperty('cost');
   });
+});
+
+describe('/api/structure-guidance endpoint', () => {
+  it('returns ADHD-friendly goals, structure, format examples, and checklist for a valid prompt', async () => {
+    const formData = new FormData();
+    formData.append('prompt', 'Write a research plan for secure data center design.');
+    // Optionally: formData.append('rubric', new File(['dummy'], 'rubric.pdf', { type: 'application/pdf' }));
+    const res = await fetch('http://localhost:3000/api/structure-guidance', {
+      method: 'POST',
+      body: formData,
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(typeof data.adhdFriendlyGoals).toBe('string');
+    expect(typeof data.structureOutline).toBe('string');
+    expect(typeof data.formatExamples).toBe('string');
+    expect(Array.isArray(data.checklist)).toBe(true);
+    expect(data.checklist.length).toBeGreaterThan(0);
+  }, 30000);
 }); 

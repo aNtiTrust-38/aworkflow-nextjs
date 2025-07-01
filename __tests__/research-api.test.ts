@@ -196,4 +196,78 @@ describe('/api/research endpoint (real API integration)', () => {
     // Should include error info for failed source
     expect(data.errors || {}).toHaveProperty('ArXiv');
   }, 30000);
+});
+
+describe('/api/research-assistant endpoint', () => {
+  it('returns academic, industry, professional sources and quality indicators for valid topics/questions', async () => {
+    const body = {
+      topics: ['secure data center design'],
+      researchQuestions: ['What are the best practices for physical security in data centers?']
+    };
+    const res = await fetch('http://localhost:3000/api/research-assistant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data.academicSources)).toBe(true);
+    expect(Array.isArray(data.industrySources)).toBe(true);
+    expect(Array.isArray(data.professionalSources)).toBe(true);
+    expect(Array.isArray(data.qualityIndicators)).toBe(true);
+    // Check that no source is from a forum or unverified/low-quality
+    const allSources = [...data.academicSources, ...data.industrySources, ...data.professionalSources];
+    allSources.forEach(src => {
+      expect(typeof src.title).toBe('string');
+      expect(typeof src.url).toBe('string');
+      expect(src.type).not.toMatch(/forum|unverified|low-quality/i);
+    });
+  }, 30000);
+});
+
+describe('/api/content-analysis endpoint', () => {
+  it('returns summaries, key points, download links, and research notes for uploaded files', async () => {
+    const formData = new FormData();
+    formData.append('files', new File(['dummy pdf content'], 'test.pdf', { type: 'application/pdf' }));
+    formData.append('files', new File(['dummy docx content'], 'test.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
+    formData.append('files', new File(['dummy image content'], 'test.png', { type: 'image/png' }));
+    const res = await fetch('http://localhost:3000/api/content-analysis', {
+      method: 'POST',
+      body: formData,
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data.summaries)).toBe(true);
+    expect(Array.isArray(data.keyPoints)).toBe(true);
+    expect(Array.isArray(data.downloadLinks)).toBe(true);
+    expect(typeof data.researchNotes).toBe('string');
+    expect(data.summaries.length).toBeGreaterThan(0);
+    expect(data.keyPoints.length).toBeGreaterThan(0);
+    expect(data.downloadLinks.length).toBeGreaterThan(0);
+    expect(data.researchNotes.length).toBeGreaterThan(0);
+  }, 30000);
+});
+
+describe('/api/citations endpoint', () => {
+  it('returns APA 7 citations, Zotero export, and formatted bibliography for given sources', async () => {
+    const sources = [
+      { title: 'Physical Security in Data Centers', authors: ['Smith, J.'], year: 2022, url: 'https://semanticscholar.org/paper/123', type: 'academic' },
+      { title: 'NIST Data Center Guidelines', authors: ['Doe, A.'], year: 2021, url: 'https://nist.gov/datacenter', type: 'professional' }
+    ];
+    const res = await fetch('http://localhost:3000/api/citations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sources }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data.apaSevenCitations)).toBe(true);
+    expect(typeof data.zoteroExport).toBe('string');
+    expect(typeof data.bibliography).toBe('string');
+    // Ensure only APA 7 format is present
+    data.apaSevenCitations.forEach((citation: string) => {
+      expect(citation).toMatch(/\(\d{4}\)/); // Year in parentheses
+      expect(citation).not.toMatch(/MLA|Chicago|IEEE|Harvard/i);
+    });
+  }, 30000);
 }); 

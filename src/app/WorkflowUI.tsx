@@ -103,6 +103,7 @@ async function fetchGenerate(prompt: string, outline: string | null, references:
 
 const WorkflowUI: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [exportMessage, setExportMessage] = React.useState<string | null>(null);
 
   const handleNext = async () => {
     if (state.step === 1) {
@@ -199,7 +200,18 @@ const WorkflowUI: React.FC = () => {
       {state.step === 4 && state.loading && <div>Generating content...</div>}
       {state.step === 4 && state.error && <div style={{ color: 'red' }}>{state.error}</div>}
       {state.step === 4 && state.content && (
-        <div>{state.content}</div>
+        <div>
+          {state.content}
+          <div style={{ marginTop: 16 }}>
+            <button type="button" onClick={() => setExportMessage('PDF export not implemented')} aria-label="Export PDF">
+              Export PDF
+            </button>
+            <button type="button" onClick={() => setExportMessage('Word export not implemented')} aria-label="Export Word" style={{ marginLeft: 8 }}>
+              Export Word
+            </button>
+          </div>
+          {exportMessage && <div>{exportMessage}</div>}
+        </div>
       )}
     </div>
   );

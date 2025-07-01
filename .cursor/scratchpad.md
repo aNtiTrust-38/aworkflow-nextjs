@@ -93,10 +93,18 @@ The next milestone is to upgrade the `/api/outline` endpoint from a stub to a re
 - [ ] Stage 3: Expand integration and E2E tests for new workflow
 - [ ] Stage 3: UI: Integrate content generation into workflow
 - [ ] Stage 3: Test coverage report
+- [x] Integrate WorkflowUI into main page (COMPLETE)
+- [x] Refactor landing form to use workflow steps (COMPLETE)
+- [x] Robust API integration and state management (COMPLETE)
+- [x] Reference display and BibTeX export (COMPLETE)
+- [ ] Export features (PDF, Word) (IN PROGRESS)
+- [ ] E2E workflow tests
+- [ ] UI/UX enhancements (loading, error, accessibility)
 
 ## Executor's Feedback or Assistance Requests
 
 - All /api/generate endpoint tests now pass (except the E2E placeholder). Minimal LLM integration logic is in place, with error handling and usage reporting. Next step: expand content generation and citation logic for multiple sections and references, and implement reference linking/validation.
+- Starting Executor mode: Integrating WorkflowUI into the main page as the first subtask. Will begin by writing a failing test for the presence of WorkflowUI on the landing page.
 
 ## Lessons
 - Always run `npx vitest` directly if no npm test script is present.
@@ -565,7 +573,7 @@ The project automates academic paper writing through a 6-stage AI workflow. Stag
 - [ ] Integrate /api/research endpoint
 - [ ] Integrate /api/generate endpoint
 - [ ] Citation management UI
-- [ ] Export features (PDF, Word, BibTeX)
+- [ ] Export features (PDF, Word) (IN PROGRESS)
 - [ ] E2E workflow integration test
 - [ ] UI/UX polish and accessibility
 
@@ -577,5 +585,36 @@ The project automates academic paper writing through a 6-stage AI workflow. Stag
 - Reference .tdd-rules-cursor.md for all TDD cycles
 - Always read and test API endpoints before UI integration
 - Maintain strict TypeScript and ESLint compliance
+
+## Current TDD Cycle
+- [ ] RED: Write failing test for API integration and state management in WorkflowUI (outline, research, generate, error/loading states)
+- [ ] Run test - confirm failure
+- [ ] GREEN: Implement robust API integration and state management
+- [ ] Run test - confirm pass
+- [ ] REFACTOR: Clean up code
+- [ ] All tests still pass
+
+## Executor's Feedback or Assistance Requests
+- Proceeding to the next subtask: robust API integration and state management in WorkflowUI. Will begin by writing failing tests for API call correctness, loading, error, and state persistence.
+
+## Project Status Board
+- [x] Integrate WorkflowUI into main page (COMPLETE)
+- [x] Refactor landing form to use workflow steps (COMPLETE)
+- [x] Robust API integration and state management (COMPLETE)
+- [x] Reference display and BibTeX export (COMPLETE)
+- [ ] Export features (PDF, Word) (IN PROGRESS)
+- [ ] E2E workflow tests
+- [ ] UI/UX enhancements (loading, error, accessibility)
+
+## Current TDD Cycle
+- [ ] RED: Write failing test for PDF and Word export in WorkflowUI
+- [ ] Run test - confirm failure
+- [ ] GREEN: Implement PDF and Word export
+- [ ] Run test - confirm pass
+- [ ] REFACTOR: Clean up code
+- [ ] All tests still pass
+
+## Executor's Feedback or Assistance Requests
+- Proceeding to the next subtask: export features (PDF, Word) in WorkflowUI. Will begin by writing failing tests for PDF and Word export buttons and output/download behavior.
 
 --- 

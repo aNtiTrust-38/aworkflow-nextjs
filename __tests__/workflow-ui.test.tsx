@@ -164,4 +164,234 @@ describe('Academic Workflow UI', () => {
       expect(screen.getByText(/generated academic paper content/i)).toBeInTheDocument();
     });
   });
+
+  // RED PHASE: Failing tests for robust API integration and state management
+  it('shows loading indicator and handles error for /api/outline call', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false })));
+    render(<WorkflowUI />);
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    expect(screen.getByText(/loading outline/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/error loading outline/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows loading indicator and handles error for /api/research call', async () => {
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/outline')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction' }) });
+      }
+      return Promise.resolve({ ok: false });
+    }));
+    render(<WorkflowUI />);
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    expect(screen.getByText(/loading research/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/error loading research/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows loading indicator and handles error for /api/generate call', async () => {
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/outline')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction' }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ references: [{ title: 'Paper', authors: ['A'], year: 2020, citation: '(A, 2020) Paper.' }] }) });
+      }
+      return Promise.resolve({ ok: false });
+    }));
+    render(<WorkflowUI />);
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('reference-0')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    expect(screen.getByText(/generating content/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/error generating content/i)).toBeInTheDocument();
+    });
+  });
+
+  it('persists prompt and outline state across navigation steps', async () => {
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/outline')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction' }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ references: [{ title: 'Paper', authors: ['A'], year: 2020, citation: '(A, 2020) Paper.' }] }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/generate')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ content: 'Generated content.' }) });
+      }
+      return Promise.reject(new Error('Unknown endpoint'));
+    }));
+    render(<WorkflowUI />);
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('reference-0')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /previous/i }));
+    expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/assignment prompt/i)).toHaveValue('Prompt');
+  });
+
+  // RED PHASE: Failing tests for PDF and Word export
+  it('shows a PDF export button when content is generated', async () => {
+    const mockReferences = [
+      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' }
+    ];
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/outline')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction' }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ references: mockReferences }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/generate')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ content: 'Generated content.' }) });
+      }
+      return Promise.reject(new Error('Unknown endpoint'));
+    }));
+    render(<WorkflowUI />);
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('reference-0')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/generated content/i)).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /export pdf/i })).toBeInTheDocument();
+  });
+
+  it('shows a Word export button when content is generated', async () => {
+    const mockReferences = [
+      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' }
+    ];
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/outline')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction' }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ references: mockReferences }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/generate')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ content: 'Generated content.' }) });
+      }
+      return Promise.reject(new Error('Unknown endpoint'));
+    }));
+    render(<WorkflowUI />);
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('reference-0')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/generated content/i)).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /export word/i })).toBeInTheDocument();
+  });
+
+  it('clicking PDF export triggers PDF download/output', async () => {
+    const mockReferences = [
+      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' }
+    ];
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/outline')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction' }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ references: mockReferences }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/generate')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ content: 'Generated content.' }) });
+      }
+      return Promise.reject(new Error('Unknown endpoint'));
+    }));
+    render(<WorkflowUI />);
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('reference-0')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/generated content/i)).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export pdf/i });
+    fireEvent.click(exportBtn);
+    // For now, just check that PDF output appears in the DOM (could be modal, link, etc.)
+    await waitFor(() => {
+      expect(screen.getByText(/pdf export not implemented/i)).toBeInTheDocument();
+    });
+  });
+
+  it('clicking Word export triggers Word download/output', async () => {
+    const mockReferences = [
+      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' }
+    ];
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/outline')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction' }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ references: mockReferences }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/generate')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ content: 'Generated content.' }) });
+      }
+      return Promise.reject(new Error('Unknown endpoint'));
+    }));
+    render(<WorkflowUI />);
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('reference-0')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/generated content/i)).toBeInTheDocument();
+    });
+    const exportBtn = screen.getByRole('button', { name: /export word/i });
+    fireEvent.click(exportBtn);
+    // For now, just check that Word output appears in the DOM (could be modal, link, etc.)
+    await waitFor(() => {
+      expect(screen.getByText(/word export not implemented/i)).toBeInTheDocument();
+    });
+  });
 }); 

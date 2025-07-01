@@ -6,13 +6,19 @@ import Home from '../src/app/page';
 // Failing test: prompt input, file upload, and submit button should be present
 
 describe('Landing Page UI', () => {
-  it('renders prompt input, file upload, and submit button', () => {
+  // Remove legacy form test
+  // it('renders prompt input, file upload, and submit button', () => {
+  //   render(<Home />);
+  //   expect(screen.getByLabelText(/assignment prompt/i)).toBeInTheDocument();
+  //   expect(screen.getByLabelText(/upload files/i)).toBeInTheDocument();
+  //   expect(screen.getByRole('button', { name: /generate outline/i })).toBeInTheDocument();
+  // });
+
+  // RED PHASE: Failing test for WorkflowUI integration
+  it('renders the WorkflowUI stepper on the main page', () => {
     render(<Home />);
-    // Prompt input (textarea)
-    expect(screen.getByLabelText(/assignment prompt/i)).toBeInTheDocument();
-    // File upload (rubric/sample)
-    expect(screen.getByLabelText(/upload files/i)).toBeInTheDocument();
-    // Submit button
-    expect(screen.getByRole('button', { name: /generate outline/i })).toBeInTheDocument();
+    // Allow for multiple renders in strict mode/dev
+    const steppers = screen.getAllByTestId('workflow-stepper');
+    expect(steppers.length).toBeGreaterThan(0);
   });
 }); 

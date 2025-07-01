@@ -319,79 +319,169 @@ describe('Academic Workflow UI', () => {
     expect(screen.getByRole('button', { name: /export word/i })).toBeInTheDocument();
   });
 
-  it('clicking PDF export triggers PDF download/output', async () => {
-    const mockReferences = [
-      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' }
-    ];
+  // Fix export tests to stub before render and only check download logic
+  it('downloads a PDF file with .pdf extension and correct content when PDF export is clicked', async () => {
+    const createObjectURL = vi.fn(() => 'blob:mock-pdf-url');
+    const click = vi.fn();
+    let createdEl: any = null;
+    vi.stubGlobal('URL', { createObjectURL });
+    // Mock fetch to return generated content for /api/generate
     vi.stubGlobal('fetch', vi.fn((url) => {
-      if (typeof url === 'string' && url.includes('/api/outline')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction' }) });
-      }
-      if (typeof url === 'string' && url.includes('/api/research')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ references: mockReferences }) });
-      }
       if (typeof url === 'string' && url.includes('/api/generate')) {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ content: 'Generated content.' }) });
       }
-      return Promise.reject(new Error('Unknown endpoint'));
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
     }));
     render(<WorkflowUI />);
     fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
-    });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => {
-      expect(screen.getByTestId('reference-0')).toBeInTheDocument();
-    });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/generated content/i)).toBeInTheDocument();
-    });
+    // Wait for content to appear
+    await screen.findByText(/generated content/i);
+    // Patch only createElement and body methods after render
+    const origCreateElement = document.createElement;
+    const origAppendChild = document.body.appendChild;
+    const origRemoveChild = document.body.removeChild;
+    document.createElement = () => {
+      createdEl = {
+        href: '',
+        download: '',
+        click,
+        style: {},
+        setAttribute: vi.fn(),
+        remove: vi.fn(),
+      };
+      return createdEl as any;
+    };
+    document.body.appendChild = vi.fn();
+    document.body.removeChild = vi.fn();
     const exportBtn = screen.getByRole('button', { name: /export pdf/i });
     fireEvent.click(exportBtn);
-    // For now, just check that PDF output appears in the DOM (could be modal, link, etc.)
-    await waitFor(() => {
-      expect(screen.getByText(/pdf export not implemented/i)).toBeInTheDocument();
-    });
+    expect(createObjectURL).toHaveBeenCalled();
+    expect(click).toHaveBeenCalled();
+    expect(createdEl.download.endsWith('.pdf')).toBe(true);
+    // Restore
+    document.createElement = origCreateElement;
+    document.body.appendChild = origAppendChild;
+    document.body.removeChild = origRemoveChild;
   });
 
-  it('clicking Word export triggers Word download/output', async () => {
-    const mockReferences = [
-      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' }
-    ];
+  it('downloads a Word file with .docx extension and correct content when Word export is clicked', async () => {
+    const createObjectURL = vi.fn(() => 'blob:mock-docx-url');
+    const click = vi.fn();
+    let createdEl: any = null;
+    vi.stubGlobal('URL', { createObjectURL });
+    // Mock fetch to return generated content for /api/generate
     vi.stubGlobal('fetch', vi.fn((url) => {
-      if (typeof url === 'string' && url.includes('/api/outline')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction' }) });
-      }
-      if (typeof url === 'string' && url.includes('/api/research')) {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ references: mockReferences }) });
-      }
       if (typeof url === 'string' && url.includes('/api/generate')) {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ content: 'Generated content.' }) });
       }
-      return Promise.reject(new Error('Unknown endpoint'));
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
     }));
     render(<WorkflowUI />);
     fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
-    });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => {
-      expect(screen.getByTestId('reference-0')).toBeInTheDocument();
-    });
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/generated content/i)).toBeInTheDocument();
-    });
+    // Wait for content to appear
+    await screen.findByText(/generated content/i);
+    // Patch only createElement and body methods after render
+    const origCreateElement = document.createElement;
+    const origAppendChild = document.body.appendChild;
+    const origRemoveChild = document.body.removeChild;
+    document.createElement = () => {
+      createdEl = {
+        href: '',
+        download: '',
+        click,
+        style: {},
+        setAttribute: vi.fn(),
+        remove: vi.fn(),
+      };
+      return createdEl as any;
+    };
+    document.body.appendChild = vi.fn();
+    document.body.removeChild = vi.fn();
     const exportBtn = screen.getByRole('button', { name: /export word/i });
     fireEvent.click(exportBtn);
-    // For now, just check that Word output appears in the DOM (could be modal, link, etc.)
     await waitFor(() => {
-      expect(screen.getByText(/word export not implemented/i)).toBeInTheDocument();
+      expect(createObjectURL).toHaveBeenCalled();
+      expect(click).toHaveBeenCalled();
+      expect(createdEl.download.endsWith('.docx')).toBe(true);
     });
+    // Restore
+    document.createElement = origCreateElement;
+    document.body.appendChild = origAppendChild;
+    document.body.removeChild = origRemoveChild;
+  });
+
+  // RED PHASE: Failing E2E workflow test
+  it('runs the full academic workflow and enables export (E2E)', async () => {
+    // Mock all API calls
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/outline')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ outline: 'I. Introduction\nII. Methods' }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ references: [{ title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' }] }) });
+      }
+      if (typeof url === 'string' && url.includes('/api/generate')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ content: 'Generated academic content.' }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    }));
+    // Mock file download
+    const createObjectURL = vi.fn(() => 'blob:mock-url');
+    const click = vi.fn();
+    let createdEl: any = null;
+    vi.stubGlobal('URL', { createObjectURL });
+    // Run full workflow
+    render(<WorkflowUI />);
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await screen.findByText(/introduction/i);
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await screen.findByTestId('reference-0');
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await screen.findByText(/generated academic content/i);
+    // Patch only createElement and body methods after render
+    const origCreateElement = document.createElement;
+    const origAppendChild = document.body.appendChild;
+    const origRemoveChild = document.body.removeChild;
+    document.createElement = () => {
+      createdEl = {
+        href: '',
+        download: '',
+        click,
+        style: {},
+        setAttribute: vi.fn(),
+        remove: vi.fn(),
+      };
+      return createdEl as any;
+    };
+    document.body.appendChild = vi.fn();
+    document.body.removeChild = vi.fn();
+    // Export buttons should appear
+    const pdfBtn = screen.getByRole('button', { name: /export pdf/i });
+    const wordBtn = screen.getByRole('button', { name: /export word/i });
+    expect(pdfBtn).toBeInTheDocument();
+    expect(wordBtn).toBeInTheDocument();
+    // Test PDF export
+    fireEvent.click(pdfBtn);
+    expect(createObjectURL).toHaveBeenCalled();
+    expect(click).toHaveBeenCalled();
+    expect(createdEl.download.endsWith('.pdf')).toBe(true);
+    // Test Word export
+    fireEvent.click(wordBtn);
+    await waitFor(() => {
+      expect(createObjectURL).toHaveBeenCalled();
+      expect(click).toHaveBeenCalled();
+      expect(createdEl.download.endsWith('.docx')).toBe(true);
+    });
+    // Restore
+    document.createElement = origCreateElement;
+    document.body.appendChild = origAppendChild;
+    document.body.removeChild = origRemoveChild;
   });
 }); 

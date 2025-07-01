@@ -1,4 +1,6 @@
 import React, { useReducer } from 'react';
+import { jsPDF } from 'jspdf';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 
 const TOTAL_STEPS = 4;
 
@@ -150,6 +152,44 @@ const WorkflowUI: React.FC = () => {
     }
   };
 
+  // PDF export handler
+  const handleExportPDF = () => {
+    if (!state.content) return;
+    const doc = new jsPDF();
+    doc.text(state.content, 10, 10);
+    const pdfBlob = doc.output('blob');
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'academic-paper.pdf';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  // DOCX export handler
+  const handleExportWord = async () => {
+    if (!state.content) return;
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          children: [
+            new Paragraph({
+              children: [new TextRun(state.content)],
+            }),
+          ],
+        },
+      ],
+    });
+    const blob = await Packer.toBlob(doc);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'academic-paper.docx';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   return (
     <div>
       <div data-testid="workflow-stepper">{`Step ${state.step} of ${TOTAL_STEPS}`}</div>
@@ -203,10 +243,10 @@ const WorkflowUI: React.FC = () => {
         <div>
           {state.content}
           <div style={{ marginTop: 16 }}>
-            <button type="button" onClick={() => setExportMessage('PDF export not implemented')} aria-label="Export PDF">
+            <button type="button" onClick={handleExportPDF}>
               Export PDF
             </button>
-            <button type="button" onClick={() => setExportMessage('Word export not implemented')} aria-label="Export Word" style={{ marginLeft: 8 }}>
+            <button type="button" onClick={handleExportWord}>
               Export Word
             </button>
           </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from "next/image";
+import WorkflowUI from "./WorkflowUI";
 
 export default function Home() {
   return (
@@ -13,17 +14,7 @@ export default function Home() {
           height={38}
           priority
         />
-        <form className="flex flex-col gap-4 w-full max-w-md">
-          <label htmlFor="assignment-prompt" className="font-semibold">Assignment Prompt</label>
-          <textarea id="assignment-prompt" name="assignmentPrompt" rows={4} className="border rounded p-2" aria-label="Assignment Prompt" />
-
-          <label htmlFor="file-upload" className="font-semibold">Upload Files</label>
-          <input id="file-upload" name="files" type="file" multiple className="border rounded p-2" aria-label="Upload Files" />
-
-          <button type="submit" className="mt-4 bg-blue-600 text-white rounded px-4 py-2 font-semibold hover:bg-blue-700 transition" aria-label="Generate Outline">
-            Generate Outline
-          </button>
-        </form>
+        <WorkflowUI />
       </main>
       <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
         <a

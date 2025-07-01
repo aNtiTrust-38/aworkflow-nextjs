@@ -496,7 +496,7 @@ describe('Academic Workflow UI', () => {
     expect(screen.getByTestId('workflow-stepper')).toHaveClass('academic-stepper');
     // Typography and spacing classes should be present
     const main = screen.getByTestId('workflow-main');
-    expect(main).toHaveClass('prose', 'prose-lg', 'mx-auto', 'my-8');
+    expect(main).toHaveClass('prose-sm', 'sm:prose-lg', 'mx-auto', 'my-8');
   });
 
   it('applies academic/professional theming (palette, typography, spacing)', () => {
@@ -590,5 +590,31 @@ describe('Academic Workflow UI', () => {
     // expect(screen.getByLabelText(/assignment prompt/i)).toHaveFocus();
     // ARIA live region updates for step changes
     expect(screen.getByTestId('stepper-live')).toHaveTextContent(/step 2 of 4/i);
+  });
+
+  it('is responsive: stepper and workflow UI adapt to mobile, tablet, and desktop breakpoints', () => {
+    render(<WorkflowUI />);
+    // Desktop: default
+    let stepper = screen.getByTestId('workflow-stepper');
+    let main = screen.getByTestId('workflow-main');
+    expect(stepper).toHaveClass('flex-col', 'sm:flex-row');
+    expect(main).toHaveClass('prose-sm', 'sm:prose-lg');
+    // Simulate mobile (sm)
+    global.innerWidth = 375;
+    global.dispatchEvent(new Event('resize'));
+    stepper = screen.getByTestId('workflow-stepper');
+    main = screen.getByTestId('workflow-main');
+    expect(stepper).toHaveClass('flex-col');
+    expect(main).toHaveClass('prose-sm');
+    // Simulate tablet (md)
+    global.innerWidth = 768;
+    global.dispatchEvent(new Event('resize'));
+    stepper = screen.getByTestId('workflow-stepper');
+    main = screen.getByTestId('workflow-main');
+    expect(stepper).toHaveClass('sm:flex-row');
+    expect(main).toHaveClass('sm:prose-lg');
+    // Reset
+    global.innerWidth = 1024;
+    global.dispatchEvent(new Event('resize'));
   });
 }); 

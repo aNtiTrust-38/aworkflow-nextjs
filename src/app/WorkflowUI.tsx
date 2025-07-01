@@ -198,10 +198,10 @@ const WorkflowUI: React.FC = () => {
     <div>
       {/* Academic header for professional theming */}
       <header data-testid="academic-header" className="text-3xl font-bold text-center mb-6 tracking-tight font-serif text-academic-primary">Academic Paper Workflow</header>
-      <main data-testid="workflow-main" className="prose prose-lg mx-auto my-8 bg-academic-bg p-8 shadow-academic">
+      <main data-testid="workflow-main" className="prose-sm sm:prose-lg mx-auto my-8 bg-academic-bg p-8 shadow-academic">
         <div
           data-testid="workflow-stepper"
-          className="academic-stepper bg-academic-muted rounded px-4 py-2 mb-4 flex gap-2 justify-center"
+          className="academic-stepper bg-academic-muted rounded px-4 py-2 mb-4 flex-col sm:flex-row gap-2 justify-center"
           tabIndex={0}
           onKeyDown={e => {
             const stepButtons = Array.from(document.querySelectorAll('[aria-label^="Step "]'));

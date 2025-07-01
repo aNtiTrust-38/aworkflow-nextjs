@@ -114,6 +114,9 @@ const WorkflowUI: React.FC = () => {
   const [citationEdits, setCitationEdits] = React.useState<{ [idx: number]: string }>({});
   const [showAddRef, setShowAddRef] = React.useState(false);
   const [newRef, setNewRef] = React.useState({ title: '', authors: '', year: '', citation: '' });
+  const [citationStyle, setCitationStyle] = React.useState('APA');
+  const [selectedSections, setSelectedSections] = React.useState<string[]>([]);
+  const [fileFormat, setFileFormat] = React.useState<'PDF' | 'Word'>('PDF');
 
   const handleNext = async () => {
     if (state.step === 1) {
@@ -400,13 +403,74 @@ const WorkflowUI: React.FC = () => {
         {state.step === 4 && state.content && (
           <div>
             {state.content}
+            <div data-testid="export-customization" className="mt-4">
+              <label htmlFor="citation-style-select">Citation Style</label>
+              <select
+                id="citation-style-select"
+                data-testid="citation-style-select"
+                value={citationStyle}
+                onChange={e => setCitationStyle(e.target.value)}
+                onKeyDown={e => {
+                  const styles = ['APA', 'MLA', 'Chicago'];
+                  let idx = styles.indexOf(citationStyle);
+                  if (e.key === 'ArrowDown') {
+                    idx = (idx + 1) % styles.length;
+                    setCitationStyle(styles[idx]);
+                    e.preventDefault();
+                  } else if (e.key === 'ArrowUp') {
+                    idx = (idx - 1 + styles.length) % styles.length;
+                    setCitationStyle(styles[idx]);
+                    e.preventDefault();
+                  } else if (e.key === 'Enter') {
+                    // no-op for now
+                  }
+                }}
+              >
+                <option value="APA">APA</option>
+                <option value="MLA">MLA</option>
+                <option value="Chicago">Chicago</option>
+              </select>
+              <div className="mt-2">Sections to Export:</div>
+              {['Introduction', 'Methods'].map(section => (
+                <label key={section}>
+                  <input
+                    type="checkbox"
+                    data-testid={`section-checkbox-${section}`}
+                    checked={selectedSections.includes(section)}
+                    onChange={e => {
+                      setSelectedSections(sel => e.target.checked ? [...sel, section] : sel.filter(s => s !== section));
+                    }}
+                  />
+                  {section}
+                </label>
+              ))}
+              <div className="mt-2">File Format:</div>
+              <label>
+                <input
+                  type="radio"
+                  data-testid="file-format-pdf"
+                  checked={fileFormat === 'PDF'}
+                  onChange={() => setFileFormat('PDF')}
+                /> PDF
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  data-testid="file-format-word"
+                  checked={fileFormat === 'Word'}
+                  onChange={() => setFileFormat('Word')}
+                /> Word
+              </label>
+            </div>
             <div style={{ marginTop: 16 }}>
-              <button type="button" onClick={handleExportPDF}>
-                Export PDF
-              </button>
-              <button type="button" onClick={handleExportWord}>
-                Export Word
-              </button>
+              <button type="button" onClick={() => {
+                handleExportPDF();
+                setExportMessage(`Exported with ${citationStyle} style: ${selectedSections.join(', ')}`);
+              }}>Export PDF</button>
+              <button type="button" onClick={() => {
+                handleExportWord();
+                setExportMessage(`Exported with ${citationStyle} style: ${selectedSections.join(', ')}`);
+              }}>Export Word</button>
             </div>
             {exportMessage && <div>{exportMessage}</div>}
           </div>

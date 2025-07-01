@@ -2,8 +2,33 @@ import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import WorkflowUI from '../src/app/WorkflowUI';
+import { beforeEach } from 'vitest';
 
-// Ensure test isolation
+let originalCreateElement: typeof document.createElement;
+
+beforeEach(() => {
+  originalCreateElement = document.createElement;
+  // Stub jsPDF
+  vi.stubGlobal('jsPDF', function () {
+    return { text: vi.fn(), output: vi.fn(() => new Blob()), save: vi.fn() };
+  });
+  // Stub docx
+  vi.stubGlobal('Document', function () {
+    return {};
+  });
+  vi.stubGlobal('Packer', { toBlob: vi.fn(() => Promise.resolve(new Blob())) });
+  // Stub URL.createObjectURL
+  vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:url'), revokeObjectURL: vi.fn() });
+  // Stub document.createElement for 'a'
+  vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+    const el = originalCreateElement.call(document, tag);
+    if (tag === 'a') {
+      el.click = vi.fn();
+    }
+    return el;
+  });
+});
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -712,5 +737,62 @@ describe('Academic Workflow UI', () => {
     const refTitles = screen.getAllByTestId(/reference-\d+/).map(ref => ref.textContent);
     expect(refTitles.some(t => t && t.includes('Manual Paper'))).toBe(true);
     expect(refTitles.some(t => t && t.includes('Carol'))).toBe(true);
+  });
+
+  it('allows users to customize export: citation style, section selection, and file format', async () => {
+    // Mock fetch for /api/outline, /api/research, /api/generate
+    const mockOutline = 'I. Introduction\nII. Methods';
+    const mockResearch = [
+      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' },
+      { title: 'Paper 2', authors: ['Bob'], year: 2019, citation: '(Bob, 2019) Paper 2.' }
+    ];
+    const mockContent = 'Introduction\nContent\nMethods\nContent';
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ references: mockResearch })
+        });
+      }
+      if (typeof url === 'string' && url.includes('/api/generate')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ content: mockContent })
+        });
+      }
+      // Fallback for /api/outline
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ outline: mockOutline })
+      });
+    }));
+    render(<WorkflowUI />);
+    // Go through workflow to export step
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => screen.getByText(/introduction/i));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => screen.getByTestId('reference-0'));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => screen.getByText(/export pdf/i));
+    // Export customization UI
+    expect(screen.getByTestId('export-customization')).toBeInTheDocument();
+    // Select citation style
+    fireEvent.change(screen.getByTestId('citation-style-select'), { target: { value: 'MLA' } });
+    expect(screen.getByTestId('citation-style-select')).toHaveValue('MLA');
+    // Select sections to export
+    fireEvent.click(screen.getByTestId('section-checkbox-Introduction'));
+    fireEvent.click(screen.getByTestId('section-checkbox-Methods'));
+    // Select file format
+    fireEvent.click(screen.getByTestId('file-format-word'));
+    // Export and check message
+    fireEvent.click(screen.getByText(/export word/i));
+    await waitFor(() => screen.getByText(/exported with MLA style: Introduction, Methods/));
+    // Keyboard navigation: change citation style
+    const styleSelect = screen.getByTestId('citation-style-select');
+    styleSelect.focus();
+    fireEvent.keyDown(styleSelect, { key: 'ArrowDown' });
+    fireEvent.keyDown(styleSelect, { key: 'Enter' });
+    expect(styleSelect).toHaveValue('Chicago');
   });
 }); 

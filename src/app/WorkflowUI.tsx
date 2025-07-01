@@ -110,6 +110,8 @@ const WorkflowUI: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [exportMessage, setExportMessage] = React.useState<string | null>(null);
   const [showError, setShowError] = React.useState(true);
+  const [editingCitationIdx, setEditingCitationIdx] = React.useState<number | null>(null);
+  const [citationEdits, setCitationEdits] = React.useState<{ [idx: number]: string }>({});
 
   const handleNext = async () => {
     if (state.step === 1) {
@@ -296,6 +298,41 @@ const WorkflowUI: React.FC = () => {
         )}
         {state.step === 3 && state.references.length > 0 && (
           <div>
+            <div data-testid="citations-section" className="mt-6">
+              <div className="font-semibold mb-2">Citations</div>
+              {state.references.map((ref, idx) => (
+                <div key={idx} className="mb-2">
+                  {editingCitationIdx === idx ? (
+                    <>
+                      <input
+                        data-testid={`citation-edit-input-${idx}`}
+                        value={citationEdits[idx] ?? ref.citation}
+                        onChange={e => setCitationEdits({ ...citationEdits, [idx]: e.target.value })}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const newRefs = [...state.references];
+                            newRefs[idx] = { ...newRefs[idx], citation: citationEdits[idx] ?? ref.citation };
+                            dispatch({ type: 'SET_REFERENCES', value: newRefs });
+                            setEditingCitationIdx(null);
+                          }
+                        }}
+                      />
+                      <button data-testid={`save-citation-${idx}`} onClick={() => {
+                        const newRefs = [...state.references];
+                        newRefs[idx] = { ...newRefs[idx], citation: citationEdits[idx] ?? ref.citation };
+                        dispatch({ type: 'SET_REFERENCES', value: newRefs });
+                        setEditingCitationIdx(null);
+                      }}>Save</button>
+                    </>
+                  ) : (
+                    <>
+                      <span data-testid={`citation-${idx}`}>{ref.citation}</span>
+                      <button data-testid={`edit-citation-${idx}`} onClick={() => setEditingCitationIdx(idx)}>Edit</button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
             {state.references.map((ref, idx) => (
               <div key={idx} data-testid={`reference-${idx}`}>
                 <div>{ref.title}</div>

@@ -617,4 +617,47 @@ describe('Academic Workflow UI', () => {
     global.innerWidth = 1024;
     global.dispatchEvent(new Event('resize'));
   });
+
+  it('allows users to preview and edit citations with changes reflected in the UI', async () => {
+    // Mock fetch for /api/outline and /api/research
+    const mockOutline = 'I. Introduction\nII. Methods';
+    const mockResearch = [
+      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' },
+      { title: 'Paper 2', authors: ['Bob'], year: 2019, citation: '(Bob, 2019) Paper 2.' }
+    ];
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ references: mockResearch })
+        });
+      }
+      // Fallback for /api/outline
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ outline: mockOutline })
+      });
+    }));
+    render(<WorkflowUI />);
+    // Go to research step
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => screen.getByText(/introduction/i));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => screen.getByTestId('reference-0'));
+    // Preview citations section
+    expect(screen.getByTestId('citations-section')).toBeInTheDocument();
+    expect(screen.getByTestId('citation-0')).toHaveTextContent(/Paper 1/);
+    // Edit citation
+    fireEvent.click(screen.getByTestId('edit-citation-0'));
+    const input = screen.getByTestId('citation-edit-input-0');
+    fireEvent.change(input, { target: { value: 'Edited Citation' } });
+    fireEvent.click(screen.getByTestId('save-citation-0'));
+    // Citation should update in UI
+    expect(screen.getByTestId('citation-0')).toHaveTextContent('Edited Citation');
+    // Keyboard navigation
+    input.focus();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(screen.getByTestId('citation-0')).toHaveTextContent('Edited Citation');
+  });
 }); 

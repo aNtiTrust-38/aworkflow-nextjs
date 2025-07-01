@@ -555,17 +555,23 @@ The project automates academic paper writing through a 6-stage AI workflow. Stag
 ## Project Status Board
 - [x] RED: Write failing test for multi-step workflow UI
 - [x] GREEN: Implement minimal WorkflowUI to pass test
-- [ ] REFACTOR: Clean up WorkflowUI if needed
-- [ ] Implement state management
-- [ ] Integrate API endpoints
+- [x] REFACTOR: Clean up WorkflowUI if needed
+- [x] RED: Write failing test for state management
+- [x] GREEN: Implement minimal state management to pass test
+- [x] REFACTOR: Clean up state management if needed
+- [x] RED: Write failing test for /api/outline integration
+- [x] GREEN: Implement minimal /api/outline integration to pass test
+- [ ] REFACTOR: Clean up /api/outline integration if needed
+- [ ] Integrate /api/research endpoint
+- [ ] Integrate /api/generate endpoint
 - [ ] Citation management UI
 - [ ] Export features (PDF, Word, BibTeX)
 - [ ] E2E workflow integration test
 - [ ] UI/UX polish and accessibility
 
 ## Executor's Feedback or Assistance Requests
-- GREEN phase complete: Minimal WorkflowUI implemented and test passes.
-- Next: Refactor WorkflowUI if needed, then proceed to state management (write failing test first).
+- Minimal API integration for /api/outline is implemented and all related tests pass.
+- Next: Refactor /api/outline integration if needed, then proceed to /api/research integration (write failing test first).
 
 ## Lessons
 - Reference .tdd-rules-cursor.md for all TDD cycles

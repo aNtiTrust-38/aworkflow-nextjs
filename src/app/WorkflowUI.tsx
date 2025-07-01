@@ -199,7 +199,26 @@ const WorkflowUI: React.FC = () => {
       {/* Academic header for professional theming */}
       <header data-testid="academic-header" className="text-3xl font-bold text-center mb-6 tracking-tight font-serif text-academic-primary">Academic Paper Workflow</header>
       <main data-testid="workflow-main" className="prose prose-lg mx-auto my-8 bg-academic-bg p-8 shadow-academic">
-        <div data-testid="workflow-stepper" className="academic-stepper bg-academic-muted rounded px-4 py-2 mb-4 flex gap-2 justify-center">
+        <div
+          data-testid="workflow-stepper"
+          className="academic-stepper bg-academic-muted rounded px-4 py-2 mb-4 flex gap-2 justify-center"
+          tabIndex={0}
+          onKeyDown={e => {
+            const stepButtons = Array.from(document.querySelectorAll('[aria-label^="Step "]'));
+            const active = document.activeElement;
+            const idx = stepButtons.indexOf(active as HTMLElement);
+            if (e.key === 'ArrowRight' && idx < stepButtons.length - 1) {
+              (stepButtons[idx + 1] as HTMLElement).focus();
+              e.preventDefault();
+            } else if (e.key === 'ArrowLeft' && idx > 0) {
+              (stepButtons[idx - 1] as HTMLElement).focus();
+              e.preventDefault();
+            } else if (e.key === 'Enter' && idx !== -1) {
+              dispatch({ type: 'SET_STEP', value: idx + 1 });
+              e.preventDefault();
+            }
+          }}
+        >
           {[...Array(TOTAL_STEPS)].map((_, idx) => (
             <button
               key={idx}
@@ -212,6 +231,7 @@ const WorkflowUI: React.FC = () => {
               {`Step ${idx + 1}`}
             </button>
           ))}
+          <span data-testid="stepper-live" className="sr-only" aria-live="polite">{`Step ${state.step} of ${TOTAL_STEPS}`}</span>
         </div>
         <div data-testid="section-title" className="text-xl font-semibold mt-4 mb-2">Assignment Prompt</div>
         <label htmlFor="prompt" className="sr-only">Assignment Prompt</label>

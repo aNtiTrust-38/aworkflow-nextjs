@@ -565,4 +565,30 @@ describe('Academic Workflow UI', () => {
       expect(btn).toHaveAttribute('aria-label', `Step ${idx + 1}`);
     });
   });
+
+  it('supports keyboard shortcuts and accessibility for step navigation', async () => {
+    render(<WorkflowUI />);
+    let stepButtons = screen.getAllByRole('button', { name: /step/i });
+    // Focus first step button
+    stepButtons[0].focus();
+    // Right arrow moves to next step
+    fireEvent.keyDown(stepButtons[0], { key: 'ArrowRight' });
+    stepButtons = screen.getAllByRole('button', { name: /step/i });
+    expect(stepButtons[1]).toHaveFocus();
+    // Left arrow moves back
+    fireEvent.keyDown(stepButtons[1], { key: 'ArrowLeft' });
+    stepButtons = screen.getAllByRole('button', { name: /step/i });
+    expect(stepButtons[0]).toHaveFocus();
+    // Enter activates step
+    fireEvent.keyDown(stepButtons[1], { key: 'ArrowRight' });
+    fireEvent.keyDown(stepButtons[1], { key: 'Enter' });
+    await waitFor(() => {
+      stepButtons = screen.getAllByRole('button', { name: /step/i });
+      expect(stepButtons[1]).toHaveAttribute('aria-current', 'step');
+    });
+    // NOTE: Tab navigation is handled by the browser and cannot be simulated with fireEvent.keyDown
+    // expect(screen.getByLabelText(/assignment prompt/i)).toHaveFocus();
+    // ARIA live region updates for step changes
+    expect(screen.getByTestId('stepper-live')).toHaveTextContent(/step 2 of 4/i);
+  });
 }); 

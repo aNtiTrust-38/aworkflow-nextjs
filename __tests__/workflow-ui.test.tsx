@@ -660,4 +660,57 @@ describe('Academic Workflow UI', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(screen.getByTestId('citation-0')).toHaveTextContent('Edited Citation');
   });
+
+  it('allows users to add, remove, and reorder references in the research step', async () => {
+    // Mock fetch for /api/outline and /api/research
+    const mockOutline = 'I. Introduction\nII. Methods';
+    const mockResearch = [
+      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' },
+      { title: 'Paper 2', authors: ['Bob'], year: 2019, citation: '(Bob, 2019) Paper 2.' }
+    ];
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ references: mockResearch })
+        });
+      }
+      // Fallback for /api/outline
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ outline: mockOutline })
+      });
+    }));
+    render(<WorkflowUI />);
+    // Go to research step
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => screen.getByText(/introduction/i));
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => screen.getByTestId('reference-0'));
+    // Add a new reference
+    fireEvent.click(screen.getByTestId('add-reference-btn'));
+    fireEvent.change(screen.getByTestId('reference-title-input'), { target: { value: 'Manual Paper' } });
+    fireEvent.change(screen.getByTestId('reference-authors-input'), { target: { value: 'Carol' } });
+    fireEvent.change(screen.getByTestId('reference-year-input'), { target: { value: '2022' } });
+    fireEvent.change(screen.getByTestId('reference-citation-input'), { target: { value: '(Carol, 2022) Manual Paper.' } });
+    fireEvent.click(screen.getByTestId('save-reference-btn'));
+    expect(screen.getByTestId('reference-2')).toHaveTextContent('Manual Paper');
+    // Remove a reference
+    fireEvent.click(screen.getByTestId('remove-reference-1'));
+    expect(screen.queryByText('Paper 2')).not.toBeInTheDocument();
+    // Reorder references (move last up)
+    fireEvent.click(screen.getByTestId('move-reference-up-1'));
+    const refs = screen.getAllByTestId(/reference-\d+/);
+    expect(refs[0]).toHaveTextContent('Manual Paper');
+    // Keyboard navigation: add reference
+    fireEvent.click(screen.getByTestId('add-reference-btn'));
+    const titleInput = screen.getByTestId('reference-title-input');
+    titleInput.focus();
+    fireEvent.keyDown(titleInput, { key: 'Enter' });
+    // Should save reference (simulate Enter key)
+    const refTitles = screen.getAllByTestId(/reference-\d+/).map(ref => ref.textContent);
+    expect(refTitles.some(t => t && t.includes('Manual Paper'))).toBe(true);
+    expect(refTitles.some(t => t && t.includes('Carol'))).toBe(true);
+  });
 }); 

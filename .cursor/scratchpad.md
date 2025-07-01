@@ -44,7 +44,7 @@ The next milestone is to upgrade the `/api/outline` endpoint from a stub to a re
 - Handles file uploads (PDF, DOCX, invalid types)
 - Handles missing API key (500 error)
 - Handles Claude API errors, rate limits, and timeouts
-- Tracks and returns usage/cost (stub or real)
+- Tracks and returns usage/cost information in the response (stub or real)
 - All tests pass, coverage is adequate
 
 ## TDD Status (Claude 3.5 Sonnet Integration)

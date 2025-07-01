@@ -112,6 +112,8 @@ const WorkflowUI: React.FC = () => {
   const [showError, setShowError] = React.useState(true);
   const [editingCitationIdx, setEditingCitationIdx] = React.useState<number | null>(null);
   const [citationEdits, setCitationEdits] = React.useState<{ [idx: number]: string }>({});
+  const [showAddRef, setShowAddRef] = React.useState(false);
+  const [newRef, setNewRef] = React.useState({ title: '', authors: '', year: '', citation: '' });
 
   const handleNext = async () => {
     if (state.step === 1) {
@@ -195,6 +197,19 @@ const WorkflowUI: React.FC = () => {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+
+  function saveRef() {
+    if (!newRef.title) return;
+    const ref = {
+      title: newRef.title,
+      authors: newRef.authors.split(',').map(a => a.trim()),
+      year: Number(newRef.year) || 0,
+      citation: newRef.citation
+    };
+    dispatch({ type: 'SET_REFERENCES', value: [...state.references, ref] });
+    setShowAddRef(false);
+    setNewRef({ title: '', authors: '', year: '', citation: '' });
+  }
 
   return (
     <div>
@@ -298,6 +313,16 @@ const WorkflowUI: React.FC = () => {
         )}
         {state.step === 3 && state.references.length > 0 && (
           <div>
+            <button data-testid="add-reference-btn" onClick={() => setShowAddRef(true)}>Add Reference</button>
+            {showAddRef && (
+              <div>
+                <input data-testid="reference-title-input" placeholder="Title" value={newRef.title} onChange={e => setNewRef({ ...newRef, title: e.target.value })} onKeyDown={e => { if (e.key === 'Enter') { saveRef(); } }} />
+                <input data-testid="reference-authors-input" placeholder="Authors" value={newRef.authors} onChange={e => setNewRef({ ...newRef, authors: e.target.value })} />
+                <input data-testid="reference-year-input" placeholder="Year" value={newRef.year} onChange={e => setNewRef({ ...newRef, year: e.target.value })} />
+                <input data-testid="reference-citation-input" placeholder="Citation" value={newRef.citation} onChange={e => setNewRef({ ...newRef, citation: e.target.value })} />
+                <button data-testid="save-reference-btn" onClick={saveRef}>Save</button>
+              </div>
+            )}
             <div data-testid="citations-section" className="mt-6">
               <div className="font-semibold mb-2">Citations</div>
               {state.references.map((ref, idx) => (
@@ -339,6 +364,19 @@ const WorkflowUI: React.FC = () => {
                 <div>{ref.authors.join(', ')}</div>
                 <div>{ref.year}</div>
                 <div>{ref.citation}</div>
+                <button data-testid={`remove-reference-${idx}`} onClick={() => {
+                  const newRefs = state.references.filter((_, i) => i !== idx);
+                  dispatch({ type: 'SET_REFERENCES', value: newRefs });
+                }}>Remove</button>
+                {idx > 0 && (
+                  <button data-testid={`move-reference-up-${idx}`} onClick={() => {
+                    const newRefs = [...state.references];
+                    const temp = newRefs[idx - 1];
+                    newRefs[idx - 1] = newRefs[idx];
+                    newRefs[idx] = temp;
+                    dispatch({ type: 'SET_REFERENCES', value: newRefs });
+                  }}>Move Up</button>
+                )}
               </div>
             ))}
           </div>

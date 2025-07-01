@@ -68,4 +68,49 @@ describe('Academic Workflow UI', () => {
       expect(screen.getByText(/conclusion/i)).toBeInTheDocument();
     });
   });
+
+  it('calls /api/research with prompt and displays research results', async () => {
+    const mockResearch = [
+      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' },
+      { title: 'Paper 2', authors: ['Bob'], year: 2019, citation: '(Bob, 2019) Paper 2.' }
+    ];
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ references: mockResearch })
+        });
+      }
+      // Fallback for /api/outline
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ outline: 'I. Introduction\nII. Main Point' })
+      });
+    }));
+    render(<WorkflowUI />);
+    // Enter prompt and go to step 2
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Test prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    // Wait for outline to load
+    await waitFor(() => {
+      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    });
+    // Click Next to trigger research API call
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    // Loading indicator should appear
+    expect(screen.getByText(/loading research/i)).toBeInTheDocument();
+    // Wait for research results to appear and check by testid
+    await waitFor(() => {
+      const ref0 = screen.getByTestId('reference-0');
+      expect(ref0).toHaveTextContent('Paper 1');
+      expect(ref0).toHaveTextContent('Alice');
+      expect(ref0).toHaveTextContent('2020');
+      expect(ref0).toHaveTextContent('(Alice, 2020) Paper 1.');
+      const ref1 = screen.getByTestId('reference-1');
+      expect(ref1).toHaveTextContent('Paper 2');
+      expect(ref1).toHaveTextContent('Bob');
+      expect(ref1).toHaveTextContent('2019');
+      expect(ref1).toHaveTextContent('(Bob, 2019) Paper 2.');
+    });
+  });
 }); 

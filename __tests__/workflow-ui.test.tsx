@@ -27,21 +27,21 @@ describe('Academic Workflow UI', () => {
   it('tracks current step and persists prompt input across steps', () => {
     render(<WorkflowUI />);
     // Initial state: Step 1
-    expect(screen.getByTestId('workflow-stepper')).toHaveTextContent(/step 1 of 3/i);
+    expect(screen.getByTestId('workflow-stepper')).toHaveTextContent(/step 1 of 4/i);
     // Enter prompt
     const promptInput = screen.getByLabelText(/assignment prompt/i);
     fireEvent.change(promptInput, { target: { value: 'Test prompt' } });
     // Move to next step
     fireEvent.click(screen.getByRole('button', { name: /next/i }));
     // Stepper should update
-    expect(screen.getByTestId('workflow-stepper')).toHaveTextContent(/step 2 of 3/i);
+    expect(screen.getByTestId('workflow-stepper')).toHaveTextContent(/step 2 of 4/i);
     // Prompt input should persist value
     expect(screen.getByLabelText(/assignment prompt/i)).toHaveValue('Test prompt');
     // Previous button should now be enabled
     expect(screen.getByRole('button', { name: /previous/i })).toBeEnabled();
     // Move back to previous step
     fireEvent.click(screen.getByRole('button', { name: /previous/i }));
-    expect(screen.getByTestId('workflow-stepper')).toHaveTextContent(/step 1 of 3/i);
+    expect(screen.getByTestId('workflow-stepper')).toHaveTextContent(/step 1 of 4/i);
     // Prompt input should still have value
     expect(screen.getByLabelText(/assignment prompt/i)).toHaveValue('Test prompt');
   });
@@ -111,6 +111,57 @@ describe('Academic Workflow UI', () => {
       expect(ref1).toHaveTextContent('Bob');
       expect(ref1).toHaveTextContent('2019');
       expect(ref1).toHaveTextContent('(Bob, 2019) Paper 2.');
+    });
+  });
+
+  it('calls /api/generate with prompt, outline, references and displays generated content', async () => {
+    const mockResearch = [
+      { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' },
+      { title: 'Paper 2', authors: ['Bob'], year: 2019, citation: '(Bob, 2019) Paper 2.' }
+    ];
+    const mockOutline = 'I. Introduction\nII. Main Point 1\nIII. Main Point 2\nIV. Conclusion';
+    const mockContent = 'This is the generated academic paper content.';
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/api/research')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ references: mockResearch })
+        });
+      }
+      if (typeof url === 'string' && url.includes('/api/outline')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ outline: mockOutline })
+        });
+      }
+      if (typeof url === 'string' && url.includes('/api/generate')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ content: mockContent })
+        });
+      }
+      return Promise.reject(new Error('Unknown endpoint'));
+    }));
+    render(<WorkflowUI />);
+    // Enter prompt and go to step 2
+    fireEvent.change(screen.getByLabelText(/assignment prompt/i), { target: { value: 'Test prompt' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    // Wait for outline to load
+    await waitFor(() => {
+      expect(screen.getByText(/introduction/i)).toBeInTheDocument();
+    });
+    // Go to step 3 (research)
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId('reference-0')).toBeInTheDocument();
+    });
+    // Click Next to trigger generate API call
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    // Loading indicator should appear
+    expect(screen.getByText(/generating content/i)).toBeInTheDocument();
+    // Wait for generated content to appear
+    await waitFor(() => {
+      expect(screen.getByText(/generated academic paper content/i)).toBeInTheDocument();
     });
   });
 }); 

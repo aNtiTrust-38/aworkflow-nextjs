@@ -1,6 +1,6 @@
 import React, { useReducer } from 'react';
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 interface Reference {
   title: string;
@@ -16,6 +16,7 @@ interface WorkflowState {
   outline: string | null;
   error: string | null;
   references: Reference[];
+  content: string | null;
 }
 
 type WorkflowAction =
@@ -25,7 +26,8 @@ type WorkflowAction =
   | { type: 'SET_LOADING'; value: boolean }
   | { type: 'SET_OUTLINE'; value: string }
   | { type: 'SET_ERROR'; value: string | null }
-  | { type: 'SET_REFERENCES'; value: Reference[] };
+  | { type: 'SET_REFERENCES'; value: Reference[] }
+  | { type: 'SET_CONTENT'; value: string };
 
 const initialState: WorkflowState = {
   step: 1,
@@ -34,6 +36,7 @@ const initialState: WorkflowState = {
   outline: null,
   error: null,
   references: [],
+  content: null,
 };
 
 function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
@@ -52,6 +55,8 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
       return { ...state, error: action.value };
     case 'SET_REFERENCES':
       return { ...state, references: action.value };
+    case 'SET_CONTENT':
+      return { ...state, content: action.value };
     default:
       return state;
   }
@@ -83,6 +88,19 @@ async function fetchResearch(prompt: string): Promise<Reference[]> {
   return data.references || [];
 }
 
+async function fetchGenerate(prompt: string, outline: string | null, references: Reference[]): Promise<string> {
+  const resp = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ outline: outline ? outline.split('\n').map((section, idx) => ({ section: `Section ${idx + 1}`, content: section })) : [], references }),
+  });
+  if (!resp.ok) {
+    throw new Error('Failed to generate content');
+  }
+  const data = await resp.json();
+  return data.content || '';
+}
+
 const WorkflowUI: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -110,6 +128,19 @@ const WorkflowUI: React.FC = () => {
       } catch (err) {
         dispatch({ type: 'SET_ERROR', value: 'Error loading research.' });
         dispatch({ type: 'SET_REFERENCES', value: [] });
+      } finally {
+        dispatch({ type: 'SET_LOADING', value: false });
+      }
+    } else if (state.step === 3) {
+      dispatch({ type: 'SET_LOADING', value: true });
+      dispatch({ type: 'SET_ERROR', value: null });
+      dispatch({ type: 'NEXT_STEP' });
+      try {
+        const content = await fetchGenerate(state.prompt, state.outline, state.references);
+        dispatch({ type: 'SET_CONTENT', value: content });
+      } catch (err) {
+        dispatch({ type: 'SET_ERROR', value: 'Error generating content.' });
+        dispatch({ type: 'SET_CONTENT', value: '' });
       } finally {
         dispatch({ type: 'SET_LOADING', value: false });
       }
@@ -164,6 +195,11 @@ const WorkflowUI: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+      {state.step === 4 && state.loading && <div>Generating content...</div>}
+      {state.step === 4 && state.error && <div style={{ color: 'red' }}>{state.error}</div>}
+      {state.step === 4 && state.content && (
+        <div>{state.content}</div>
       )}
     </div>
   );

@@ -513,4 +513,63 @@ POST /api/generate
 - `usage` must be present in all successful responses (stub or real).
 - All fields are required unless otherwise noted.
 
+---
+
+# Academic Workflow UI Integration Planning
+
+## Background and Motivation
+The project automates academic paper writing through a 6-stage AI workflow. Stages 1-3 (outline, research, content generation) are implemented and tested at the API level. The next priority is to integrate these endpoints into a seamless, user-friendly UI that guides users through the complete academic paper generation process, including citation management and export features.
+
+## Key Challenges and Analysis
+- Ensuring smooth, stateful progression through outline → research → content generation
+- Robust error handling and user feedback for AI/API failures
+- Managing and validating citations and references in the UI
+- Supporting export features (PDF, Word, BibTeX)
+- Maintaining strict TDD and test coverage for all UI components and workflow logic
+- Responsive, accessible, and modern UI/UX with Tailwind CSS
+- Integrating with existing authentication/session management
+
+## High-level Task Breakdown
+1. **Design Multi-Step Workflow UI**
+   - Success: User can progress through prompt input → outline → research → content generation in a guided, stepwise interface
+   - Test: UI renders each step, disables/enables navigation appropriately, and displays correct state
+2. **Implement State Management**
+   - Success: All data (prompt, outline, research, content, references) is tracked and passed between steps
+   - Test: State persists across navigation, resets on new workflow, and is isolated per user session
+3. **Integrate API Endpoints**
+   - Success: UI calls /api/outline, /api/research, /api/generate in correct sequence, handles loading and errors
+   - Test: Mock API responses, verify correct data flow and error handling
+4. **Citation Management UI**
+   - Success: User can view, edit, and validate references; in-text citations are linked to references
+   - Test: All citations in generated content match references, UI highlights mismatches
+5. **Export Features**
+   - Success: User can export paper as PDF, Word, and BibTeX
+   - Test: Exported files contain correct content and references
+6. **E2E Workflow Integration Test**
+   - Success: Full workflow (prompt → outline → research → content → export) passes E2E test
+   - Test: Simulate user journey, verify all steps and outputs
+7. **UI/UX Polish and Accessibility**
+   - Success: Responsive, accessible, and visually appealing interface
+   - Test: Manual and automated accessibility checks, responsive design tests
+
+## Project Status Board
+- [x] RED: Write failing test for multi-step workflow UI
+- [x] GREEN: Implement minimal WorkflowUI to pass test
+- [ ] REFACTOR: Clean up WorkflowUI if needed
+- [ ] Implement state management
+- [ ] Integrate API endpoints
+- [ ] Citation management UI
+- [ ] Export features (PDF, Word, BibTeX)
+- [ ] E2E workflow integration test
+- [ ] UI/UX polish and accessibility
+
+## Executor's Feedback or Assistance Requests
+- GREEN phase complete: Minimal WorkflowUI implemented and test passes.
+- Next: Refactor WorkflowUI if needed, then proceed to state management (write failing test first).
+
+## Lessons
+- Reference .tdd-rules-cursor.md for all TDD cycles
+- Always read and test API endpoints before UI integration
+- Maintain strict TypeScript and ESLint compliance
+
 --- 

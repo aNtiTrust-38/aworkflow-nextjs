@@ -36,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
     "jsdom": "^26.1.0",
+    "next-test-api-route-handler": "^4.0.16",
     "prisma": "^6.10.1",
     "supertest": "^7.1.1",
     "tailwindcss": "^4",

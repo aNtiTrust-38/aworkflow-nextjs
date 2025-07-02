@@ -1,6 +1,10 @@
 import React, { useReducer } from 'react';
 import { jsPDF } from 'jspdf';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { ADHDFriendlyGoals } from './ADHDFriendlyGoals';
+import { ResearchAssistant } from './ResearchAssistant';
+import { ContentAnalysis } from './ContentAnalysis';
+import { CitationManager } from './CitationManager';
 
 const RESEARCH_WORKFLOW_STEPS = [
   'INPUT',              // Assignment prompt + rubric upload
@@ -277,6 +281,10 @@ const WorkflowUI: React.FC = () => {
             <div className="text-sm mt-2">Please try again or reload the page to recover.</div>
           </div>
         )}
+        {state.step === 2 && <ADHDFriendlyGoals />}
+        {state.step === 4 && <ResearchAssistant />}
+        {state.step === 5 && <ContentAnalysis />}
+        {state.step === 6 && <CitationManager />}
       </main>
     </div>
   );

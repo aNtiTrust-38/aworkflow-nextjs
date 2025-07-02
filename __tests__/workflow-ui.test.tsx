@@ -3,6 +3,10 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import WorkflowUI from '../src/app/WorkflowUI';
 import { beforeEach } from 'vitest';
+import { ADHDFriendlyGoals } from '../src/app/ADHDFriendlyGoals';
+import { ResearchAssistant } from '../src/app/ResearchAssistant';
+import { ContentAnalysis } from '../src/app/ContentAnalysis';
+import { CitationManager } from '../src/app/CitationManager';
 
 let originalCreateElement: typeof document.createElement;
 
@@ -774,5 +778,124 @@ describe('Academic Workflow UI', () => {
     fireEvent.keyDown(styleSelect, { key: 'ArrowDown' });
     fireEvent.keyDown(styleSelect, { key: 'Enter' });
     expect(styleSelect).toHaveValue('Chicago');
+  });
+
+  it('renders ContentAnalysis with file input, analyze button, and results area', () => {
+    render(<ContentAnalysis />);
+    // Section heading
+    expect(screen.getByRole('heading', { name: /content analysis/i })).toBeInTheDocument();
+    // Section testid
+    expect(screen.getByTestId('content-analysis-section')).toBeInTheDocument();
+    // File input
+    expect(screen.getByTestId('content-file-input')).toBeInTheDocument();
+    // Analyze button
+    expect(screen.getByTestId('analyze-btn')).toBeInTheDocument();
+    // Results area
+    expect(screen.getByTestId('analysis-results')).toBeInTheDocument();
+  });
+
+  it('renders CitationManager with citation list, add button, and style selector', () => {
+    render(<CitationManager />);
+    // Section heading
+    expect(screen.getByRole('heading', { name: /citation manager/i })).toBeInTheDocument();
+    // Section testid
+    expect(screen.getByTestId('citation-manager-section')).toBeInTheDocument();
+    // Citation list
+    expect(screen.getByTestId('citation-list')).toBeInTheDocument();
+    // Add citation button
+    expect(screen.getByTestId('add-citation-btn')).toBeInTheDocument();
+    // Style selector
+    expect(screen.getByTestId('citation-style-select')).toBeInTheDocument();
+  });
+
+  it('shows analysis results after selecting a file and clicking Analyze', () => {
+    render(<ContentAnalysis />);
+    const fileInput = screen.getByTestId('content-file-input');
+    const button = screen.getByTestId('analyze-btn');
+    const results = screen.getByTestId('analysis-results');
+    expect(results).toBeEmptyDOMElement();
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    fireEvent.click(button);
+    // After click, expect some result to appear (mocked for now)
+    expect(results).toHaveTextContent(/test\.pdf/i);
+  });
+
+  it('adds a new citation to the list when Add Citation is clicked', () => {
+    render(<CitationManager />);
+    const list = screen.getByTestId('citation-list');
+    const button = screen.getByTestId('add-citation-btn');
+    expect(list.children.length).toBe(0);
+    fireEvent.click(button);
+    expect(list.children.length).toBe(1);
+    fireEvent.click(button);
+    expect(list.children.length).toBe(2);
+  });
+
+  it('updates citation style when the style selector is changed', () => {
+    render(<CitationManager />);
+    const button = screen.getByTestId('add-citation-btn');
+    const select = screen.getByTestId('citation-style-select');
+    fireEvent.click(button);
+    const list = screen.getByTestId('citation-list');
+    expect(list.textContent).toMatch(/apa/i);
+    fireEvent.change(select, { target: { value: 'mla' } });
+    expect(list.textContent).toMatch(/mla/i);
+    fireEvent.change(select, { target: { value: 'chicago' } });
+    expect(list.textContent).toMatch(/chicago/i);
+  });
+});
+
+describe('ADHD-Friendly UI Components', () => {
+  it('renders ADHDFriendlyGoals with ADHD-friendly goals and completion buttons', () => {
+    render(<ADHDFriendlyGoals />);
+    // Section heading
+    expect(screen.getByRole('heading', { name: /adhd-friendly goals/i })).toBeInTheDocument();
+    // Section testid
+    expect(screen.getByTestId('adhd-goals-section')).toBeInTheDocument();
+    // At least 3 goals
+    const goals = screen.getAllByTestId('adhd-goal');
+    expect(goals.length).toBeGreaterThanOrEqual(3);
+    // Each goal has a complete button
+    goals.forEach((_, i) => {
+      expect(screen.getByTestId(`adhd-goal-complete-${i}`)).toBeInTheDocument();
+    });
+  });
+
+  it('renders ResearchAssistant with prompt input, research button, and results area', () => {
+    render(<ResearchAssistant />);
+    // Section heading
+    expect(screen.getByRole('heading', { name: /research assistant/i })).toBeInTheDocument();
+    // Section testid
+    expect(screen.getByTestId('research-assistant-section')).toBeInTheDocument();
+    // Prompt input
+    expect(screen.getByTestId('research-prompt-input')).toBeInTheDocument();
+    // Research button
+    expect(screen.getByTestId('research-btn')).toBeInTheDocument();
+    // Results area
+    expect(screen.getByTestId('research-results')).toBeInTheDocument();
+  });
+
+  it('marks a goal as complete when the Complete button is clicked', () => {
+    render(<ADHDFriendlyGoals />);
+    const goals = screen.getAllByTestId('adhd-goal');
+    const completeBtn = screen.getByTestId('adhd-goal-complete-0');
+    expect(goals[0]).not.toHaveClass('completed-goal');
+    fireEvent.click(completeBtn);
+    // After click, the goal should have a completed class or the button should be disabled
+    expect(goals[0].className).toMatch(/completed-goal/);
+    expect(completeBtn).toBeDisabled();
+  });
+
+  it('shows research results after entering a prompt and clicking Research', () => {
+    render(<ResearchAssistant />);
+    const input = screen.getByTestId('research-prompt-input');
+    const button = screen.getByTestId('research-btn');
+    const results = screen.getByTestId('research-results');
+    expect(results).toBeEmptyDOMElement();
+    fireEvent.change(input, { target: { value: 'What is ADHD?' } });
+    fireEvent.click(button);
+    // After click, expect some result to appear (mocked for now)
+    expect(results).toHaveTextContent(/adhd/i);
   });
 }); 

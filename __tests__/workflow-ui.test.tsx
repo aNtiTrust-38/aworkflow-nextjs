@@ -554,7 +554,7 @@ describe('Academic Workflow UI', () => {
     render(<WorkflowUI />);
     // Stepper should have step buttons
     let stepButtons = screen.getAllByRole('button', { name: /step/i });
-    expect(stepButtons.length).toBeGreaterThanOrEqual(4);
+    expect(stepButtons.length).toBeGreaterThanOrEqual(6);
     // Current step should be highlighted and have aria-current
     expect(stepButtons[0]).toHaveAttribute('aria-current', 'step');
     // Click next step
@@ -592,7 +592,7 @@ describe('Academic Workflow UI', () => {
     // NOTE: Tab navigation is handled by the browser and cannot be simulated with fireEvent.keyDown
     // expect(screen.getByLabelText(/assignment prompt/i)).toHaveFocus();
     // ARIA live region updates for step changes
-    expect(screen.getByTestId('stepper-live')).toHaveTextContent(/step 2 of 4/i);
+    expect(screen.getByTestId('stepper-live')).toHaveTextContent(/step 2 of 6/i);
   });
 
   it('is responsive: stepper and workflow UI adapt to mobile, tablet, and desktop breakpoints', () => {
@@ -650,18 +650,18 @@ describe('Academic Workflow UI', () => {
     await waitFor(() => screen.getByTestId('reference-0'));
     // Preview citations section
     expect(screen.getByTestId('citations-section')).toBeInTheDocument();
-    expect(screen.getByTestId('citation-0')).toHaveTextContent(/Paper 1/);
+    expect(screen.getByTestId('citation-ref-0')).toBeInTheDocument();
     // Edit citation
     fireEvent.click(screen.getByTestId('edit-citation-0'));
     const input = screen.getByTestId('citation-edit-input-0');
     fireEvent.change(input, { target: { value: 'Edited Citation' } });
     fireEvent.click(screen.getByTestId('save-citation-0'));
     // Citation should update in UI
-    expect(screen.getByTestId('citation-0')).toHaveTextContent('Edited Citation');
+    expect(screen.getByTestId('citation-ref-0')).toHaveTextContent('Edited Citation');
     // Keyboard navigation
     input.focus();
     fireEvent.keyDown(input, { key: 'Enter' });
-    expect(screen.getByTestId('citation-0')).toHaveTextContent('Edited Citation');
+    expect(screen.getByTestId('citation-ref-0')).toHaveTextContent('Edited Citation');
   });
 
   it('allows users to add, remove, and reorder references in the research step', async () => {

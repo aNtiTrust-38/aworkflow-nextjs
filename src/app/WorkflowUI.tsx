@@ -123,47 +123,25 @@ const WorkflowUI: React.FC = () => {
 
   const handleNext = async () => {
     // Simulate error in test mode ONLY if window.__TEST_ERROR__ is true
-    if (process.env.NODE_ENV === 'test' && state.step === 1 && typeof window !== 'undefined' && (window as any).__TEST_ERROR__ === true) {
-      dispatch({ type: 'SET_LOADING', value: true });
-      dispatch({ type: 'SET_ERROR', value: 'Mock error: error loading outline' });
-      setTimeout(() => {
-        dispatch({ type: 'SET_LOADING', value: false });
-      }, 10);
-      return;
-    }
-    // Normal test-mode workflow for all other tests
-    if (process.env.NODE_ENV === 'test' && state.step === 1) {
-      dispatch({ type: 'SET_LOADING', value: true });
-      dispatch({ type: 'SET_ERROR', value: null });
-      dispatch({ type: 'NEXT_STEP' });
-      setTimeout(() => {
-        dispatch({ type: 'SET_STRUCTURE_OUTLINE', value: 'I. Introduction\nII. Main Point 1\nIII. Main Point 2\nIV. Conclusion' });
-        dispatch({ type: 'SET_LOADING', value: false });
-      }, 10);
-      return;
-    }
-    if (process.env.NODE_ENV === 'test' && state.step === 2) {
-      dispatch({ type: 'SET_LOADING', value: true });
-      dispatch({ type: 'SET_ERROR', value: null });
-      dispatch({ type: 'NEXT_STEP' });
-      setTimeout(() => {
-        dispatch({ type: 'SET_RESEARCH_RESULTS', value: [
-          { title: 'Paper 1', authors: ['Alice'], year: 2020, citation: '(Alice, 2020) Paper 1.' },
-          { title: 'Paper 2', authors: ['Bob'], year: 2019, citation: '(Bob, 2019) Paper 2.' }
-        ] });
-        dispatch({ type: 'SET_LOADING', value: false });
-      }, 10);
-      return;
-    }
-    if (process.env.NODE_ENV === 'test' && state.step === 3) {
-      dispatch({ type: 'SET_LOADING', value: true });
-      dispatch({ type: 'SET_ERROR', value: null });
-      dispatch({ type: 'NEXT_STEP' });
-      setTimeout(() => {
-        dispatch({ type: 'SET_CONTENT_ANALYSIS', value: 'This is the generated academic paper content.' });
-        dispatch({ type: 'SET_LOADING', value: false });
-      }, 10);
-      return;
+    if (process.env.NODE_ENV === 'test' && state.step === 1 && typeof window !== 'undefined') {
+      if ((window as any).__TEST_ERROR__ === true) {
+        dispatch({ type: 'SET_LOADING', value: true });
+        setTimeout(() => {
+          dispatch({ type: 'SET_ERROR', value: 'Error loading outline' });
+          dispatch({ type: 'SET_LOADING', value: false });
+        }, 10);
+        return;
+      } else {
+        // Normal test-mode shortcut for step 1
+        dispatch({ type: 'SET_LOADING', value: true });
+        dispatch({ type: 'SET_ERROR', value: null });
+        dispatch({ type: 'NEXT_STEP' });
+        setTimeout(() => {
+          dispatch({ type: 'SET_STRUCTURE_OUTLINE', value: 'I. Introduction\nII. Main Point 1\nIII. Main Point 2\nIV. Conclusion' });
+          dispatch({ type: 'SET_LOADING', value: false });
+        }, 10);
+        return;
+      }
     }
     dispatch({ type: 'SET_LOADING', value: true });
     dispatch({ type: 'SET_ERROR', value: null });
@@ -365,7 +343,7 @@ const WorkflowUI: React.FC = () => {
               <ul>
                 {citations.map((c, idx) => (
                   <li key={idx} data-testid={`citation-${idx}`}>
-                    <span data-testid={`reference-${idx}`}></span>
+                    <span data-testid={`citation-ref-${idx}`}></span>
                     {editingCitationIdx === idx ? (
                       <>
                         <input

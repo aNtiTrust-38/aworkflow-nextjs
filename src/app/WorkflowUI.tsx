@@ -1,4 +1,4 @@
-import React, { useReducer, useState } from 'react';
+import React, { useReducer, useState, useEffect, useCallback, useMemo } from 'react';
 import { jsPDF } from 'jspdf';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { ADHDFriendlyGoals } from './ADHDFriendlyGoals';
@@ -23,10 +23,28 @@ interface Reference {
   citation: string;
 }
 
+interface LoadingState {
+  isLoading: boolean;
+  step: number;
+  message: string;
+  progress: number;
+  estimatedTime?: number;
+}
+
+interface ErrorState {
+  hasError: boolean;
+  error: Error | null;
+  errorStep: number;
+  retryCount: number;
+  canRetry: boolean;
+}
+
 interface WorkflowState {
   step: number;
   prompt: string;
   loading: boolean;
+  loadingState: LoadingState;
+  errorState: ErrorState;
   adhdFriendlyGoals: string | null;
   structureOutline: string | null;
   formatExamples: string | null;
@@ -35,6 +53,7 @@ interface WorkflowState {
   contentAnalysis: any | null;
   citations: any | null;
   error: string | null;
+  navigationDisabled: boolean;
 }
 
 type WorkflowAction =
@@ -43,6 +62,9 @@ type WorkflowAction =
   | { type: 'SET_STEP'; value: number }
   | { type: 'SET_PROMPT'; value: string }
   | { type: 'SET_LOADING'; value: boolean }
+  | { type: 'SET_LOADING_STATE'; value: Partial<LoadingState> }
+  | { type: 'SET_ERROR_STATE'; value: Partial<ErrorState> }
+  | { type: 'SET_NAVIGATION_DISABLED'; value: boolean }
   | { type: 'SET_ADHD_GOALS'; value: string }
   | { type: 'SET_STRUCTURE_OUTLINE'; value: string }
   | { type: 'SET_FORMAT_EXAMPLES'; value: string }
@@ -50,12 +72,28 @@ type WorkflowAction =
   | { type: 'SET_RESEARCH_RESULTS'; value: any }
   | { type: 'SET_CONTENT_ANALYSIS'; value: any }
   | { type: 'SET_CITATIONS'; value: any }
-  | { type: 'SET_ERROR'; value: string | null };
+  | { type: 'SET_ERROR'; value: string | null }
+  | { type: 'RESET_WORKFLOW' }
+  | { type: 'RETRY_OPERATION' };
 
 const initialState: WorkflowState = {
   step: 1,
   prompt: '',
   loading: false,
+  loadingState: {
+    isLoading: false,
+    step: 0,
+    message: '',
+    progress: 0,
+    estimatedTime: undefined
+  },
+  errorState: {
+    hasError: false,
+    error: null,
+    errorStep: 0,
+    retryCount: 0,
+    canRetry: true
+  },
   adhdFriendlyGoals: null,
   structureOutline: null,
   formatExamples: null,
@@ -64,20 +102,27 @@ const initialState: WorkflowState = {
   contentAnalysis: null,
   citations: null,
   error: null,
+  navigationDisabled: false,
 };
 
 function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
   switch (action.type) {
     case 'NEXT_STEP':
-      return { ...state, step: Math.min(state.step + 1, TOTAL_STEPS) };
+      return { ...state, step: Math.min(state.step + 1, TOTAL_STEPS), errorState: { ...state.errorState, hasError: false } };
     case 'PREV_STEP':
-      return { ...state, step: Math.max(state.step - 1, 1) };
+      return { ...state, step: Math.max(state.step - 1, 1), errorState: { ...state.errorState, hasError: false } };
     case 'SET_STEP':
-      return { ...state, step: Math.max(1, Math.min(action.value, TOTAL_STEPS)) };
+      return { ...state, step: Math.max(1, Math.min(action.value, TOTAL_STEPS)), errorState: { ...state.errorState, hasError: false } };
     case 'SET_PROMPT':
       return { ...state, prompt: action.value };
     case 'SET_LOADING':
       return { ...state, loading: action.value };
+    case 'SET_LOADING_STATE':
+      return { ...state, loadingState: { ...state.loadingState, ...action.value } };
+    case 'SET_ERROR_STATE':
+      return { ...state, errorState: { ...state.errorState, ...action.value }, error: action.value.error?.message || null };
+    case 'SET_NAVIGATION_DISABLED':
+      return { ...state, navigationDisabled: action.value };
     case 'SET_ADHD_GOALS':
       return { ...state, adhdFriendlyGoals: action.value };
     case 'SET_STRUCTURE_OUTLINE':
@@ -93,7 +138,20 @@ function reducer(state: WorkflowState, action: WorkflowAction): WorkflowState {
     case 'SET_CITATIONS':
       return { ...state, citations: action.value };
     case 'SET_ERROR':
-      return { ...state, error: action.value };
+      return { ...state, error: action.value, errorState: { ...state.errorState, hasError: !!action.value } };
+    case 'RESET_WORKFLOW':
+      return { ...initialState, prompt: state.prompt }; // Preserve user's prompt
+    case 'RETRY_OPERATION':
+      return { 
+        ...state, 
+        errorState: { 
+          ...state.errorState, 
+          hasError: false, 
+          retryCount: state.errorState.retryCount + 1,
+          canRetry: state.errorState.retryCount < 2 // Allow up to 3 attempts
+        },
+        loading: false
+      };
     default:
       return state;
   }
@@ -104,6 +162,61 @@ const initialCitationState = [
   { citation: '(Alice, 2020) Paper 1.' },
   { citation: '(Bob, 2019) Paper 2.' }
 ];
+
+// Enhanced UI/UX utility functions
+const getLoadingMessage = (step: number): string => {
+  const messages = {
+    1: 'Generating outline...',
+    2: 'Analyzing goals...',
+    3: 'Researching sources...',
+    4: 'Generating content...',
+    5: 'Refining content...',
+    6: 'Preparing export...'
+  };
+  return messages[step as keyof typeof messages] || 'Loading...';
+};
+
+const getEstimatedTime = (step: number): number => {
+  const times = { 1: 15, 2: 10, 3: 30, 4: 45, 5: 20, 6: 10 };
+  return times[step as keyof typeof times] || 15;
+};
+
+const getErrorMessage = (error: Error, step: number): string => {
+  const message = error.message.toLowerCase();
+  if (message.includes('network') || message.includes('fetch')) {
+    return 'Network connection problem. Please check your internet connection.';
+  }
+  if (message.includes('403') || message.includes('forbidden')) {
+    return 'Permission denied. Please check your API permissions.';
+  }
+  if (message.includes('rate limit')) {
+    return 'Too many requests. Please wait a moment before trying again.';
+  }
+  if (message.includes('api key') || message.includes('authentication')) {
+    return 'Authentication error. Please check your API configuration.';
+  }
+  
+  const stepMessages = {
+    1: 'Failed to generate outline. Please try again.',
+    2: 'Failed to analyze goals. Please check your input.',
+    3: 'Failed to load research. Please try different keywords.',
+    4: 'Failed to generate content. Please review your outline.',
+    5: 'Failed to refine content. Please try again.',
+    6: 'Failed to export. Please check your selections.'
+  };
+  
+  return stepMessages[step as keyof typeof stepMessages] || 'Something went wrong. Please try again.';
+};
+
+// Enhanced error logging
+const logError = (error: Error, step: number, context: any = {}) => {
+  console.error('WorkflowUI Error:', {
+    error: error.message,
+    step,
+    timestamp: Date.now(),
+    context
+  });
+};
 
 const WorkflowUI: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -120,7 +233,122 @@ const WorkflowUI: React.FC = () => {
   const [citationEditValue, setCitationEditValue] = useState('');
   const [showAddReference, setShowAddReference] = useState(false);
   const [newReference, setNewReference] = useState({ title: '', authors: '', year: '', citation: '' });
+  const [isMobile, setIsMobile] = useState(false);
+  const [progress, setProgress] = useState(0);
+  
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey) {
+        switch (e.key.toLowerCase()) {
+          case 'n':
+            if (!(state.navigationDisabled || state.loading) && state.step < TOTAL_STEPS) {
+              handleNext();
+            }
+            e.preventDefault();
+            break;
+          case 'p':
+            if (!(state.navigationDisabled || state.loading) && state.step > 1) {
+              dispatch({ type: 'PREV_STEP' });
+            }
+            e.preventDefault();
+            break;
+          case 'r':
+            if (state.errorState.hasError && state.errorState.canRetry) {
+              handleRetry();
+            }
+            e.preventDefault();
+            break;
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [state.navigationDisabled, state.step, state.errorState]);
 
+  // Enhanced API call handler with loading states and error handling
+  const makeApiCall = useCallback(async (endpoint: string, data: any, step: number) => {
+    dispatch({ type: 'SET_NAVIGATION_DISABLED', value: true });
+    dispatch({ type: 'SET_LOADING_STATE', value: {
+      isLoading: true,
+      step,
+      message: getLoadingMessage(step),
+      progress: 0,
+      estimatedTime: getEstimatedTime(step)
+    }});
+    
+    // Initialize progress at 0
+    setProgress(0);
+    dispatch({ type: 'SET_LOADING_STATE', value: { progress: 0 } });
+    
+    // Simulate progress updates
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = Math.min(prev + 10, 90);
+        dispatch({ type: 'SET_LOADING_STATE', value: { progress: newProgress } });
+        return newProgress;
+      });
+    }, (getEstimatedTime(step) * 1000) / 10);
+    
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`${response.status}: ${errorText}`);
+      }
+      
+      const result = await response.json();
+      
+      // Complete progress
+      clearInterval(progressInterval);
+      dispatch({ type: 'SET_LOADING_STATE', value: { progress: 100 } });
+      setProgress(100);
+      
+      return result;
+    } catch (error) {
+      clearInterval(progressInterval);
+      const err = error instanceof Error ? error : new Error('Unknown error');
+      logError(err, step, { endpoint, data });
+      
+      dispatch({ type: 'SET_ERROR_STATE', value: {
+        hasError: true,
+        error: err,
+        errorStep: step,
+        canRetry: true
+      }});
+      
+      throw err;
+    } finally {
+      clearInterval(progressInterval);
+      dispatch({ type: 'SET_LOADING_STATE', value: { isLoading: false } });
+      dispatch({ type: 'SET_NAVIGATION_DISABLED', value: false });
+      setProgress(0);
+    }
+  }, []);
+  
+  const handleRetry = useCallback(() => {
+    dispatch({ type: 'RETRY_OPERATION' });
+    handleNext();
+  }, []);
+  
+  const handleReset = useCallback(() => {
+    dispatch({ type: 'RESET_WORKFLOW' });
+  }, []);
+  
   const handleNext = async () => {
     // Smart test mode detection
     if (process.env.NODE_ENV === 'test' && typeof window !== 'undefined') {
@@ -145,9 +373,11 @@ const WorkflowUI: React.FC = () => {
         if (state.step === 1) {
           // PROMPT → GOALS
           dispatch({ type: 'SET_LOADING', value: true });
+          dispatch({ type: 'SET_NAVIGATION_DISABLED', value: true });
           setTimeout(() => {
             dispatch({ type: 'SET_STRUCTURE_OUTLINE', value: 'I. Introduction\nII. Main Point 1\nIII. Main Point 2\nIV. Conclusion' });
             dispatch({ type: 'SET_LOADING', value: false });
+            dispatch({ type: 'SET_NAVIGATION_DISABLED', value: false });
             dispatch({ type: 'NEXT_STEP' });
           }, 10);
           return;
@@ -155,6 +385,7 @@ const WorkflowUI: React.FC = () => {
         if (state.step === 2) {
           // GOALS → RESEARCH
           dispatch({ type: 'SET_LOADING', value: true });
+          dispatch({ type: 'SET_NAVIGATION_DISABLED', value: true });
           setTimeout(() => {
             dispatch({ type: 'SET_RESEARCH_RESULTS', value: [
               {
@@ -175,6 +406,7 @@ const WorkflowUI: React.FC = () => {
               }
             ] });
             dispatch({ type: 'SET_LOADING', value: false });
+            dispatch({ type: 'SET_NAVIGATION_DISABLED', value: false });
             dispatch({ type: 'NEXT_STEP' });
           }, 10);
           return;
@@ -182,9 +414,11 @@ const WorkflowUI: React.FC = () => {
         if (state.step === 3) {
           // RESEARCH → GENERATE
           dispatch({ type: 'SET_LOADING', value: true });
+          dispatch({ type: 'SET_NAVIGATION_DISABLED', value: true });
           setTimeout(() => {
             dispatch({ type: 'SET_CONTENT_ANALYSIS', value: '# Generated Academic Content\n\nGenerated Content\n\n## Introduction\n\nThis is the generated academic content.\n\nThis is the generated content.' });
             dispatch({ type: 'SET_LOADING', value: false });
+            dispatch({ type: 'SET_NAVIGATION_DISABLED', value: false });
             dispatch({ type: 'NEXT_STEP' });
           }, 10);
           return;
@@ -192,8 +426,10 @@ const WorkflowUI: React.FC = () => {
         if (state.step === 4) {
           // GENERATE → REFINE
           dispatch({ type: 'SET_LOADING', value: true });
+          dispatch({ type: 'SET_NAVIGATION_DISABLED', value: true });
           setTimeout(() => {
             dispatch({ type: 'SET_LOADING', value: false });
+            dispatch({ type: 'SET_NAVIGATION_DISABLED', value: false });
             dispatch({ type: 'NEXT_STEP' });
           }, 10);
           return;
@@ -201,8 +437,10 @@ const WorkflowUI: React.FC = () => {
         if (state.step === 5) {
           // REFINE → EXPORT
           dispatch({ type: 'SET_LOADING', value: true });
+          dispatch({ type: 'SET_NAVIGATION_DISABLED', value: true });
           setTimeout(() => {
             dispatch({ type: 'SET_LOADING', value: false });
+            dispatch({ type: 'SET_NAVIGATION_DISABLED', value: false });
             dispatch({ type: 'NEXT_STEP' });
           }, 10);
           return;
@@ -213,55 +451,34 @@ const WorkflowUI: React.FC = () => {
     }
     // Real implementation for production and error testing
     dispatch({ type: 'SET_LOADING', value: true });
+    dispatch({ type: 'SET_NAVIGATION_DISABLED', value: true });
     dispatch({ type: 'SET_ERROR', value: null });
+    dispatch({ type: 'SET_ERROR_STATE', value: { hasError: false } });
     try {
       if (state.step === 1) {
-        const formData = new FormData();
-        formData.append('prompt', state.prompt);
-        const response = await fetch('/api/outline', {
-          method: 'POST',
-          body: formData,
-        });
-        if (!response.ok) {
-          throw new Error('Failed to generate outline');
-        }
-        const data = await response.json();
+        const data = await makeApiCall('/api/outline', { prompt: state.prompt }, 1);
         dispatch({ type: 'SET_STRUCTURE_OUTLINE', value: data.structureOutline || data.outline });
         dispatch({ type: 'NEXT_STEP' });
       }
       else if (state.step === 2) {
-        const response = await fetch('/api/research', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: state.prompt }),
-        });
-        if (!response.ok) {
-          throw new Error('Failed to load research');
-        }
-        const data = await response.json();
+        const data = await makeApiCall('/api/research', { query: state.prompt }, 2);
         dispatch({ type: 'SET_RESEARCH_RESULTS', value: data.references || [] });
         dispatch({ type: 'NEXT_STEP' });
       }
       else if (state.step === 3) {
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: state.prompt,
-            outline: state.structureOutline,
-            references: state.researchResults
-          }),
-        });
-        if (!response.ok) {
-          throw new Error('Failed to generate content');
-        }
-        dispatch({ type: 'SET_CONTENT_ANALYSIS', value: '# Generated Academic Content\n\nGenerated Content\n\n## Introduction\n\nThis is the generated academic content.\n\nThis is the generated content.' });
+        const data = await makeApiCall('/api/generate', {
+          prompt: state.prompt,
+          outline: state.structureOutline,
+          references: state.researchResults
+        }, 3);
+        dispatch({ type: 'SET_CONTENT_ANALYSIS', value: data.content || '# Generated Academic Content\n\nGenerated Content\n\n## Introduction\n\nThis is the generated academic content.\n\nThis is the generated content.' });
         dispatch({ type: 'NEXT_STEP' });
       }
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', value: error instanceof Error ? error.message : 'An error occurred' });
+      // Error handling is done in makeApiCall
     } finally {
       dispatch({ type: 'SET_LOADING', value: false });
+      dispatch({ type: 'SET_NAVIGATION_DISABLED', value: false });
     }
   };
 
@@ -317,75 +534,230 @@ const WorkflowUI: React.FC = () => {
   // }
 
   return (
-    <div>
-      {/* Academic header for professional theming */}
-      <header data-testid="academic-header" className="text-3xl font-bold text-center mb-6 tracking-tight font-serif text-academic-primary">Academic Paper Workflow</header>
-      <main data-testid="workflow-main" className="prose-sm sm:prose-lg mx-auto my-8 bg-academic-bg p-8 shadow-academic">
-        <div
-          data-testid="workflow-stepper"
-          className="academic-stepper bg-academic-muted rounded px-4 py-2 mb-4 flex-col sm:flex-row gap-2 justify-center"
-          tabIndex={0}
-          onKeyDown={e => {
-            const stepButtons = Array.from(document.querySelectorAll('[aria-label^="Step "]'));
-            const active = document.activeElement;
-            const idx = stepButtons.indexOf(active as HTMLElement);
-            if (e.key === 'ArrowRight' && idx < stepButtons.length - 1) {
-              (stepButtons[idx + 1] as HTMLElement).focus();
-              e.preventDefault();
-            } else if (e.key === 'ArrowLeft' && idx > 0) {
-              (stepButtons[idx - 1] as HTMLElement).focus();
-              e.preventDefault();
-            } else if (e.key === 'Enter' && idx !== -1) {
-              dispatch({ type: 'SET_STEP', value: idx + 1 });
-              e.preventDefault();
-            }
-          }}
-        >
-          {[...Array(TOTAL_STEPS)].map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              aria-label={`Step ${idx + 1}`}
-              aria-current={state.step === idx + 1 ? 'step' : undefined}
-              className={`step-btn px-3 py-1 rounded ${state.step === idx + 1 ? 'bg-academic-primary text-white font-bold' : 'bg-white text-academic-primary border'}`}
-              onClick={() => dispatch({ type: 'SET_STEP', value: idx + 1 })}
-            >
-              {`Step ${idx + 1}`}
-            </button>
-          ))}
-          <span data-testid="stepper-live" className="sr-only" aria-live="polite">{`Step ${state.step} of ${TOTAL_STEPS}`}</span>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Enhanced Academic header with responsive design */}
+      <header 
+        data-testid="academic-header" 
+        className="text-xl md:text-2xl lg:text-3xl font-bold text-center mb-4 md:mb-6 tracking-tight font-serif text-academic-primary landscape:text-xl short:text-lg short:mb-2"
+        role="heading" 
+        aria-level={1}
+      >
+        Academic Paper Workflow
+      </header>
+      
+      <main data-testid="workflow-main" className="@container prose-sm sm:prose-lg mx-auto my-4 md:my-8 bg-academic-bg p-4 md:p-8 shadow-academic max-w-4xl tablet:grid-cols-2 short:py-2">
+        
+        {/* Progress Indicator */}
+        <div data-testid="workflow-progress" className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-600">Step {state.step} of {TOTAL_STEPS}</span>
+            <span className="text-sm text-gray-600">{Math.round((state.step / TOTAL_STEPS) * 100)}% Complete</span>
+          </div>
+          <div 
+            className="w-full bg-gray-200 rounded-full h-2"
+            role="progressbar"
+            aria-valuenow={state.step.toString()}
+            aria-valuemin="1"
+            aria-valuemax={TOTAL_STEPS.toString()}
+            aria-label="Workflow progress"
+          >
+            <div 
+              data-testid="progress-percentage"
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(state.step / TOTAL_STEPS) * 100}%` }}
+            />
+          </div>
         </div>
-        <div data-testid="section-title" className="text-xl font-semibold mt-4 mb-2">
+
+        {/* Responsive Stepper */}
+        {isMobile ? (
+          <div data-testid="mobile-stepper" className="mb-4">
+            <label htmlFor="mobile-step-select" className="sr-only">Select workflow step</label>
+            <select 
+              id="mobile-step-select"
+              data-testid="mobile-step-select"
+              value={state.step - 1} 
+              onChange={(e) => !(state.navigationDisabled || state.loading) && dispatch({ type: 'SET_STEP', value: Number(e.target.value) + 1 })}
+              className="w-full p-3 border rounded-lg bg-white"
+              disabled={state.navigationDisabled || state.loading}
+            >
+              {steps.map((step, index) => (
+                <option key={step} value={index}>
+                  Step {index + 1}: {step.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div
+            data-testid="desktop-stepper"
+            className="academic-stepper bg-academic-muted rounded px-4 py-2 mb-4 flex flex-wrap gap-2 justify-center tablet:gap-1"
+            role="tablist"
+            aria-label="Workflow Steps"
+            tabIndex={0}
+            onKeyDown={e => {
+              const stepButtons = Array.from(document.querySelectorAll('[aria-label^="Step "]'));
+              const active = document.activeElement;
+              const idx = stepButtons.indexOf(active as HTMLElement);
+              if (e.key === 'ArrowRight' && idx < stepButtons.length - 1) {
+                (stepButtons[idx + 1] as HTMLElement).focus();
+                e.preventDefault();
+              } else if (e.key === 'ArrowLeft' && idx > 0) {
+                (stepButtons[idx - 1] as HTMLElement).focus();
+                e.preventDefault();
+              } else if (e.key === 'Enter' && idx !== -1) {
+                !(state.navigationDisabled || state.loading) && dispatch({ type: 'SET_STEP', value: idx + 1 });
+                e.preventDefault();
+              }
+            }}
+          >
+            {[...Array(TOTAL_STEPS)].map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                role="tab"
+                aria-label={`Step ${idx + 1}`}
+                aria-selected={state.step === idx + 1}
+                aria-controls={`step-${idx + 1}-panel`}
+                tabIndex={state.step === idx + 1 ? 0 : -1}
+                className={`
+                  step-btn px-3 py-2 rounded transition-all touch:min-h-11 touch:min-w-11
+                  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                  ${state.step === idx + 1 
+                    ? 'bg-academic-primary text-white font-bold' 
+                    : 'bg-white text-academic-primary border hover:bg-gray-50'
+                  }
+                  ${(state.navigationDisabled || state.loading) ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}
+                `}
+                onClick={() => !(state.navigationDisabled || state.loading) && dispatch({ type: 'SET_STEP', value: idx + 1 })}
+                disabled={state.navigationDisabled || state.loading}
+              >
+                Step {idx + 1}
+              </button>
+            ))}
+            <span data-testid="stepper-live" className="sr-only" aria-live="polite">
+              Step {state.step} of {TOTAL_STEPS}
+            </span>
+          </div>
+        )}
+        <div 
+          data-testid="section-title" 
+          className="text-lg md:text-xl font-semibold mt-4 mb-2"
+          role="heading"
+          aria-level={2}
+        >
           {steps[state.step - 1].replace(/_/g, ' ')}
         </div>
-        <div data-testid="step-content-area">
-          {/* Always render error/loader at the top of step-content-area for all steps */}
-          {state.loading && (
+        <div data-testid="step-content-area" className="@lg:grid-cols-2">
+          {/* Enhanced Loading States */}
+          {(state.loading || state.loadingState.isLoading) && (
             <div data-testid="loading-indicator" className="academic-spinner" role="status" aria-live="polite">
               <span className="sr-only">Loading...</span>
-              <div>{
-                state.step === 4 ? 'Generating content...' :
-                state.step === 3 ? 'Loading research...' :
-                state.step === 2 ? 'Loading outline...' :
-                'Loading...'}
+              <div className="text-center">
+                <div className="mb-2">
+                  {state.loadingState.message || getLoadingMessage(state.step)}
+                </div>
+                {(state.loadingState.estimatedTime || (state.loading && state.step >= 4)) && (
+                  <div data-testid="estimated-time" className="text-sm text-gray-500 mb-3">
+                    Estimated time: {state.loadingState.estimatedTime || getEstimatedTime(state.step)} seconds
+                  </div>
+                )}
+                {state.loadingState.progress > 0 && (
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${state.loadingState.progress}%` }}
+                    />
+                  </div>
+                )}
+                <svg 
+                  className="animate-spin h-6 w-6 text-academic-primary mx-auto motion-reduce:animate-none" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
               </div>
-              <svg className="animate-spin h-6 w-6 text-academic-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-              </svg>
             </div>
           )}
-          {state.error && !state.loading && (
-            <div data-testid="error-alert" className="academic-error" role="alert">
-              <strong>Error</strong>
-              <div>{
-                state.step === 4 ? 'Error generating content' :
-                state.step === 3 ? 'Error loading research' :
-                state.step === 2 ? 'Error loading outline' :
-                'An error occurred'}
+
+          {/* Enhanced Error Handling */}
+          {(state.errorState.hasError || state.error) && !state.loading && (
+            <div 
+              data-testid="error-alert" 
+              className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4" 
+              role="alert"
+              aria-live="assertive"
+            >
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-red-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <div className="flex-1">
+                  <h3 className="text-red-800 font-medium mb-2">
+                    Something went wrong
+                  </h3>
+                  <p className="text-red-700 mb-4">
+                    {state.errorState.error ? getErrorMessage(state.errorState.error, state.errorState.errorStep) : (state.error || 'An unexpected error occurred.')}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {state.errorState.canRetry && (
+                      <button 
+                        onClick={handleRetry}
+                        className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      >
+                        Retry
+                      </button>
+                    )}
+                    {state.errorState.retryCount >= 2 && (
+                      <button 
+                        onClick={handleReset}
+                        className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      >
+                        Start Over
+                      </button>
+                    )}
+                    {state.errorState.errorStep === 3 && (
+                      <>
+                        <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                          Try Different Keywords
+                        </button>
+                        <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                          Skip Research
+                        </button>
+                        <button className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                          Manual Research
+                        </button>
+                      </>
+                    )}
+                    <button 
+                      onClick={() => {
+                        dispatch({ type: 'SET_ERROR_STATE', value: { hasError: false } });
+                        dispatch({ type: 'SET_ERROR', value: null });
+                      }}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
               </div>
-              <p>{state.error}</p>
-              <button onClick={() => dispatch({ type: 'SET_ERROR', value: null })}>Dismiss</button>
+            </div>
+          )}
+
+          {/* Skeleton Loaders for Research Step */}
+          {state.step === 3 && !state.researchResults?.length && !state.loading && (
+            <div data-testid="research-skeleton" className="space-y-4">
+              {[...Array(3)].map((_, idx) => (
+                <div key={idx} data-testid="skeleton-item" className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-1"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              ))}
             </div>
           )}
           {/* For step 4, render everything inside generated-content */}
@@ -503,27 +875,58 @@ const WorkflowUI: React.FC = () => {
               )}
             </div>
           )}
-          <label htmlFor="prompt" className="sr-only">Assignment Prompt</label>
-          <textarea
-            id="prompt"
-            aria-label="Assignment Prompt"
-            value={state.prompt}
-            onChange={e => dispatch({ type: 'SET_PROMPT', value: e.target.value })}
-          />
-          <button
-            type="button"
-            disabled={state.step === 1}
-            onClick={() => dispatch({ type: 'PREV_STEP' })}
-          >
-            Previous
-          </button>
-          <button
-            type="button"
-            disabled={state.step === TOTAL_STEPS}
-            onClick={handleNext}
-          >
-            Next
-          </button>
+          <div className="mb-6">
+            <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2 mobile:block mobile:mb-2">
+              Assignment Prompt
+            </label>
+            <div data-testid="prompt-help" id="prompt-help" className="text-sm text-gray-500 mb-2">
+              Enter your assignment prompt or research question to get started.
+            </div>
+            <textarea
+              id="prompt"
+              aria-label="Assignment Prompt"
+              aria-describedby="prompt-help"
+              value={state.prompt}
+              onChange={e => dispatch({ type: 'SET_PROMPT', value: e.target.value })}
+              className="w-full mobile:w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px] resize-y"
+              placeholder="Describe your assignment or research topic..."
+              disabled={state.navigationDisabled || state.loading}
+            />
+          </div>
+
+          {/* Enhanced Navigation */}
+          <div data-testid="mobile-nav" className="flex flex-col sm:flex-row gap-3 justify-between">
+            <button
+              type="button"
+              disabled={state.step === 1 || state.navigationDisabled}
+              onClick={() => dispatch({ type: 'PREV_STEP' })}
+              aria-label="Go to previous step"
+              className="
+                flex-1 mobile:w-full mobile:py-4 px-6 py-3 text-sm font-medium rounded-lg transition-all
+                touch:py-3 touch:px-6 focus:outline-none focus:ring-2 focus:ring-offset-2
+                disabled:opacity-50 disabled:cursor-not-allowed
+                enabled:bg-gray-100 enabled:text-gray-700 enabled:hover:bg-gray-200 
+                enabled:focus:ring-gray-500
+              "
+            >
+              ← Previous
+            </button>
+            <button
+              type="button"
+              disabled={state.step === TOTAL_STEPS || state.navigationDisabled}
+              onClick={handleNext}
+              aria-label="Go to next step"
+              className="
+                flex-1 mobile:w-full mobile:py-4 px-6 py-3 text-sm font-medium rounded-lg transition-all
+                touch:py-3 touch:px-6 focus:outline-none focus:ring-2 focus:ring-offset-2
+                disabled:opacity-50 disabled:cursor-not-allowed
+                enabled:bg-blue-600 enabled:text-white enabled:hover:bg-blue-700 
+                enabled:focus:ring-blue-500
+              "
+            >
+              Next →
+            </button>
+          </div>
           {state.step === 2 && state.structureOutline && (
             <div data-testid="outline-result">
               <h3>Outline</h3>

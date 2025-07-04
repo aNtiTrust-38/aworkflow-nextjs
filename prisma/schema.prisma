@@ -56,4 +56,15 @@ model File {
   type      String
   path      String
   uploadedAt DateTime @default(now())
+}
+
+model AppSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   // Encrypted value
+  encrypted   Boolean  @default(true)
+  category    String?  // Optional categorization (ai, auth, database, etc.)
+  description String?  // Human-readable description
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 } 

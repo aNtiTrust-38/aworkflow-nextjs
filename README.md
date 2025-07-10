@@ -28,13 +28,14 @@ A comprehensive, ADHD-friendly academic paper writing automation application des
 - **Bulk Operations**: Import/export multiple references efficiently
 - **Citation Management**: Automatic citation formatting and validation
 
-### ⚙️ **Settings GUI System (NEW)**
+### ⚙️ **Settings & Configuration System** ✅ **COMPLETE**
 - **Secure Configuration**: GUI-based settings management for non-technical users
-- **First-Time Setup Wizard**: Guided configuration with step-by-step validation
-- **Real-Time API Key Testing**: Validate credentials before saving with instant feedback
-- **Encrypted Storage**: AES-256-GCM encryption for sensitive data at rest
-- **Professional Dashboard**: Comprehensive settings management with masked values
+- **First-Time Setup Wizard**: 4-step guided configuration with step-by-step validation
+- **Real-Time API Key Testing**: Enhanced testing with typing indicators and detailed feedback
+- **Encrypted Storage**: AES-256-GCM encryption for sensitive data at rest with PBKDF2 key derivation
+- **Professional Dashboard**: Comprehensive settings management with masked values and form validation
 - **Setup Status Tracking**: Monitor configuration completeness and requirements
+- **Multi-Provider Support**: Anthropic, OpenAI, and Zotero integration with provider-specific validation
 
 ### 🎨 **Enhanced UI/UX**
 - **Loading States**: Comprehensive progress indicators and estimated time
@@ -194,14 +195,11 @@ aworkflow-nextjs/
 │   ├── settings.tsx           # Settings dashboard page (NEW)
 │   └── setup.tsx              # First-time setup wizard page (NEW)
 ├── components/                # React components
-│   ├── forms/                 # Reusable form components (NEW)
-│   │   ├── FormField.tsx      # Input field with validation
-│   │   ├── TestKeyButton.tsx  # API key testing component
-│   │   ├── SettingsCard.tsx   # Settings section container
-│   │   ├── LoadingButton.tsx  # Button with loading states
-│   │   └── index.ts           # Form components export
-│   ├── CommandPalette.tsx     # VS Code-inspired command palette (NEW) ✅
-│   └── SetupWizard.tsx        # Multi-step setup wizard (NEW)
+│   ├── SettingsDashboard.tsx  # Professional settings management (NEW) ✅
+│   ├── SetupWizard.tsx        # 4-step guided setup wizard (NEW) ✅
+│   ├── ApiKeyTester.tsx       # Enhanced API key testing UI (NEW) ✅
+│   ├── CommandPalette.tsx     # VS Code-inspired command palette ✅
+│   └── [other components...]  # Existing UI components
 ├── types/                     # TypeScript type definitions
 │   └── settings.ts            # Settings system interfaces (NEW)
 ├── lib/                      # Core libraries (NEW)
@@ -215,8 +213,9 @@ aworkflow-nextjs/
 │   │   ├── client.ts         # Zotero Web API client
 │   │   ├── sync.ts           # Bidirectional sync logic
 │   │   └── types.ts          # Zotero interfaces
-│   ├── crypto.ts             # AES-256-GCM encryption utilities (NEW)
-│   ├── settings-storage.ts   # Secure settings storage abstraction (NEW)
+│   ├── crypto.ts             # AES-256-GCM encryption utilities ✅
+│   ├── encryption-service.ts # Encryption service wrapper ✅
+│   ├── user-settings-storage.ts # Secure settings storage with encryption ✅
 │   └── ai-router-config.ts   # Global AI router configuration
 ├── pages/api/                 # API endpoints
 │   ├── citations.ts          # Citation management API
@@ -224,9 +223,9 @@ aworkflow-nextjs/
 │   ├── generate.ts           # Content generation API (enhanced)
 │   ├── research.ts           # Research API
 │   ├── structure-guidance.ts # Outline generation API (enhanced)
-│   ├── settings.ts           # Settings management API (NEW)
-│   ├── test-key.ts           # API key validation endpoint (NEW)
-│   ├── setup-status.ts       # Setup completion tracking (NEW)
+│   ├── user-settings.ts      # User settings CRUD API ✅
+│   ├── test-api-keys.ts      # Multi-provider API key validation ✅
+│   ├── setup-status.ts       # Setup completion tracking
 │   └── zotero/               # Zotero API endpoints (NEW)
 │       ├── sync.ts           # Bidirectional sync endpoint
 │       ├── import.ts         # Import from Zotero
@@ -236,11 +235,16 @@ aworkflow-nextjs/
 │   ├── zotero-integration.test.ts   # Zotero tests (13/13 ✅)
 │   ├── zotero-api.test.ts          # Zotero API tests
 │   ├── multi-llm-api.test.ts       # Multi-LLM API tests
-│   ├── crypto.test.ts              # Encryption utilities tests (17/23 ✅)
-│   ├── settings-storage.test.ts    # Settings storage tests (NEW)
-│   ├── settings-ui.test.tsx        # Settings UI component tests (NEW)
-│   ├── setup-wizard.test.tsx       # Setup wizard tests (NEW)
-│   ├── settings-api.test.ts        # Settings API tests (NEW)
+│   ├── crypto.test.ts              # Encryption utilities tests (23/23 ✅)
+│   ├── encryption-service.test.ts  # Encryption service tests (13/13 ✅)
+│   ├── user-settings-storage.test.ts # Settings storage tests (17/17 ✅)
+│   ├── components/                  # Component test suites
+│   │   ├── SettingsDashboard.test.tsx # Settings dashboard tests
+│   │   ├── SetupWizard.simple.test.tsx # Setup wizard tests (4/4 ✅)
+│   │   └── ApiKeyTester.simple.test.tsx # API key tester tests (7/7 ✅)
+│   ├── api/                        # API endpoint tests
+│   │   ├── user-settings.test.ts   # User settings API tests (15/15 ✅)
+│   │   └── test-api-keys.test.ts   # API key testing tests (16/16 ✅)
 │   ├── command-palette.test.tsx    # Command palette tests (NEW) ✅
 │   ├── ui-loading-states.test.tsx  # Loading state tests (7/7 ✅)
 │   ├── error-handling.test.tsx     # Error handling tests
@@ -445,9 +449,9 @@ npx vitest --ui
 ### Test Coverage Goals
 - **AI Providers**: 100% coverage ✅ (13/13 tests passing)
 - **Zotero Integration**: 100% coverage ✅ (13/13 tests passing)
-- **Settings System**: 90%+ coverage ✅ (23/23 core tests passing)
-- **Settings UI**: Comprehensive component testing ✅
-- **Settings API**: Full endpoint coverage ✅
+- **Settings System**: 95%+ coverage ✅ (95+ core tests passing across all components)
+- **Settings UI**: Comprehensive component testing ✅ (SettingsDashboard, SetupWizard, ApiKeyTester)
+- **Settings API**: Full endpoint coverage ✅ (user-settings, test-api-keys endpoints)
 - **Command Palette**: Core functionality tested ✅ (5/5 tests working)
 - **Encryption**: Core security functions ✅ (23/23 working - GCM encryption fixed)
 - **Loading States**: 100% coverage ✅ (7/7 tests passing)

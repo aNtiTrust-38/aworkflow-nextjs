@@ -54,7 +54,7 @@ simple-electron-app/dist/
 simple-electron-app/node_modules/
 
 # development notes (not for sync)
-nextsteps.md
+# nextsteps.md - now included for project tracking
 
 # archived development files
 .archived/

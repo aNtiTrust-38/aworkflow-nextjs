@@ -1,0 +1,96 @@
+// Prisma schema for academic workflow
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String        @id @default(uuid())
+  name      String
+  email     String        @unique
+  password  String
+  papers    Paper[]
+  files     File[]
+  settings  UserSettings?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model UserSettings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // AI Provider Settings (encrypted)
+  anthropicApiKey       String?
+  openaiApiKey          String?
+  monthlyBudget         Float    @default(100)
+  preferredProvider     String   @default("auto")
+  
+  // Academic Preferences
+  citationStyle         String   @default("apa")
+  defaultLanguage       String   @default("en")
+  adhdFriendlyMode      Boolean  @default(false)
+  
+  // UI Preferences
+  theme                 String   @default("system")
+  reducedMotion         Boolean  @default(false)
+  highContrast          Boolean  @default(false)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Paper {
+  id        String     @id @default(uuid())
+  user      User       @relation(fields: [userId], references: [id])
+  userId    String
+  title     String
+  outline   String?
+  content   String?
+  status    String?
+  references Reference[]
+  files     File[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Reference {
+  id        String   @id @default(uuid())
+  paper     Paper    @relation(fields: [paperId], references: [id])
+  paperId   String
+  title     String
+  authors   String
+  source    String
+  url       String
+  citation  String
+  addedAt   DateTime @default(now())
+}
+
+model File {
+  id        String   @id @default(uuid())
+  paper     Paper?   @relation(fields: [paperId], references: [id])
+  paperId   String?
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  filename  String
+  type      String
+  path      String
+  uploadedAt DateTime @default(now())
+}
+
+model AppSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   // Encrypted value
+  encrypted   Boolean  @default(true)
+  category    String?  // Optional categorization (ai, auth, database, etc.)
+  description String?  // Human-readable description
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+} 

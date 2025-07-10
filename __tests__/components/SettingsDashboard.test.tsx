@@ -112,7 +112,8 @@ describe('SettingsDashboard', () => {
 
     it('should display existing API keys as masked', async () => {
       await waitFor(() => {
-        expect(screen.getByDisplayValue(/sk-ant-•••••••/)).toBeInTheDocument();
+        const anthropicInput = screen.getByLabelText(/anthropic api key/i);
+        expect(anthropicInput).toHaveValue('sk-ant•••••••g');
       });
     });
 

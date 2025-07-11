@@ -200,3 +200,22 @@ export class AIRouter {
     return this.providers.filter(p => p.isAvailable()).map(p => p.name);
   }
 }
+
+// Singleton AIRouter instance for API usage
+import { OpenAIProvider } from './openai';
+import { AnthropicProvider } from './anthropic';
+
+let airouterInstance: AIRouter | null = null;
+
+export function getAIRouter(): AIRouter {
+  if (!airouterInstance) {
+    // TODO: Replace with real API key loading logic
+    const openaiKey = process.env.OPENAI_API_KEY || '';
+    const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
+    const providers = [];
+    if (openaiKey) providers.push(new OpenAIProvider(openaiKey));
+    if (anthropicKey) providers.push(new AnthropicProvider(anthropicKey));
+    airouterInstance = new AIRouter(providers);
+  }
+  return airouterInstance;
+}

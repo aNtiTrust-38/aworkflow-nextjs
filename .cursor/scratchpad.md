@@ -1,41 +1,109 @@
 # Academic Workflow Project Planner Documentation
 
-## Background and Motivation
-This project aims to automate and streamline the academic paper writing process through a six-stage workflow, leveraging AI, citation network analysis, and multi-source research. The goal is to reduce manual effort, improve research quality, and maintain academic rigor, all within a cost-effective, single-user, local deployment environment.
+## CURRENT DEVELOPMENT MILESTONE: SetupWizard Navigation Fix (Critical)
 
-The next milestone is to upgrade the `/api/outline` endpoint from a stub to a real AI-powered academic outline generator using Claude 3.5 Sonnet via the Anthropic SDK. This must strictly follow the TDD protocol as defined in `.tdd-rules-cursor.md`.
+## Background and Motivation
+**SYSTEM CRASH RECOVERY**: Development was halted due to system crash during SetupWizard test refactor. Current status:
+- **46 tests failing | 180 passing** (test suite running, but SetupWizard navigation broken)
+- **Critical Issue**: SetupWizard `canProceed()` function only validates errors, NOT required fields
+- **Root Cause**: Anthropic API Key marked as required (*) but empty field doesn't prevent navigation
+- **Impact**: Users can proceed through wizard without providing required API keys
+
+**Analysis of Current Implementation**:
+- `canProceed()` function (lines 158-173) only checks `validationErrors.length === 0`
+- Required field validation is missing for Anthropic API Key (marked with "*")
+- Step transitions fail because tests expect proper required field validation
+
+This aligns with the nextsteps.md priorities: **Finish SetupWizard Test Pass**, **Remove Redundant/Flaky Tests**, **Optimize Test Performance**, and **Generate Coverage Report**.
 
 ## Key Challenges and Analysis
-- Securely handling the Anthropic API key (never commit to repo)
-- Parsing multipart/form-data for prompt and optional files
-- Handling API errors, rate limits, and timeouts gracefully
-- Ensuring response structure is always academic and well-formed
-- Maintaining test coverage and passing all existing tests
-- Adhering to strict TDD and .tdd-rules-cursor.md protocols
-- Ensuring response time is < 30s and cost per outline is tracked
-- Properly mocking or skipping environment-dependent tests
+- **SetupWizard Logic**: `canProceed()` function incorrectly validates step progression
+- **Test Precision**: Floating point precision issues in percentage calculations
+- **Error Recovery**: Error boundary reset state management needs fixing
+- **Test Reliability**: Some tests have timing issues and need stabilization
+- **TDD Compliance**: All fixes must follow RED/GREEN/REFACTOR cycle
+- **Performance**: Test suite takes 41.49s and needs optimization
 
-## High-level Task Breakdown (Claude 3.5 Sonnet Integration)
-- [ ] **TDD: Write failing tests for /api/outline**
-  - Success: Tests fail, clearly describe expected behavior (see Test Scenarios)
-- [ ] **Install and configure Anthropic SDK**
-  - Success: `@anthropic-ai/sdk` present in dependencies, imported in endpoint
-- [ ] **Add ANTHROPIC_API_KEY to .env and .env.example**
-  - Success: Key is loaded from environment, never committed
-- [ ] **Parse prompt and files from POST requests (multipart/form-data)**
-  - Success: Endpoint extracts prompt and files, returns 400 if missing
-- [ ] **Call Anthropic Claude 3.5 Sonnet API**
-  - Success: Endpoint calls Claude with academic system prompt, receives outline
-- [ ] **Format and return academic outline**
-  - Success: Outline is string, well-structured (I., II., III.), academic tone
-- [ ] **Track/log token usage and cost**
-  - Success: Usage/cost info included in response (stub or real)
-- [ ] **Comprehensive error handling**
-  - Success: Handles missing key, API errors, rate limits, timeouts, returns user-friendly errors
-- [ ] **Update/expand integration tests for edge/error cases**
-  - Success: Tests cover valid, invalid, and error scenarios
-- [ ] **Test coverage report**
-  - Success: Coverage report generated, all tests pass
+## High-level Task Breakdown (TDD: SetupWizard Navigation Fix)
+
+### **PHASE 1: FIX SETUPWIZARD NAVIGATION (CRITICAL - YOLO MODE AUTHORIZED)**
+
+#### **Task 1.1: TDD - Write Failing Test for Required Field Validation**
+- [ ] **RED**: Write test that expects Continue button disabled when Anthropic API Key empty
+- [ ] **Verify**: Test fails because current implementation allows navigation without API key
+- [ ] **Success Criteria**: Test clearly demonstrates required field validation failure
+- [ ] **Commit**: `test: add failing test for required API key validation`
+
+#### **Task 1.2: TDD - Implement Required Field Validation**
+- [ ] **GREEN**: Modify `canProceed()` function to check required fields
+- [ ] **Implementation**: Add check for `wizardState.settings.anthropicApiKey.trim() !== ''`
+- [ ] **Verify**: Test passes - Continue button disabled when API key empty
+- [ ] **Success Criteria**: Navigation properly blocked without required API key
+- [ ] **Commit**: `feat: implement required field validation for API keys`
+
+#### **Task 1.3: TDD - Fix Step Transition Logic**
+- [ ] **GREEN**: Ensure step transitions work when required fields provided
+- [ ] **Implementation**: Test with valid API key - navigation should proceed
+- [ ] **Verify**: Tests pass for step 2 → step 3 transition
+- [ ] **Success Criteria**: All SetupWizard navigation tests pass
+- [ ] **Commit**: `fix: enable step transitions with valid required fields`
+
+#### **Task 1.4: TDD - Refactor and Optimize**
+- [ ] **REFACTOR**: Clean up validation logic while keeping tests green
+- [ ] **Implementation**: Extract required field validation to separate function
+- [ ] **Verify**: All tests still pass after refactoring
+- [ ] **Success Criteria**: Clean, maintainable code with full test coverage
+- [ ] **Commit**: `refactor: extract required field validation logic`
+
+### **PHASE 2: TEST PERFORMANCE OPTIMIZATION (MEDIUM)**
+
+#### **Task 2.1: Audit Test Performance**
+- [ ] **Analysis**: Identify why test suite takes 475.45s (too slow)
+- [ ] **Target**: Reduce to <60s total runtime
+- [ ] **Success Criteria**: Performance bottlenecks identified and documented
+
+#### **Task 2.2: Optimize Test Setup/Teardown**
+- [ ] **Implementation**: Review setup/teardown times (835.52s setup time is excessive)
+- [ ] **Fix**: Implement faster test initialization
+- [ ] **Success Criteria**: Setup time reduced to <100s
+
+### **PHASE 3: GENERATE COVERAGE REPORT (LOW)**
+
+#### **Task 3.1: Run Coverage Analysis**
+- [ ] **Command**: `npm run test:coverage`
+- [ ] **Analysis**: Document coverage gaps
+- [ ] **Success Criteria**: Coverage report generated, gaps identified
+
+#### **Task 3.2: Document Test Results**
+- [ ] **Update**: README and project documentation
+- [ ] **Include**: Test status, coverage metrics, performance improvements
+- [ ] **Success Criteria**: Complete documentation of test refactor results
+
+## Success Criteria for Milestone Completion
+- ✅ **All SetupWizard tests pass** (currently 14 failing → 0 failing)
+- ✅ **Continue button properly disabled** when required fields empty
+- ✅ **Step transitions work correctly** with valid inputs
+- ✅ **Test suite runs in <60s** (currently 475.45s)
+- ✅ **Coverage report >90%** with gaps documented
+- ✅ **No flaky or redundant tests** remain
+
+## Current TDD Status
+- **Phase**: RED (Tests failing as expected)
+- **Failing Tests**: 46 (primarily SetupWizard navigation)
+- **Current Focus**: SetupWizard `canProceed()` function required field validation
+- **Next Action**: Write failing test for required field validation
+
+## YOLO Mode Authorization ✅
+**Executor has permission to proceed with YOLO mode for LOW RISK changes**:
+- Bug fixes to SetupWizard navigation logic
+- Test fixes and performance optimizations
+- Documentation updates
+- Refactoring that maintains functionality
+
+**HIGH RISK (requires approval)**:
+- Major architectural changes to SetupWizard component
+- Changing API contracts
+- Adding new dependencies
 
 ## Test Scenarios (Claude 3.5 Sonnet Integration)
 - Returns 400 for missing prompt
@@ -152,39 +220,45 @@ The TDD cycle is now unblocked and accessibility implementation is COMPLETE.
 
 ## Project Status Board
 
-## ✅ Completed Tasks
-- [x] **Task 1: Debug & Fix Remaining Test Issues (Backup/Restore UI)** - COMPLETED ✅
-  - Fixed DOM pollution issues between tests
-  - Fixed accessibility test selectors
-  - Fixed API key masking behavior in tests
-  - Fixed academic and UI preferences test expectations
-  - Achieved GREEN status: 27 tests passing, 1 skipped (DOM container issue)
-  - **SUCCESS CRITERIA MET**: All backup/restore UI tests pass except one with DOM container issue (skipped)
+### 🔄 **CURRENT TASKS - YOLO MODE ACTIVE**
+- [ ] **Task 1.1**: TDD - Write failing test for required field validation
+  - **Status**: Ready to start
+  - **Priority**: CRITICAL
+  - **TDD Phase**: RED
+- [ ] **Task 1.2**: TDD - Implement required field validation  
+  - **Status**: Blocked by Task 1.1
+  - **Priority**: CRITICAL
+  - **TDD Phase**: GREEN
+- [ ] **Task 1.3**: TDD - Fix step transition logic
+  - **Status**: Blocked by Task 1.2
+  - **Priority**: CRITICAL
+  - **TDD Phase**: GREEN
+- [ ] **Task 1.4**: TDD - Refactor and optimize
+  - **Status**: Blocked by Task 1.3
+  - **Priority**: CRITICAL
+  - **TDD Phase**: REFACTOR
 
-## 🔄 In Progress
-- [x] **Task 2: Expand Automated Tests (Usage Indicator & Error Handling)** - COMPLETED ✅
-  - ✅ Added comprehensive tests for usage indicator component (Navigation.usage-indicator.test.tsx)
-  - ✅ Added error boundary and error handling tests (ErrorHandling.test.tsx)
-  - ✅ Added comprehensive ProgressBar component tests (ProgressBar.test.tsx)
-  - ✅ Added edge case testing for API failures and error recovery
-  - **SUCCESS CRITERIA MET**: 60+ new tests created, comprehensive coverage achieved
+### 📋 **PENDING TASKS**
+- [ ] **Task 2.1**: Audit test performance
+  - **Status**: Waiting for Phase 1 completion
+  - **Priority**: MEDIUM
+- [ ] **Task 2.2**: Optimize test setup/teardown
+  - **Status**: Waiting for Task 2.1
+  - **Priority**: MEDIUM
+- [ ] **Task 3.1**: Generate coverage report
+  - **Status**: Waiting for test fixes
+  - **Priority**: LOW
+- [ ] **Task 3.2**: Document test results
+  - **Status**: Waiting for completion
+  - **Priority**: LOW
 
-## 🔄 In Progress
-- [ ] **Task 3: Refactor & Optimize Test Structure** - READY TO START
-  - Consolidate duplicate test utilities
-  - Improve test performance and reliability
-  - **SUCCESS CRITERIA**: Tests run faster, no flaky tests
-
-## 📋 Pending Tasks
-- [ ] **Task 4: Generate Test Coverage Report**
-  - Run coverage analysis
-  - Document test coverage metrics
-  - **SUCCESS CRITERIA**: Coverage report generated, gaps identified
-
-- [ ] **Task 5: Final Documentation & Handoff**
-  - Update README with testing guidelines
-  - Document any remaining issues
-  - **SUCCESS CRITERIA**: Complete documentation delivered
+### ✅ **COMPLETED TASKS (PREVIOUS MILESTONES)**
+- [x] **Crypto Tests**: 23/23 passing ✅
+- [x] **Accessibility Tests**: 14/14 passing ✅ 
+- [x] **Loading States**: 7/7 passing ✅
+- [x] **Settings Storage**: 23/23 passing ✅
+- [x] **AI Providers**: 13/13 passing ✅
+- [x] **Zotero Integration**: 13/13 passing ✅
 
 ## Previous Completed Tasks
 - [x] File upload tests skipped (Node.js multipart limitation, documented)

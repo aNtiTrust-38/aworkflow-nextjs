@@ -217,6 +217,18 @@ export function SetupWizard() {
     }
   };
 
+  // Check if required fields are provided for the current step
+  const hasRequiredFields = (stepId: string): boolean => {
+    if (stepId === 'apiKeys') {
+      // Anthropic API key is required
+      const anthropicApiKey = wizardState.settings.anthropicApiKey?.trim();
+      return Boolean(anthropicApiKey);
+    }
+    
+    // Other steps don't have required fields
+    return true;
+  };
+
   // Check if current step can proceed
   const canProceed = (): boolean => {
     // Welcome step can always proceed
@@ -226,23 +238,17 @@ export function SetupWizard() {
     
     const currentStepData = steps[wizardState.currentStep];
     
-    if (currentStepData.id === 'apiKeys') {
-      // Check validation errors first
-      if (validationErrors.length > 0) {
-        return false;
-      }
-      
-      // Check required fields - Anthropic API key is required
-      const anthropicApiKey = wizardState.settings.anthropicApiKey?.trim();
-      if (!anthropicApiKey) {
-        return false;
-      }
-      
-      return true;
+    // Check validation errors first
+    if (validationErrors.length > 0) {
+      return false;
     }
     
-    // Other steps can proceed without validation
-    return validationErrors.length === 0;
+    // Check required fields for this step
+    if (!hasRequiredFields(currentStepData.id)) {
+      return false;
+    }
+    
+    return true;
   };
 
   // Save current step settings

@@ -250,6 +250,47 @@ export function SettingsDashboard() {
     }
   };
 
+  // Backup settings
+  const handleBackup = async () => {
+    try {
+      const res = await fetch('/api/settings/backup');
+      if (!res.ok) throw new Error('Failed to backup settings');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'settings-backup.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      setSuccessMessage('Settings backup downloaded.');
+    } catch (err: any) {
+      setError(`Backup failed: ${err.message}`);
+    }
+  };
+
+  // Restore settings
+  const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const res = await fetch('/api/settings/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to restore settings');
+      setSuccessMessage('Settings restored successfully.');
+      setError(null);
+      loadSettings();
+    } catch (err: any) {
+      setError(`Restore failed: ${err.message}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -536,6 +577,23 @@ export function SettingsDashboard() {
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
+      </div>
+      {/* Backup/Restore controls */}
+      <div style={{ marginTop: 32, display: 'flex', gap: 16, alignItems: 'center' }}>
+        <button type="button" onClick={handleBackup} aria-label="Backup settings" style={{ padding: '6px 16px' }}>
+          Backup Settings
+        </button>
+        <label htmlFor="restore-settings" style={{ display: 'inline-block', padding: '6px 16px', background: '#eee', borderRadius: 4, cursor: 'pointer' }}>
+          Restore Settings
+          <input
+            id="restore-settings"
+            type="file"
+            accept="application/json"
+            style={{ display: 'none' }}
+            onChange={handleRestore}
+            aria-label="Restore settings from file"
+          />
+        </label>
       </div>
     </div>
   );

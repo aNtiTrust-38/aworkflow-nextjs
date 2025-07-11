@@ -227,8 +227,18 @@ export function SetupWizard() {
     const currentStepData = steps[wizardState.currentStep];
     
     if (currentStepData.id === 'apiKeys') {
-      // For testing, allow proceeding with just some basic validation
-      return validationErrors.length === 0;
+      // Check validation errors first
+      if (validationErrors.length > 0) {
+        return false;
+      }
+      
+      // Check required fields - Anthropic API key is required
+      const anthropicApiKey = wizardState.settings.anthropicApiKey?.trim();
+      if (!anthropicApiKey) {
+        return false;
+      }
+      
+      return true;
     }
     
     // Other steps can proceed without validation

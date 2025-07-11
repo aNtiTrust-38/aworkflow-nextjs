@@ -173,6 +173,10 @@ describe('SetupWizard', () => {
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
       
+      // Provide required API key before navigating
+      const anthropicInput = screen.getByLabelText(/anthropic api key/i);
+      fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
+      
       // Step 2 to 3
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
@@ -293,6 +297,10 @@ describe('SetupWizard', () => {
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
       
+      // Provide required API key before navigating
+      const anthropicInput = screen.getByLabelText(/anthropic api key/i);
+      fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
+      
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
     });
@@ -345,6 +353,10 @@ describe('SetupWizard', () => {
       const continueButton = screen.getByRole('button', { name: /continue/i });
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
+      
+      // Provide required API key before navigating
+      const anthropicInput = screen.getByLabelText(/anthropic api key/i);
+      fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));

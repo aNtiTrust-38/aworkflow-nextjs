@@ -408,7 +408,7 @@ export function SetupWizard() {
 
       {/* Step Content */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{currentStepData.title}</h1>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentStepData.title}</h2>
         <p className="text-gray-600 mb-6">{currentStepData.description}</p>
 
         {/* Error Message */}
@@ -661,6 +661,7 @@ export function SetupWizard() {
 
         {currentStepData.id === 'review' && (
           <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Review & Complete</h2>
             <h3 className="text-lg font-semibold text-gray-900">Configuration Summary</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

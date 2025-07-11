@@ -171,16 +171,16 @@ describe('SetupWizard', () => {
       
       // Step 1 to 2
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByText('AI Provider Configuration'));
+      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
       
       // Step 2 to 3
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByText('Academic Preferences'));
+      await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
       
       // Step 3 to 4
       fireEvent.click(continueButton);
       await waitFor(() => {
-        expect(screen.getByText('Review & Complete')).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Review & Complete/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /complete setup/i })).toBeInTheDocument();
       });
     });
@@ -205,7 +205,7 @@ describe('SetupWizard', () => {
       // Navigate to API keys step
       const continueButton = screen.getByRole('button', { name: /continue/i });
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByText('AI Provider Configuration'));
+      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
     });
 
     it('should display API key input fields', async () => {
@@ -291,10 +291,10 @@ describe('SetupWizard', () => {
       // Navigate to preferences step
       const continueButton = screen.getByRole('button', { name: /continue/i });
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByText('AI Provider Configuration'));
+      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
       
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByText('Academic Preferences'));
+      await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
     });
 
     it('should display preference settings', async () => {
@@ -344,10 +344,10 @@ describe('SetupWizard', () => {
       // Navigate to review step
       const continueButton = screen.getByRole('button', { name: /continue/i });
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByText('AI Provider Configuration'));
+      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
       
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByText('Academic Preferences'));
+      await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
       
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByText('Review & Complete'));
@@ -355,10 +355,10 @@ describe('SetupWizard', () => {
 
     it('should display configuration summary', async () => {
       await waitFor(() => {
-        expect(screen.getByText('Configuration Summary')).toBeInTheDocument();
-        expect(screen.getByText(/AI Provider:/)).toBeInTheDocument();
-        expect(screen.getByText(/Monthly Budget:/)).toBeInTheDocument();
-        expect(screen.getByText(/Citation Style:/)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Configuration Summary/i })).toBeInTheDocument();
+        expect(screen.getByText(/AI Provider:/i)).toBeInTheDocument();
+        expect(screen.getByText(/Monthly Budget:/i)).toBeInTheDocument();
+        expect(screen.getByText(/Citation Style:/i)).toBeInTheDocument();
       });
     });
 
@@ -475,7 +475,7 @@ describe('SetupWizard', () => {
       // Navigate to API keys step
       const continueButton = screen.getByRole('button', { name: /continue/i });
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByText('AI Provider Configuration'));
+      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
 
       // Fill in API key
       const anthropicInput = screen.getByLabelText(/anthropic api key/i);
@@ -485,13 +485,14 @@ describe('SetupWizard', () => {
       fireEvent.click(continueButton);
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/api/user-settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            anthropicApiKey: 'sk-ant-test-key'
+        expect(mockFetch).toHaveBeenCalledWith(
+          '/api/user-settings',
+          expect.objectContaining({
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: expect.stringContaining('"anthropicApiKey":"sk-ant-test-key"')
           })
-        });
+        );
       });
     });
   });

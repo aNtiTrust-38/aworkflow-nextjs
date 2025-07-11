@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SessionProvider } from 'next-auth/react';
 import { SettingsDashboard } from '../../components/SettingsDashboard';
 
@@ -482,5 +482,67 @@ describe('SettingsDashboard', () => {
         });
       });
     });
+  });
+});
+
+describe('Backup & Restore UI', () => {
+  beforeEach(async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        anthropicApiKey: null,
+        openaiApiKey: null,
+        monthlyBudget: 100,
+        preferredProvider: 'auto',
+        citationStyle: 'apa',
+        defaultLanguage: 'en',
+        adhdFriendlyMode: false,
+        theme: 'system',
+        reducedMotion: false,
+        highContrast: false
+      })
+    } as Response);
+    renderWithSession(<SettingsDashboard />);
+    await waitFor(() => screen.getByText('Settings Dashboard'));
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('should trigger settings backup and show success message', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      blob: () => Promise.resolve(new Blob([JSON.stringify({ test: 'data' })], { type: 'application/json' }))
+    } as Response);
+
+    const backupButton = screen.getByRole('button', { name: /backup settings/i });
+    fireEvent.click(backupButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/settings backup downloaded/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should upload a settings file and restore settings via API', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ success: true })
+    } as Response);
+
+    const file = new File([JSON.stringify({ test: 'restored' })], 'settings-backup.json', { type: 'application/json' });
+    // Patch .text() method for the test
+    Object.defineProperty(file, 'text', {
+      value: () => Promise.resolve(JSON.stringify({ test: 'restored' })),
+    });
+    // Use getAllByLabelText to avoid ambiguity
+    const inputs = screen.getAllByLabelText(/restore settings from file/i);
+    // Pick the first file input
+    const input = inputs.find(i => (i as HTMLInputElement).type === 'file') as HTMLInputElement | undefined;
+    expect(input).toBeDefined();
+    fireEvent.change(input!, { target: { files: [file] } });
+
+    // Use a flexible matcher for the success message
+    await screen.findByText((content) => content.includes('Settings restored successfully'));
   });
 });

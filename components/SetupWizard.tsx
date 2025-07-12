@@ -430,13 +430,13 @@ export function SetupWizard() {
 
   // --- PATCH: Only render current step's content and navigation ---
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto p-6" data-testid="setupwizard-container">
       {/* Progress Bar - only one instance, keyed by currentStep */}
       <React.Fragment key={`progressbar-step-${wizardState.currentStep}`}>
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-600">Step {wizardState.currentStep + 1} of {steps.length}</span>
-            <span className="text-sm text-gray-600">{Math.round(((wizardState.currentStep + 1) / steps.length) * 100)}%</span>
+            <span className="text-sm text-gray-600" data-testid="setupwizard-step-counter">Step {wizardState.currentStep + 1} of {steps.length}</span>
+            <span className="text-sm text-gray-600" data-testid="setupwizard-progress-percent">{Math.round(((wizardState.currentStep + 1) / steps.length) * 100)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
@@ -454,7 +454,7 @@ export function SetupWizard() {
       {/* Step Content - only render current step, keyed for remount */}
       <React.Fragment key={`step-content-${wizardState.currentStep}`}>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentStepData.title}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2" data-testid="setupwizard-step-title">{currentStepData.title}</h2>
           <p className="text-gray-600 mb-6">{currentStepData.description}</p>
           {/* Error Message */}
           {error && (
@@ -464,7 +464,7 @@ export function SetupWizard() {
           )}
           {/* Step-specific content */}
           {currentStepData.id === 'welcome' && (
-            <div className="space-y-4">
+            <div className="space-y-4" data-testid="setupwizard-welcome-content">
               <p className="text-gray-700">
                 This wizard will help you configure your Academic Workflow Assistant with:
               </p>
@@ -479,7 +479,7 @@ export function SetupWizard() {
             </div>
           )}
           {currentStepData.id === 'apiKeys' && (
-            <div className="space-y-6">
+            <div className="space-y-6" data-testid="setupwizard-apikeys-content">
               {/* Anthropic API Key */}
               <div>
                 <label htmlFor="anthropicApiKey" className="block text-sm font-medium text-gray-700 mb-2">
@@ -491,6 +491,7 @@ export function SetupWizard() {
                     type="password"
                     value={wizardState.settings.anthropicApiKey}
                     onChange={(e) => handleInputChange('anthropicApiKey', e.target.value)}
+                    data-testid="setupwizard-anthropic-api-key"
                     onBlur={() => handleBlur('anthropicApiKey')}
                     className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       getFieldError('anthropicApiKey') ? 'border-red-500' : 'border-gray-300'

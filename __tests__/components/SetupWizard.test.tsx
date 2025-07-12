@@ -156,13 +156,13 @@ describe('SetupWizard', () => {
       } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
+      await waitFor(() => screen.getByTestId('setupwizard-step-title'));
     });
 
     it('should show progress indicators for all steps', async () => {
+      renderWithSession(<SetupWizard />);
       await waitFor(() => {
-        const stepIndicator = screen.getByText(/Step \d+ of \d+/);
-        expect(stepIndicator).toBeInTheDocument();
+        expect(screen.getByTestId('setupwizard-step-counter')).toBeInTheDocument();
         expect(screen.getByTestId('setupwizard-progressbar')).toBeInTheDocument();
       });
     });
@@ -259,7 +259,7 @@ describe('SetupWizard', () => {
       } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
+      await waitFor(() => screen.getByTestId('setupwizard-step-title'));
       
       // Navigate to API keys step
       const continueButton = screen.getByTestId('setupwizard-continue-btn');
@@ -372,7 +372,7 @@ describe('SetupWizard', () => {
       } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
+      await waitFor(() => screen.getByTestId('setupwizard-step-title'));
       
       // Navigate to preferences step
       const continueButton = screen.getByTestId('setupwizard-continue-btn');
@@ -471,7 +471,7 @@ describe('SetupWizard', () => {
       } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
+      await waitFor(() => screen.getByTestId('setupwizard-step-title'));
       
       // Navigate to review step
       const continueButton = screen.getByTestId('setupwizard-continue-btn');
@@ -614,7 +614,7 @@ describe('SetupWizard', () => {
         } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
+      await waitFor(() => screen.getByTestId('setupwizard-step-title'));
 
       // Navigate to API keys step
       const continueButton = screen.getByTestId('setupwizard-continue-btn');

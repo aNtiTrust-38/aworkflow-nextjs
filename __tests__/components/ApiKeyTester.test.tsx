@@ -159,7 +159,7 @@ describe('ApiKeyTester Component', () => {
       fireEvent.click(testButton);
 
       // Should show loading state
-      expect(screen.getByText(/testing.../i)).toBeInTheDocument();
+      expect(screen.getByTestId('button-testing-text')).toBeInTheDocument();
 
       await waitFor(() => {
         expect(screen.getByText(/✓ api key is valid and working/i)).toBeInTheDocument();
@@ -235,7 +235,7 @@ describe('ApiKeyTester Component', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/✓ api key is valid and working/i)).toBeInTheDocument();
-        expect(screen.getByText(/openai/i)).toBeInTheDocument();
+        expect(screen.getByRole('region', { name: /test results/i })).toHaveTextContent('OpenAI');
       });
 
       expect(mockFetch).toHaveBeenCalledWith('/api/test-api-keys', {
@@ -321,7 +321,7 @@ describe('ApiKeyTester Component', () => {
       const testButton = screen.getByRole('button', { name: /test api key/i });
       fireEvent.click(testButton);
 
-      expect(screen.getByText(/testing.../i)).toBeInTheDocument();
+      expect(screen.getByTestId('button-testing-text')).toBeInTheDocument();
       expect(testButton).toBeDisabled();
     });
   });
@@ -333,21 +333,29 @@ describe('ApiKeyTester Component', () => {
       const apiKeyInput = screen.getByLabelText(/api key/i);
       fireEvent.change(apiKeyInput, { target: { value: 'sk-ant-' } });
 
-      expect(screen.getByText(/entering anthropic api key.../i)).toBeInTheDocument();
+      expect(screen.getByTestId('typing-indicator')).toBeInTheDocument();
+      expect(screen.getByTestId('typing-indicator')).toHaveTextContent('Entering Anthropic API key...');
     });
 
-    it('should show format validation in real-time', () => {
+    it('should show format validation in real-time', async () => {
       renderWithSession(<ApiKeyTester />);
 
       const apiKeyInput = screen.getByLabelText(/api key/i);
       
       // Start typing invalid format
       fireEvent.change(apiKeyInput, { target: { value: 'invalid' } });
-      expect(screen.getByText(/✗ invalid format/i)).toBeInTheDocument();
+      
+      // Wait for typing to finish and validation to appear
+      await waitFor(() => {
+        expect(screen.getByTestId('realtime-validation')).toBeInTheDocument();
+        expect(screen.getByTestId('realtime-validation')).toHaveTextContent('✗ Invalid format');
+      });
 
       // Type valid format
       fireEvent.change(apiKeyInput, { target: { value: 'sk-ant-valid' } });
-      expect(screen.getByText(/✓ valid format/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId('realtime-validation')).toHaveTextContent('✓ Valid format');
+      });
     });
 
     it('should show progress indicator during testing', async () => {
@@ -367,7 +375,7 @@ describe('ApiKeyTester Component', () => {
 
       // Should show progress bar
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
-      expect(screen.getByText(/testing connection.../i)).toBeInTheDocument();
+      expect(screen.getByTestId('progress-testing-text')).toBeInTheDocument();
 
       // Resolve the promise
       resolvePromise!({

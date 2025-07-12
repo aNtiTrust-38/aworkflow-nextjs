@@ -215,13 +215,13 @@ export function ApiKeyTester() {
             
             {/* Real-time feedback */}
             {isTyping && apiKey && (
-              <p className="mt-1 text-sm text-blue-600">
+              <p className="mt-1 text-sm text-blue-600" data-testid="typing-indicator">
                 Entering {provider === 'anthropic' ? 'Anthropic' : provider === 'openai' ? 'OpenAI' : 'Zotero'} API key...
               </p>
             )}
             
             {realTimeValidation && !isTyping && (
-              <p className={`mt-1 text-sm ${realTimeValidation.isValid ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`mt-1 text-sm ${realTimeValidation.isValid ? 'text-green-600' : 'text-red-600'}`} data-testid="realtime-validation">
                 {realTimeValidation.message}
               </p>
             )}
@@ -260,7 +260,7 @@ export function ApiKeyTester() {
               {testing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Testing...
+                  <span data-testid="button-testing-text">Testing...</span>
                 </>
               ) : (
                 'Test API Key'
@@ -281,7 +281,7 @@ export function ApiKeyTester() {
                   aria-valuemax={100}
                 />
               </div>
-              <p className="text-sm text-gray-600 text-center">Testing connection...</p>
+              <p className="text-sm text-gray-600 text-center" data-testid="progress-testing-text">Testing connection...</p>
             </div>
           )}
 
@@ -296,6 +296,7 @@ export function ApiKeyTester() {
               role="region"
               aria-label="Test results"
               aria-live="polite"
+              data-testid="test-results"
             >
               <div className="flex items-start space-x-3">
                 <div className={`text-xl ${testResult.valid ? 'text-green-600' : 'text-red-600'}`}>

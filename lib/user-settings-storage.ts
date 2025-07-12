@@ -121,6 +121,7 @@ export class UserSettingsStorage {
           result.anthropicApiKey = await this.encryptionService.decryptApiKey(encryptedData);
         } catch (error) {
           console.warn('Failed to decrypt anthropic API key:', error);
+          result.anthropicApiKey = null;
         }
       }
 
@@ -131,6 +132,7 @@ export class UserSettingsStorage {
           result.openaiApiKey = await this.encryptionService.decryptApiKey(encryptedData);
         } catch (error) {
           console.warn('Failed to decrypt OpenAI API key:', error);
+          result.openaiApiKey = null;
         }
       }
 

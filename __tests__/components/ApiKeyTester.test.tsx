@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SessionProvider } from 'next-auth/react';
 import { ApiKeyTester } from '../../components/ApiKeyTester';
 
@@ -40,6 +40,10 @@ describe('ApiKeyTester Component', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   describe('Component Rendering', () => {
     it('should render API key tester with provider options', () => {
       renderWithSession(<ApiKeyTester />);
@@ -48,8 +52,9 @@ describe('ApiKeyTester Component', () => {
       expect(screen.getByText('Test your API keys for connectivity and functionality')).toBeInTheDocument();
       
       // Provider selection
-      expect(screen.getByLabelText(/select provider/i)).toBeInTheDocument();
-      expect(screen.getByDisplayValue('anthropic')).toBeInTheDocument();
+      const providerSelect = screen.getByLabelText(/select provider/i) as HTMLSelectElement;
+      expect(providerSelect).toBeInTheDocument();
+      expect(providerSelect.value).toBe('anthropic');
     });
 
     it('should show API key input field', () => {

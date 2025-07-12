@@ -111,7 +111,7 @@ const Navigation: React.FC = () => {
               </span>
             )}
             {/* Usage/budget indicator */}
-            {usage && (
+            {usage && typeof usage.used === 'number' && typeof usage.budget === 'number' && typeof usage.percentage === 'number' && (
               <span
                 aria-label={`API usage: $${usage.used.toFixed(2)} of $${usage.budget.toFixed(2)} (${usage.percentage.toFixed(0)}%)`}
                 title={`API usage: $${usage.used.toFixed(2)} of $${usage.budget.toFixed(2)} (${usage.percentage.toFixed(0)}%)`}

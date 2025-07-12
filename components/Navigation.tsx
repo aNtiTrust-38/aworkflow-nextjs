@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -13,30 +13,28 @@ const Navigation: React.FC = () => {
   const [status, setStatus] = useState<'complete' | 'incomplete' | null>(null);
   const [apiWarning, setApiWarning] = useState<string | null>(null);
   const [usage, setUsage] = useState<{ used: number; remaining: number; percentage: number; budget: number } | null>(null);
+  const isMounted = useRef(true);
 
   useEffect(() => {
+    isMounted.current = true;
     async function fetchStatusAndApiHealth() {
       try {
-        // Setup status
         const res = await fetch('/api/setup-status');
         if (!res.ok) throw new Error('Failed to fetch setup status');
         const data = await res.json();
-        setStatus(data.isSetup ? 'complete' : 'incomplete');
+        if (isMounted.current) setStatus(data.isSetup ? 'complete' : 'incomplete');
       } catch {
-        setStatus(null);
+        if (isMounted.current) setStatus(null);
       }
 
       try {
-        // API key health check
         const res = await fetch('/api/user-settings');
         if (!res.ok) throw new Error('Failed to fetch user settings');
         const settings = await res.json();
         let warning = null;
-        // Check for missing keys (at least one is required)
         if (!settings.anthropicApiKey && !settings.openaiApiKey) {
           warning = 'API key missing';
         } else {
-          // Validate available keys
           const tests = [];
           if (settings.anthropicApiKey) {
             tests.push(fetch('/api/test-api-keys', {
@@ -52,33 +50,31 @@ const Navigation: React.FC = () => {
               body: JSON.stringify({ provider: 'openai', apiKey: settings.openaiApiKey })
             }));
           }
-          
           const responses = await Promise.all(tests);
           const results = await Promise.all(responses.map(r => r.json()));
-          
           if (results.some(result => !result.valid)) {
             warning = 'API key invalid';
           }
         }
-        setApiWarning(warning);
+        if (isMounted.current) setApiWarning(warning);
       } catch {
-        setApiWarning(null);
+        if (isMounted.current) setApiWarning(null);
       }
     }
     fetchStatusAndApiHealth();
 
-    // Fetch usage/budget
     async function fetchUsage() {
       try {
         const res = await fetch('/api/usage');
         if (!res.ok) throw new Error('Failed to fetch usage');
         const data = await res.json();
-        setUsage(data);
+        if (isMounted.current) setUsage(data);
       } catch {
-        setUsage(null);
+        if (isMounted.current) setUsage(null);
       }
     }
     fetchUsage();
+    return () => { isMounted.current = false; };
   }, []);
 
   return (

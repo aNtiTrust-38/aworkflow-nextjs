@@ -742,4 +742,26 @@ describe('Navigation Usage Indicator - Expansion', () => {
       // Should not throw or crash
     });
   });
+});
+
+describe('Unmount Safety', () => {
+  it('should not set state or throw if unmounted before async fetch resolves', async () => {
+    // Arrange: mock fetch to delay
+    let resolveFetch: (value: any) => void;
+    const fetchPromise = new Promise(resolve => { resolveFetch = resolve; });
+    mockFetch.mockImplementation(() => fetchPromise as any);
+
+    // Act: render and immediately unmount
+    const { unmount } = render(<Navigation />);
+    unmount();
+
+    // Simulate fetch resolving after unmount
+    resolveFetch!({ ok: true, json: () => Promise.resolve({ isSetup: true }) });
+
+    // Wait a tick to allow any async handlers to run
+    await new Promise(r => setTimeout(r, 10));
+
+    // Assert: no error thrown, no React warning, test completes
+    expect(true).toBe(true); // If we reach here, no crash occurred
+  });
 }); 

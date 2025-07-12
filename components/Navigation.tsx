@@ -108,7 +108,7 @@ const Navigation: React.FC = () => {
               />
             )}
             {/* API warning */}
-            {apiWarning && (
+            {apiWarning && !usage && (
               <span
                 aria-label={apiWarning}
                 title={apiWarning}
@@ -118,7 +118,7 @@ const Navigation: React.FC = () => {
               </span>
             )}
             {/* Usage/budget indicator */}
-            {usage && typeof usage.used === 'number' && typeof usage.budget === 'number' && typeof usage.percentage === 'number' && (
+            {usage && typeof usage.used === 'number' && typeof usage.budget === 'number' && typeof usage.percentage === 'number' ? (
               <span
                 aria-label={`API usage: $${usage.used.toFixed(2)} of $${usage.budget.toFixed(2)} (${usage.percentage.toFixed(0)}%)`}
                 title={`API usage: $${usage.used.toFixed(2)} of $${usage.budget.toFixed(2)} (${usage.percentage.toFixed(0)}%)`}
@@ -139,16 +139,16 @@ const Navigation: React.FC = () => {
                       display: 'block',
                       height: '100%',
                       width: `${Math.min(usage.percentage, 100)}%`,
-                      background: usage.percentage >= 80 ? '#ef4444' : '#22c55e',
+                      background: usage.percentage >= 90 ? '#ef4444' : '#22c55e',
                       transition: 'width 0.3s',
                     }}
                   />
                 </span>
-                <span style={{ fontSize: 10, color: usage.percentage >= 80 ? '#ef4444' : '#666', marginLeft: 2 }}>
-                  {usage.percentage.toFixed(0)}<span>%</span>
+                <span style={{ fontSize: 10, color: usage.percentage >= 90 ? '#ef4444' : '#666', marginLeft: 2 }}>
+                  {`${usage.percentage.toFixed(0)}%`}
                 </span>
               </span>
-            )}
+            ) : null}
           </Link>
         </li>
       </ul>

@@ -679,4 +679,58 @@ describe('Navigation Usage Indicator', () => {
       });
     });
   });
+});
+
+describe('Navigation Usage Indicator - Expansion', () => {
+  it('should show an accessible label for the usage bar', async () => {
+    // Mock all fetches for a normal usage scenario
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ isSetup: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ anthropicApiKey: 'sk', openaiApiKey: 'sk' }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ valid: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ valid: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ used: 10, remaining: 90, percentage: 10, budget: 100 }) } as Response);
+    render(<Navigation />);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/api usage/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should display a warning when usage exceeds 90%', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ isSetup: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ anthropicApiKey: 'sk', openaiApiKey: 'sk' }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ valid: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ valid: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ used: 95, remaining: 5, percentage: 95, budget: 100 }) } as Response);
+    render(<Navigation />);
+    await waitFor(() => {
+      expect(screen.getByText('95%')).toHaveStyle({ color: '#ef4444' });
+      expect(screen.getByTitle(/api usage/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should render a tooltip with budget details on hover', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ isSetup: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ anthropicApiKey: 'sk', openaiApiKey: 'sk' }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ valid: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ valid: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ used: 50, remaining: 50, percentage: 50, budget: 100 }) } as Response);
+    render(<Navigation />);
+    await waitFor(() => {
+      const usageEl = screen.getByLabelText(/api usage/i);
+      expect(usageEl).toHaveAttribute('title', expect.stringMatching(/\$50.*100.*50%/i));
+    });
+  });
+
+  it('should handle missing usage gracefully with fallback UI', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ isSetup: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ anthropicApiKey: 'sk', openaiApiKey: 'sk' }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ valid: true }) } as Response);
+    mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ valid: true }) } as Response);
+    mockFetch.mockRejectedValueOnce(new Error('Usage API failed'));
+    render(<Navigation />);
+    await waitFor(() => {
+      expect(screen.getByText('Settings')).toBeInTheDocument();
+      // Should not throw or crash
+    });
+  });
 }); 

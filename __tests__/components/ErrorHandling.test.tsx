@@ -505,3 +505,46 @@ describe('Error Handling Integration', () => {
     });
   });
 }); 
+
+describe('ErrorBoundary - New Behaviors', () => {
+  it('should display error details if provided', () => {
+    const errorDetails = 'Stack trace: line 42';
+    render(
+      <ErrorBoundary fallback={<div>Error! <span>{errorDetails}</span></div>}>
+        <ThrowError shouldThrow={true} message="Test error" />
+      </ErrorBoundary>
+    );
+    expect(screen.getByText(errorDetails)).toBeInTheDocument();
+  });
+
+  it('should render a retry button if onRetry is passed', () => {
+    const onRetry = vi.fn();
+    render(
+      <ErrorBoundary fallback={<button onClick={onRetry}>Retry</button>}>
+        <ThrowError shouldThrow={true} message="Test error" />
+      </ErrorBoundary>
+    );
+    expect(screen.getByText('Retry')).toBeInTheDocument();
+  });
+
+  it('should call onRetry when retry is clicked', () => {
+    const onRetry = vi.fn();
+    render(
+      <ErrorBoundary fallback={<button onClick={onRetry}>Retry</button>}>
+        <ThrowError shouldThrow={true} message="Test error" />
+      </ErrorBoundary>
+    );
+    fireEvent.click(screen.getByText('Retry'));
+    expect(onRetry).toHaveBeenCalled();
+  });
+
+  it('should support a custom error icon in fallback', () => {
+    render(
+      <ErrorBoundary fallback={<div><span role="img" aria-label="error-icon">🚨</span> Custom error</div>}>
+        <ThrowError shouldThrow={true} message="Test error" />
+      </ErrorBoundary>
+    );
+    expect(screen.getByLabelText('error-icon')).toBeInTheDocument();
+    expect(screen.getByText('Custom error')).toBeInTheDocument();
+  });
+}); 

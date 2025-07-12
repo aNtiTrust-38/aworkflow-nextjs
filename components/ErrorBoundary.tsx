@@ -23,7 +23,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error if needed
-    if (process.env.NODE_ENV !== 'test') {
+    if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
       // eslint-disable-next-line no-console
       console.error('ErrorBoundary caught:', error, errorInfo);
     }
@@ -36,14 +36,26 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
+      // If a custom fallback is provided, render it
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+      // Default fallback UI with accessible alert role
+      return (
         <div role="alert" className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
           <h3 className="text-red-800 font-medium mb-2">Something went wrong</h3>
           <p className="text-red-700 mb-4">{this.state.error?.message || 'An unexpected error occurred.'}</p>
-          <button onClick={this.handleReset} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">Reset</button>
+          <button
+            onClick={this.handleReset}
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            aria-label="Reset error state"
+          >
+            Reset
+          </button>
         </div>
       );
     }
+    // Render children if no error
     return this.props.children;
   }
 }

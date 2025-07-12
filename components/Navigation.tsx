@@ -103,22 +103,26 @@ const Navigation: React.FC = () => {
                 }}
               />
             )}
-            {/* API warning */}
-            {apiWarning && !usage && (
+            {/* API warning: always render if present */}
+            {apiWarning && (
               <span
                 aria-label={apiWarning}
                 title={apiWarning}
                 style={{ color: '#f59e42', marginLeft: 4, fontSize: 16 }}
+                data-testid="api-warning"
+                role="status"
               >
                 ⚠️
               </span>
             )}
-            {/* Usage/budget indicator */}
-            {usage && typeof usage.used === 'number' && typeof usage.budget === 'number' && typeof usage.percentage === 'number' ? (
+            {/* Usage/budget indicator: always render if present */}
+            {usage && typeof usage.used === 'number' && typeof usage.budget === 'number' && typeof usage.percentage === 'number' && (
               <span
                 aria-label={`API usage: $${usage.used.toFixed(2)} of $${usage.budget.toFixed(2)} (${usage.percentage.toFixed(0)}%)`}
                 title={`API usage: $${usage.used.toFixed(2)} of $${usage.budget.toFixed(2)} (${usage.percentage.toFixed(0)}%)`}
                 style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 2 }}
+                data-testid="api-usage-indicator"
+                role="status"
               >
                 <span
                   style={{
@@ -144,7 +148,7 @@ const Navigation: React.FC = () => {
                   {`${usage.percentage.toFixed(0)}%`}
                 </span>
               </span>
-            ) : null}
+            )}
           </Link>
         </li>
       </ul>

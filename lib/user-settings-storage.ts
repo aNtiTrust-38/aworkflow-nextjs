@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { EncryptionService } from './encryption-service';
-import { EncryptionResult } from '../types/settings';
 
 interface ApiKeysData {
   anthropicApiKey?: string | null;
@@ -118,7 +117,7 @@ export class UserSettingsStorage {
       // Decrypt anthropic key
       if (settings.anthropicApiKey) {
         try {
-          const encryptedData = JSON.parse(settings.anthropicApiKey) as EncryptionResult;
+          const encryptedData = JSON.parse(settings.anthropicApiKey) as any; // Removed EncryptionResult import
           result.anthropicApiKey = await this.encryptionService.decryptApiKey(encryptedData);
         } catch (error) {
           console.warn('Failed to decrypt anthropic API key:', error);
@@ -128,7 +127,7 @@ export class UserSettingsStorage {
       // Decrypt OpenAI key
       if (settings.openaiApiKey) {
         try {
-          const encryptedData = JSON.parse(settings.openaiApiKey) as EncryptionResult;
+          const encryptedData = JSON.parse(settings.openaiApiKey) as any; // Removed EncryptionResult import
           result.openaiApiKey = await this.encryptionService.decryptApiKey(encryptedData);
         } catch (error) {
           console.warn('Failed to decrypt OpenAI API key:', error);
@@ -181,13 +180,14 @@ export class UserSettingsStorage {
         where: { userId }
       });
 
+      // Sanitize and return defaults for corrupted values
       return {
-        citationStyle: settings?.citationStyle || 'apa',
-        defaultLanguage: settings?.defaultLanguage || 'en',
-        adhdFriendlyMode: settings?.adhdFriendlyMode || false,
-        theme: settings?.theme || 'system',
-        reducedMotion: settings?.reducedMotion || false,
-        highContrast: settings?.highContrast || false
+        citationStyle: settings?.citationStyle && typeof settings.citationStyle === 'string' && settings.citationStyle.length > 0 ? settings.citationStyle : 'apa',
+        defaultLanguage: settings?.defaultLanguage && typeof settings.defaultLanguage === 'string' && settings.defaultLanguage.length > 0 ? settings.defaultLanguage : 'en',
+        adhdFriendlyMode: typeof settings?.adhdFriendlyMode === 'boolean' ? settings.adhdFriendlyMode : false,
+        theme: settings?.theme && typeof settings.theme === 'string' && settings.theme.length > 0 ? settings.theme : 'system',
+        reducedMotion: typeof settings?.reducedMotion === 'boolean' ? settings.reducedMotion : false,
+        highContrast: typeof settings?.highContrast === 'boolean' ? settings.highContrast : false
       };
     } catch (error: any) {
       throw new Error(`Failed to retrieve preferences: ${error.message}`);
@@ -230,9 +230,16 @@ export class UserSettingsStorage {
         where: { userId }
       });
 
+      // Sanitize and return defaults for corrupted values
+      let monthlyBudget = typeof settings?.monthlyBudget === 'number' && settings.monthlyBudget > 0 ? settings.monthlyBudget : 100;
+      let preferredProvider: 'auto' | 'anthropic' | 'openai' =
+        typeof settings?.preferredProvider === 'string' && ['auto', 'anthropic', 'openai'].includes(settings.preferredProvider)
+          ? settings.preferredProvider as any
+          : 'auto';
+
       return {
-        monthlyBudget: settings?.monthlyBudget || 100,
-        preferredProvider: (settings?.preferredProvider as 'auto' | 'anthropic' | 'openai') || 'auto'
+        monthlyBudget,
+        preferredProvider
       };
     } catch (error: any) {
       throw new Error(`Failed to retrieve AI settings: ${error.message}`);

@@ -1,23 +1,24 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PrismaClient } from '@prisma/client';
 import { UserSettingsStorage } from '../lib/user-settings-storage';
 import { generateMasterKey } from '../lib/crypto';
 
+// Fix for Node globals in test
+declare const process: any;
+declare function require(name: string): any;
+
 const prisma = new PrismaClient();
+
+// YOLO MODE: Optimized test setup/teardown for speed
 
 describe('UserSettingsStorage', () => {
   let settingsStorage: UserSettingsStorage;
   let testUser: any;
 
-  beforeEach(async () => {
-    // Set encryption key for tests
+  beforeAll(async () => {
     process.env.SETTINGS_ENCRYPTION_KEY = generateMasterKey();
-    
-    // Clean up test data
     await prisma.userSettings.deleteMany();
     await prisma.user.deleteMany();
-    
-    // Create test user
     testUser = await prisma.user.create({
       data: {
         name: 'Settings Test User',
@@ -25,15 +26,14 @@ describe('UserSettingsStorage', () => {
         password: 'hashed_password'
       }
     });
-    
     settingsStorage = new UserSettingsStorage();
   });
 
-  afterEach(async () => {
-    // Clean up test data
+  afterAll(async () => {
     await prisma.userSettings.deleteMany();
     await prisma.user.deleteMany();
     delete process.env.SETTINGS_ENCRYPTION_KEY;
+    await prisma.$disconnect();
   });
 
   describe('API Key Storage', () => {
@@ -109,13 +109,22 @@ describe('UserSettingsStorage', () => {
     });
 
     it('should use default values for new users', async () => {
-      const preferences = await settingsStorage.getPreferences(testUser.id);
+      // Create a new user for this test
+      const newUser = await prisma.user.create({
+        data: {
+          name: 'Default Pref User',
+          email: `default-pref-${Date.now()}@example.com`,
+          password: 'pw',
+        }
+      });
+      const preferences = await settingsStorage.getPreferences(newUser.id);
       expect(preferences.citationStyle).toBe('apa');
       expect(preferences.defaultLanguage).toBe('en');
       expect(preferences.adhdFriendlyMode).toBe(false);
       expect(preferences.theme).toBe('system');
       expect(preferences.reducedMotion).toBe(false);
       expect(preferences.highContrast).toBe(false);
+      await prisma.user.delete({ where: { id: newUser.id } });
     });
 
     it('should handle partial preference updates', async () => {
@@ -151,9 +160,18 @@ describe('UserSettingsStorage', () => {
     });
 
     it('should use default AI settings for new users', async () => {
-      const aiSettings = await settingsStorage.getAiSettings(testUser.id);
+      // Create a new user for this test
+      const newUser = await prisma.user.create({
+        data: {
+          name: 'Default AI User',
+          email: `default-ai-${Date.now()}@example.com`,
+          password: 'pw',
+        }
+      });
+      const aiSettings = await settingsStorage.getAiSettings(newUser.id);
       expect(aiSettings.monthlyBudget).toBe(100);
       expect(aiSettings.preferredProvider).toBe('auto');
+      await prisma.user.delete({ where: { id: newUser.id } });
     });
   });
 
@@ -219,8 +237,7 @@ describe('UserSettingsStorage', () => {
 
     it('should handle deletion of non-existent settings', async () => {
       // Should not throw error
-      await expect(settingsStorage.deleteUserSettings('non-existent'))
-        .resolves.not.toThrow();
+      await expect(settingsStorage.deleteUserSettings('non-existent')).resolves.toBeUndefined();
     });
   });
 
@@ -235,8 +252,7 @@ describe('UserSettingsStorage', () => {
     });
 
     it('should validate user IDs', async () => {
-      await expect(settingsStorage.getCompleteSettings(''))
-        .rejects.toThrow(/user id/i);
+      await expect(settingsStorage.getCompleteSettings('')).rejects.toThrow(/user id/i);
       
       await expect(settingsStorage.storeCompleteSettings('', {}))
         .rejects.toThrow(/user id/i);
@@ -245,19 +261,20 @@ describe('UserSettingsStorage', () => {
 
   describe('Security and Data Integrity', () => {
     it('should ensure API keys are encrypted in database', async () => {
+      // Ensure encryption key is set
+      if (!process.env.SETTINGS_ENCRYPTION_KEY) {
+        process.env.SETTINGS_ENCRYPTION_KEY = generateMasterKey();
+      }
       const apiKey = 'sk-test-encryption-check';
-      
       await settingsStorage.storeApiKeys(testUser.id, {
         anthropicApiKey: apiKey
       });
-      
       // Query database directly to check encryption
       const rawSettings = await prisma.userSettings.findUnique({
         where: { userId: testUser.id }
       });
-      
       expect(rawSettings?.anthropicApiKey).toBeDefined();
-      expect(rawSettings?.anthropicApiKey).not.toBe(apiKey);
+      expect(rawSettings?.anthropicApiKey === apiKey).toBe(false);
       expect(rawSettings?.anthropicApiKey).toContain(':'); // Encrypted format
     });
 
@@ -278,6 +295,58 @@ describe('UserSettingsStorage', () => {
       // Should complete without errors
       const final = await settingsStorage.getPreferences(testUser.id);
       expect(final.citationStyle).toMatch(/^style-\d+$/);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle corrupted data gracefully', async () => {
+      // Corrupt the existing userSettings row for the test user
+      await prisma.userSettings.update({
+        where: { userId: testUser.id },
+        data: {
+          anthropicApiKey: '{not-json}',
+          openaiApiKey: '{not-json}',
+          monthlyBudget: -1,
+          preferredProvider: '',
+          citationStyle: '',
+          defaultLanguage: '',
+          adhdFriendlyMode: false,
+          theme: '',
+          reducedMotion: false,
+          highContrast: false,
+        }
+      });
+      // Should not throw, should return defaults/nulls
+      const keys = await settingsStorage.getApiKeys(testUser.id);
+      expect(keys.anthropicApiKey).toBeNull();
+      expect(keys.openaiApiKey).toBeNull();
+      const prefs = await settingsStorage.getPreferences(testUser.id);
+      expect(prefs.citationStyle).toBe('apa');
+      const ai = await settingsStorage.getAiSettings(testUser.id);
+      expect(ai.monthlyBudget).toBe(100);
+    });
+
+    it('should handle missing fields in DB gracefully', async () => {
+      // Remove userSettings row
+      await prisma.userSettings.deleteMany({ where: { userId: testUser.id } });
+      // Should return defaults/nulls
+      const keys = await settingsStorage.getApiKeys(testUser.id);
+      expect(keys.anthropicApiKey).toBeNull();
+      expect(keys.openaiApiKey).toBeNull();
+      const prefs = await settingsStorage.getPreferences(testUser.id);
+      expect(prefs.citationStyle).toBe('apa');
+      const ai = await settingsStorage.getAiSettings(testUser.id);
+      expect(ai.monthlyBudget).toBe(100);
+    });
+
+    it('should handle concurrent writes without data loss', async () => {
+      // Simulate two writes at once
+      const p1 = settingsStorage.storePreferences(testUser.id, { theme: 'light' });
+      const p2 = settingsStorage.storePreferences(testUser.id, { theme: 'dark' });
+      await Promise.all([p1, p2]);
+      // Should have one of the values, not throw or corrupt
+      const prefs = await settingsStorage.getPreferences(testUser.id);
+      expect(['light', 'dark']).toContain(prefs.theme);
     });
   });
 });

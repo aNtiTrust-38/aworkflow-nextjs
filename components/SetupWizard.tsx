@@ -446,6 +446,7 @@ export function SetupWizard() {
               aria-valuenow={wizardState.currentStep + 1}
               aria-valuemin={0}
               aria-valuemax={steps.length}
+              data-testid="setupwizard-progressbar"
             />
           </div>
         </div>
@@ -743,12 +744,13 @@ export function SetupWizard() {
             </div>
           )}
           {/* Navigation Buttons - only one set per step */}
-          <div className="flex justify-between mt-8">
+          <div className="flex justify-between mt-8" data-testid="setupwizard-nav-buttons">
             <button
               onClick={prevStep}
               disabled={wizardState.currentStep === 0}
               className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400"
               tabIndex={0}
+              data-testid="setupwizard-back-btn"
             >
               Back
             </button>
@@ -758,6 +760,7 @@ export function SetupWizard() {
                 disabled={completing || !canProceed()}
                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
                 tabIndex={0}
+                data-testid="setupwizard-complete-btn"
               >
                 {completing ? 'Completing Setup...' : 'Complete Setup'}
               </button>
@@ -767,6 +770,7 @@ export function SetupWizard() {
                 disabled={!canProceed()}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
                 tabIndex={0}
+                data-testid="setupwizard-continue-btn"
               >
                 Continue
               </button>

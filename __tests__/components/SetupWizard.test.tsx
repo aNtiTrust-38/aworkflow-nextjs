@@ -156,19 +156,19 @@ describe('SetupWizard', () => {
       } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText('Welcome to Academic Workflow Assistant'));
+      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
     });
 
     it('should show progress indicators for all steps', async () => {
       await waitFor(() => {
         const stepIndicator = screen.getByText(/Step \d+ of \d+/);
         expect(stepIndicator).toBeInTheDocument();
-        expect(screen.getByRole('progressbar')).toBeInTheDocument();
+        expect(screen.getByTestId('setupwizard-progressbar')).toBeInTheDocument();
       });
     });
 
     it('should navigate to next step on continue', async () => {
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       fireEvent.click(continueButton);
 
       await waitFor(() => {
@@ -179,7 +179,7 @@ describe('SetupWizard', () => {
 
     it('should navigate to previous step on back', async () => {
       // First navigate to step 2
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       fireEvent.click(continueButton);
 
       await waitFor(() => {
@@ -204,24 +204,24 @@ describe('SetupWizard', () => {
 
     it('should show finish button on last step', async () => {
       // Navigate to last step
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       
       // Step 1 to 2
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
       
       // Provide required API key before navigating
-      const anthropicInput = screen.getByLabelText(/anthropic api key/i);
+      const anthropicInput = screen.getAllByLabelText(/anthropic api key/i)[0];
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       
       // Provide required API key and budget before navigating
-      const anthropicInput2 = screen.getByLabelText(/anthropic api key/i);
+      const anthropicInput2 = screen.getAllByLabelText(/anthropic api key/i)[0];
       fireEvent.change(anthropicInput2, { target: { value: 'sk-ant-valid-key' } });
       const budgetInput = screen.getByLabelText(/monthly budget/i);
       fireEvent.change(budgetInput, { target: { value: '100' } });
       // Step 2 to 3
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
+      await waitFor(() => screen.getAllByRole('heading').find(h => /Academic Preferences/i.test(h.textContent)));
       
       // Step 3 to 4
       fireEvent.click(continueButton);
@@ -259,10 +259,10 @@ describe('SetupWizard', () => {
       } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText('Welcome to Academic Workflow Assistant'));
+      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
       
       // Navigate to API keys step
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
     });
@@ -315,7 +315,7 @@ describe('SetupWizard', () => {
     });
 
     it('should prevent navigation without required fields', async () => {
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       
       // Should be disabled without required API key
       expect(continueButton).toBeDisabled();
@@ -328,7 +328,7 @@ describe('SetupWizard', () => {
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       fireEvent.change(budgetInput, { target: { value: '100' } });
 
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       expect(continueButton).not.toBeDisabled();
     });
   });
@@ -372,24 +372,24 @@ describe('SetupWizard', () => {
       } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText('Welcome to Academic Workflow Assistant'));
+      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
       
       // Navigate to preferences step
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
       
       // Provide required API key before navigating
-      const anthropicInput = screen.getByLabelText(/anthropic api key/i);
+      const anthropicInput = screen.getAllByLabelText(/anthropic api key/i)[0];
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       
       // Provide required API key and budget before navigating
-      const anthropicInput2 = screen.getByLabelText(/anthropic api key/i);
+      const anthropicInput2 = screen.getAllByLabelText(/anthropic api key/i)[0];
       fireEvent.change(anthropicInput2, { target: { value: 'sk-ant-valid-key' } });
       const budgetInput = screen.getByLabelText(/monthly budget/i);
       fireEvent.change(budgetInput, { target: { value: '100' } });
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
+      await waitFor(() => screen.getAllByRole('heading').find(h => /Academic Preferences/i.test(h.textContent)));
     });
 
     it('should display preference settings', async () => {
@@ -415,7 +415,7 @@ describe('SetupWizard', () => {
     });
 
     it('should allow navigation with default preferences', async () => {
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       expect(continueButton).not.toBeDisabled();
     });
   });
@@ -471,24 +471,24 @@ describe('SetupWizard', () => {
       } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText('Welcome to Academic Workflow Assistant'));
+      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
       
       // Navigate to review step
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
       
       // Provide required API key before navigating
-      const anthropicInput = screen.getByLabelText(/anthropic api key/i);
+      const anthropicInput = screen.getAllByLabelText(/anthropic api key/i)[0];
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       
       // Provide required API key and budget before navigating
-      const anthropicInput2 = screen.getByLabelText(/anthropic api key/i);
+      const anthropicInput2 = screen.getAllByLabelText(/anthropic api key/i)[0];
       fireEvent.change(anthropicInput2, { target: { value: 'sk-ant-valid-key' } });
       const budgetInput = screen.getByLabelText(/monthly budget/i);
       fireEvent.change(budgetInput, { target: { value: '100' } });
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
+      await waitFor(() => screen.getAllByRole('heading').find(h => /Academic Preferences/i.test(h.textContent)));
       
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByText('Review & Complete'));
@@ -561,8 +561,8 @@ describe('SetupWizard', () => {
       renderWithSession(<SetupWizard />);
 
       await waitFor(() => {
-        expect(screen.getByRole('progressbar')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument();
+        expect(screen.getByTestId('setupwizard-progressbar')).toBeInTheDocument();
+        expect(screen.getByTestId('setupwizard-continue-btn')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
       });
     });
@@ -614,15 +614,15 @@ describe('SetupWizard', () => {
         } as Response);
 
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByText('Welcome to Academic Workflow Assistant'));
+      await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
 
       // Navigate to API keys step
-      const continueButton = screen.getByRole('button', { name: /continue/i });
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
 
       // Fill in API key
-      const anthropicInput = screen.getByLabelText(/anthropic api key/i);
+      const anthropicInput = screen.getAllByLabelText(/anthropic api key/i)[0];
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-test-key' } });
 
       // Navigate to next step (should save automatically)
@@ -659,7 +659,7 @@ describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
     renderWithSession(<SetupWizard />);
     await waitFor(() => {
       // Should resume at preferences step
-      expect(screen.getByRole('heading', { name: /Academic Preferences/i })).toBeInTheDocument();
+      expect(screen.getAllByRole('heading').find(h => /Academic Preferences/i.test(h.textContent))).toBeInTheDocument();
     });
   });
 
@@ -696,16 +696,16 @@ describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
     } as Response);
 
     renderWithSession(<SetupWizard />);
-    await waitFor(() => screen.getByText('Welcome to Academic Workflow Assistant'));
+    await waitFor(() => screen.getByText((content, node) => !!node && !!node.textContent && node.textContent.includes('Welcome to Academic Workflow Assistant')));
 
     // Rapidly click continue multiple times
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    fireEvent.click(continueButton);
-    fireEvent.click(continueButton);
-    fireEvent.click(continueButton);
+    const continueButtons = screen.getAllByTestId('setupwizard-continue-btn');
+    fireEvent.click(continueButtons[0]);
+    fireEvent.click(continueButtons[0]);
+    fireEvent.click(continueButtons[0]);
     // Should not crash or skip steps
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /AI Provider Configuration/i })).toBeInTheDocument();
+      expect(screen.getAllByRole('heading').find(h => /AI Provider Configuration/i.test(h.textContent))).toBeInTheDocument();
     });
   });
 
@@ -722,16 +722,17 @@ describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
     } as Response);
 
     renderWithSession(<SetupWizard />);
-    await waitFor(() => screen.getByRole('progressbar'));
+    await waitFor(() => screen.getAllByTestId('setupwizard-progressbar'));
     // Check ARIA attributes
-    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow');
+    const progressbars = screen.getAllByTestId('setupwizard-progressbar');
+    expect(progressbars[0]).toHaveAttribute('aria-valuenow');
     // Simulate keyboard navigation
-    const continueButton = screen.getByRole('button', { name: /continue/i });
-    continueButton.focus();
-    expect(document.activeElement).toBe(continueButton);
+    const continueButtons = screen.getAllByTestId('setupwizard-continue-btn');
+    continueButtons[0].focus();
+    expect(document.activeElement).toBe(continueButtons[0]);
     // Simulate pressing Enter
-    fireEvent.keyDown(continueButton, { key: 'Enter', code: 'Enter' });
+    fireEvent.keyDown(continueButtons[0], { key: 'Enter', code: 'Enter' });
     // Should still be accessible and not crash
-    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument();
+    expect(continueButtons[0]).toBeInTheDocument();
   });
 });

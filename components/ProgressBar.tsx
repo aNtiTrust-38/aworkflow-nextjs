@@ -9,8 +9,15 @@ interface ProgressBarProps {
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ value, min = 1, max = 100, label = 'Progress', testId = 'progress-percentage' }) => {
-  // Clamp value
-  const percent = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+  // Handle edge case where min equals max
+  let percent = 0;
+  if (min === max) {
+    percent = 100;
+  } else {
+    // Clamp value and round to 2 decimal places
+    percent = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+    percent = Math.round(percent * 100) / 100; // Round to 2 decimal places
+  }
   return (
     <div
       className="w-full bg-gray-200 rounded-full h-2"

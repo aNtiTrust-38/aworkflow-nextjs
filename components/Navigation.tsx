@@ -32,24 +32,31 @@ const Navigation: React.FC = () => {
         if (!res.ok) throw new Error('Failed to fetch user settings');
         const settings = await res.json();
         let warning = null;
-        // Check for missing keys
-        if (!settings.anthropicApiKey || !settings.openaiApiKey) {
+        // Check for missing keys (at least one is required)
+        if (!settings.anthropicApiKey && !settings.openaiApiKey) {
           warning = 'API key missing';
         } else {
-          // Validate keys
-          const testAnthropic = await fetch('/api/test-api-keys', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider: 'anthropic', apiKey: settings.anthropicApiKey })
-          });
-          const testOpenai = await fetch('/api/test-api-keys', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider: 'openai', apiKey: settings.openaiApiKey })
-          });
-          const resultAnthropic = await testAnthropic.json();
-          const resultOpenai = await testOpenai.json();
-          if (!resultAnthropic.valid || !resultOpenai.valid) {
+          // Validate available keys
+          const tests = [];
+          if (settings.anthropicApiKey) {
+            tests.push(fetch('/api/test-api-keys', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ provider: 'anthropic', apiKey: settings.anthropicApiKey })
+            }));
+          }
+          if (settings.openaiApiKey) {
+            tests.push(fetch('/api/test-api-keys', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ provider: 'openai', apiKey: settings.openaiApiKey })
+            }));
+          }
+          
+          const responses = await Promise.all(tests);
+          const results = await Promise.all(responses.map(r => r.json()));
+          
+          if (results.some(result => !result.valid)) {
             warning = 'API key invalid';
           }
         }

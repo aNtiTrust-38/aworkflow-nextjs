@@ -301,6 +301,8 @@ describe('SetupWizard', () => {
         })
       } as Response);
 
+      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
+
       const anthropicInput = screen.getByLabelText(/anthropic api key/i);
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
 

@@ -485,7 +485,7 @@ export function SetupWizard() {
               )}
               {wizardState.testResults.anthropic && (
                 <div className={`mt-2 p-2 rounded ${wizardState.testResults.anthropic.valid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {wizardState.testResults.anthropic.valid ? '✓' : '✗'} {wizardState.testResults.anthropic.details.message}
+                  {wizardState.testResults.anthropic.valid ? '✓' : '✗'} {wizardState.testResults.anthropic.details?.message || 'Test completed'}
                 </div>
               )}
             </div>
@@ -522,7 +522,7 @@ export function SetupWizard() {
               )}
               {wizardState.testResults.openai && (
                 <div className={`mt-2 p-2 rounded ${wizardState.testResults.openai.valid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {wizardState.testResults.openai.valid ? '✓' : '✗'} {wizardState.testResults.openai.details.message}
+                  {wizardState.testResults.openai.valid ? '✓' : '✗'} {wizardState.testResults.openai.details?.message || 'Test completed'}
                 </div>
               )}
             </div>
@@ -677,7 +677,6 @@ export function SetupWizard() {
 
         {currentStepData.id === 'review' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Review & Complete</h2>
             <h3 className="text-lg font-semibold text-gray-900">Configuration Summary</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -107,6 +107,7 @@ describe('SetupWizard', () => {
 
   describe('Step Navigation', () => {
     beforeEach(async () => {
+      // Step 1: Welcome
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -115,6 +116,42 @@ describe('SetupWizard', () => {
           nextStep: 'welcome',
           requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
           missingSettings: ['anthropicApiKey', 'monthlyBudget']
+        })
+      } as Response);
+
+      // Step 2: API Keys
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: ['welcome'],
+          nextStep: 'apiKeys',
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: []
+        })
+      } as Response);
+
+      // Step 3: Preferences
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: ['welcome', 'apiKeys'],
+          nextStep: 'preferences',
+          requiredSettings: [],
+          missingSettings: []
+        })
+      } as Response);
+
+      // Step 4: Review
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: ['welcome', 'apiKeys', 'preferences'],
+          nextStep: 'review',
+          requiredSettings: [],
+          missingSettings: []
         })
       } as Response);
 
@@ -177,6 +214,11 @@ describe('SetupWizard', () => {
       const anthropicInput = screen.getByLabelText(/anthropic api key/i);
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       
+      // Provide required API key and budget before navigating
+      const anthropicInput2 = screen.getByLabelText(/anthropic api key/i);
+      fireEvent.change(anthropicInput2, { target: { value: 'sk-ant-valid-key' } });
+      const budgetInput = screen.getByLabelText(/monthly budget/i);
+      fireEvent.change(budgetInput, { target: { value: '100' } });
       // Step 2 to 3
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
@@ -192,14 +234,27 @@ describe('SetupWizard', () => {
 
   describe('API Keys Configuration Step', () => {
     beforeEach(async () => {
+      // Step 1: Welcome
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
           isSetup: false,
           completedSteps: [],
+          nextStep: 'welcome',
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: ['anthropicApiKey', 'monthlyBudget']
+        })
+      } as Response);
+
+      // Step 2: API Keys
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: ['welcome'],
           nextStep: 'apiKeys',
-          requiredSettings: ['anthropicApiKey'],
-          missingSettings: ['anthropicApiKey']
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: []
         })
       } as Response);
 
@@ -278,6 +333,31 @@ describe('SetupWizard', () => {
 
   describe('Academic Preferences Step', () => {
     beforeEach(async () => {
+      // Step 1: Welcome
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: [],
+          nextStep: 'welcome',
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: ['anthropicApiKey', 'monthlyBudget']
+        })
+      } as Response);
+
+      // Step 2: API Keys
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: ['welcome'],
+          nextStep: 'apiKeys',
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: []
+        })
+      } as Response);
+
+      // Step 3: Preferences
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -301,6 +381,11 @@ describe('SetupWizard', () => {
       const anthropicInput = screen.getByLabelText(/anthropic api key/i);
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       
+      // Provide required API key and budget before navigating
+      const anthropicInput2 = screen.getByLabelText(/anthropic api key/i);
+      fireEvent.change(anthropicInput2, { target: { value: 'sk-ant-valid-key' } });
+      const budgetInput = screen.getByLabelText(/monthly budget/i);
+      fireEvent.change(budgetInput, { target: { value: '100' } });
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
     });
@@ -335,6 +420,43 @@ describe('SetupWizard', () => {
 
   describe('Review & Complete Step', () => {
     beforeEach(async () => {
+      // Step 1: Welcome
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: [],
+          nextStep: 'welcome',
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: ['anthropicApiKey', 'monthlyBudget']
+        })
+      } as Response);
+
+      // Step 2: API Keys
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: ['welcome'],
+          nextStep: 'apiKeys',
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: []
+        })
+      } as Response);
+
+      // Step 3: Preferences
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: ['welcome', 'apiKeys'],
+          nextStep: 'preferences',
+          requiredSettings: [],
+          missingSettings: []
+        })
+      } as Response);
+
+      // Step 4: Review
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -358,6 +480,11 @@ describe('SetupWizard', () => {
       const anthropicInput = screen.getByLabelText(/anthropic api key/i);
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       
+      // Provide required API key and budget before navigating
+      const anthropicInput2 = screen.getByLabelText(/anthropic api key/i);
+      fireEvent.change(anthropicInput2, { target: { value: 'sk-ant-valid-key' } });
+      const budgetInput = screen.getByLabelText(/monthly budget/i);
+      fireEvent.change(budgetInput, { target: { value: '100' } });
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByRole('heading', { name: /Academic Preferences/i }));
       
@@ -417,14 +544,15 @@ describe('SetupWizard', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels and roles', async () => {
+      // Step 1: Welcome
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
           isSetup: false,
           completedSteps: [],
           nextStep: 'welcome',
-          requiredSettings: [],
-          missingSettings: []
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: ['anthropicApiKey', 'monthlyBudget']
         })
       } as Response);
 
@@ -438,14 +566,15 @@ describe('SetupWizard', () => {
     });
 
     it('should support keyboard navigation', async () => {
+      // Step 1: Welcome
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
           isSetup: false,
           completedSteps: [],
           nextStep: 'welcome',
-          requiredSettings: [],
-          missingSettings: []
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: ['anthropicApiKey', 'monthlyBudget']
         })
       } as Response);
 
@@ -462,6 +591,7 @@ describe('SetupWizard', () => {
 
   describe('Data Persistence', () => {
     it('should save progress between steps', async () => {
+      // Step 1: Welcome
       mockFetch
         .mockResolvedValueOnce({
           ok: true,

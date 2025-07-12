@@ -3,9 +3,11 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Navigation from '../../components/Navigation';
 
+// Fix for TypeScript global
+declare const global: any;
+
 // Mock fetch for API calls
-global.fetch = vi.fn();
-const mockFetch = vi.mocked(fetch);
+const mockFetch = vi.mocked(global.fetch = vi.fn());
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -15,7 +17,6 @@ vi.mock('next/navigation', () => ({
 describe('Navigation Usage Indicator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    cleanup();
   });
 
   afterEach(() => {
@@ -65,6 +66,10 @@ describe('Navigation Usage Indicator', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/api usage.*25\.50.*100.*25%/i)).toBeInTheDocument();
+        // Percent is split into two spans, so use a function matcher
+        expect(screen.getByText((content, node) => {
+          return node?.textContent === '26%';
+        })).toBeInTheDocument();
       });
     });
 
@@ -109,8 +114,7 @@ describe('Navigation Usage Indicator', () => {
       render(<Navigation />);
 
       await waitFor(() => {
-        const usageText = screen.getByText('75%');
-        expect(usageText).toBeInTheDocument();
+        expect(screen.getByText((content, node) => node?.textContent === '75%')).toBeInTheDocument();
       });
     });
 
@@ -155,7 +159,7 @@ describe('Navigation Usage Indicator', () => {
       render(<Navigation />);
 
       await waitFor(() => {
-        const usageText = screen.getByText('85%');
+        const usageText = screen.getByText((content, node) => node?.textContent === '85%');
         expect(usageText).toBeInTheDocument();
         expect(usageText).toHaveStyle({ color: '#ef4444' });
       });
@@ -202,7 +206,7 @@ describe('Navigation Usage Indicator', () => {
       render(<Navigation />);
 
       await waitFor(() => {
-        const usageText = screen.getByText('50%');
+        const usageText = screen.getByText((content, node) => node?.textContent === '50%');
         expect(usageText).toBeInTheDocument();
         expect(usageText).toHaveStyle({ color: '#666' });
       });
@@ -245,7 +249,7 @@ describe('Navigation Usage Indicator', () => {
       });
 
       // Should not show usage indicator
-      expect(screen.queryByLabelText(/api usage/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/api usage/i)).toBeNull();
     });
   });
 
@@ -292,6 +296,7 @@ describe('Navigation Usage Indicator', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/api usage.*75\.00.*250.*30%/i)).toBeInTheDocument();
+        expect(screen.getByText((content, node) => node?.textContent === '30%')).toBeInTheDocument();
       });
     });
 
@@ -337,7 +342,7 @@ describe('Navigation Usage Indicator', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/api usage.*0\.00.*100.*0%/i)).toBeInTheDocument();
-        expect(screen.getByText('0%')).toBeInTheDocument();
+        expect(screen.getByText((content, node) => node?.textContent === '0%')).toBeInTheDocument();
       });
     });
 
@@ -383,7 +388,7 @@ describe('Navigation Usage Indicator', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/api usage.*120\.00.*100.*120%/i)).toBeInTheDocument();
-        expect(screen.getByText('120%')).toBeInTheDocument();
+        expect(screen.getByText((content, node) => node?.textContent === '120%')).toBeInTheDocument();
       });
     });
   });
@@ -513,9 +518,9 @@ describe('Navigation Usage Indicator', () => {
       await waitFor(() => {
         expect(screen.getByText('Settings')).toBeInTheDocument();
       });
-
       // Should not show API warning
-      expect(screen.queryByText('⚠️')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('API key invalid')).toBeNull();
+      expect(screen.queryByText('⚠️')).toBeNull();
     });
   });
 
@@ -537,8 +542,8 @@ describe('Navigation Usage Indicator', () => {
       });
 
       // Should not show any indicators when APIs fail
-      expect(screen.queryByLabelText(/api usage/i)).not.toBeInTheDocument();
-      expect(screen.queryByText('⚠️')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/api usage/i)).toBeNull();
+      expect(screen.queryByText('⚠️')).toBeNull();
     });
 
     it('should handle malformed API responses', async () => {
@@ -585,7 +590,7 @@ describe('Navigation Usage Indicator', () => {
       });
 
       // Should not show usage indicator with malformed data
-      expect(screen.queryByLabelText(/api usage/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/api usage/i)).toBeNull();
     });
   });
 
@@ -634,6 +639,7 @@ describe('Navigation Usage Indicator', () => {
         const usageIndicator = screen.getByLabelText(/api usage.*42\.50.*100.*42%/i);
         expect(usageIndicator).toBeInTheDocument();
         expect(usageIndicator).toHaveAttribute('title');
+        expect(screen.getByText((content, node) => node?.textContent === '42%')).toBeInTheDocument();
       });
     });
 

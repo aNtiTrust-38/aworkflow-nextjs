@@ -23,9 +23,17 @@ const { getUserSettingsStorage } = await import('../../lib/user-settings-storage
 const mockGetServerSession = vi.mocked(getServerSession);
 const mockGetUserSettingsStorage = vi.mocked(getUserSettingsStorage);
 const mockStorage = {
+  prisma: {} as any,
+  encryptionService: {} as any,
   getCompleteSettings: vi.fn(),
   storeCompleteSettings: vi.fn(),
-  deleteUserSettings: vi.fn()
+  deleteUserSettings: vi.fn(),
+  storeApiKeys: vi.fn(),
+  getApiKeys: vi.fn(),
+  storePreferences: vi.fn(),
+  getPreferences: vi.fn(),
+  storeAiSettings: vi.fn(),
+  getAiSettings: vi.fn()
 };
 
 describe('/api/user-settings', () => {
@@ -199,7 +207,7 @@ describe('/api/user-settings', () => {
         openaiApiKey: 'sk-openai-new-key-456'
       };
 
-      mockStorage.storeCompleteSettings.mockResolvedValue();
+      mockStorage.storeCompleteSettings.mockResolvedValue(undefined);
       mockStorage.getCompleteSettings.mockResolvedValue({
         anthropicApiKey: 'sk-ant-new-key-123',
         openaiApiKey: 'sk-openai-new-key-456',
@@ -231,7 +239,7 @@ describe('/api/user-settings', () => {
         adhdFriendlyMode: true
       };
 
-      mockStorage.storeCompleteSettings.mockResolvedValue();
+      mockStorage.storeCompleteSettings.mockResolvedValue(undefined);
       mockStorage.getCompleteSettings.mockResolvedValue({
         anthropicApiKey: null,
         openaiApiKey: null,
@@ -285,7 +293,7 @@ describe('/api/user-settings', () => {
         monthlyBudget: 250
       };
 
-      mockStorage.storeCompleteSettings.mockResolvedValue();
+      mockStorage.storeCompleteSettings.mockResolvedValue(undefined);
       mockStorage.getCompleteSettings.mockResolvedValue({
         anthropicApiKey: null,
         openaiApiKey: null,
@@ -345,7 +353,7 @@ describe('/api/user-settings', () => {
     });
 
     it('should delete all user settings', async () => {
-      mockStorage.deleteUserSettings.mockResolvedValue();
+      mockStorage.deleteUserSettings.mockResolvedValue(undefined);
 
       const { req, res } = createMocks({
         method: 'DELETE'
@@ -363,7 +371,7 @@ describe('/api/user-settings', () => {
     });
 
     it('should handle deletion of non-existent settings', async () => {
-      mockStorage.deleteUserSettings.mockResolvedValue();
+      mockStorage.deleteUserSettings.mockResolvedValue(undefined);
 
       const { req, res } = createMocks({
         method: 'DELETE'

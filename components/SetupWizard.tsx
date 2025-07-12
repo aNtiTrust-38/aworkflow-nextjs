@@ -333,19 +333,26 @@ export function SetupWizard() {
 
   // 3. Patch: Prevent rapid navigation from breaking flow
   const [navLock, setNavLock] = useState(false);
+  
   const nextStep = async () => {
     if (!canProceed() || navLock) return;
     setNavLock(true);
+    
     await saveCurrentStep();
     setWizardState(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
-    setTimeout(() => setNavLock(false), 300); // lock for 300ms to prevent rapid clicks
+    
+    // Brief timeout to prevent rapid clicking
+    setTimeout(() => setNavLock(false), 150);
   };
 
   // Navigate to previous step
   const prevStep = () => {
-    if (wizardState.currentStep > 0) {
-      setWizardState(prev => ({ ...prev, currentStep: prev.currentStep - 1 }));
-    }
+    if (wizardState.currentStep <= 0 || navLock) return;
+    setNavLock(true);
+    
+    setWizardState(prev => ({ ...prev, currentStep: prev.currentStep - 1 }));
+    
+    setTimeout(() => setNavLock(false), 150);
   };
 
   // Complete setup

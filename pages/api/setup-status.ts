@@ -1,91 +1,52 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getSettingsStorage } from '../../lib/settings-storage';
-import { SetupStatus, SETTING_KEYS } from '../../types/settings';
+import { getServerSession } from 'next-auth/next';
+import { getSetupStatus, updateSetupStatus } from '../../lib/settings-storage';
+import { SetupStatus } from '../../types/settings';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    if (req.method !== 'GET') {
-      res.setHeader('Allow', ['GET']);
-      return res.status(405).json({ 
-        error: `Method ${req.method} not allowed`
-      });
+    const session = await getServerSession();
+    
+    if (!session?.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const storage = getSettingsStorage();
+    const userId = session.user.id;
 
-    try {
-      // Check if basic setup is complete
-      const isSetup = await storage.isSetup();
-
-      // Get current settings to check what's configured
-      const maskedSettings = await storage.getMaskedSettings();
-
-      // Define required settings for basic functionality
-      const requiredSettings = [
-        SETTING_KEYS.ANTHROPIC_API_KEY,
-        SETTING_KEYS.NEXTAUTH_SECRET,
-        SETTING_KEYS.NEXTAUTH_URL
-      ];
-
-      // Determine which settings are missing
-      const missingSettings: string[] = [];
-      const completedSteps: string[] = [];
-
-      if (!maskedSettings.configured.anthropic) {
-        missingSettings.push(SETTING_KEYS.ANTHROPIC_API_KEY);
-      } else {
-        completedSteps.push('anthropic_setup');
+    if (req.method === 'GET') {
+      const setupStatus = await getSetupStatus(userId);
+      
+      if (!setupStatus) {
+        // Return default setup status
+        const defaultStatus: SetupStatus = {
+          isSetup: false,
+          completedSteps: [],
+          currentStep: 0
+        };
+        return res.status(200).json(defaultStatus);
       }
-
-      if (!maskedSettings.configured.auth) {
-        missingSettings.push(SETTING_KEYS.NEXTAUTH_SECRET);
-        missingSettings.push(SETTING_KEYS.NEXTAUTH_URL);
-      } else {
-        completedSteps.push('auth_setup');
-      }
-
-      // Optional but recommended settings
-      if (maskedSettings.configured.openai) {
-        completedSteps.push('openai_setup');
-      }
-
-      if (maskedSettings.configured.zotero) {
-        completedSteps.push('zotero_setup');
-      }
-
-      if (maskedSettings.configured.database) {
-        completedSteps.push('database_setup');
-      }
-
-      // Determine next step based on what's missing
-      let nextStep: string | undefined;
-      if (!maskedSettings.configured.anthropic) {
-        nextStep = 'anthropic_setup';
-      } else if (!maskedSettings.configured.auth) {
-        nextStep = 'auth_setup';
-      } else if (!maskedSettings.configured.openai) {
-        nextStep = 'openai_setup';
-      } else if (!maskedSettings.configured.zotero) {
-        nextStep = 'zotero_setup';
-      }
-
-      const setupStatus: SetupStatus = {
-        isSetup,
-        completedSteps,
-        nextStep,
-        requiredSettings: requiredSettings,
-        missingSettings
-      };
-
+      
       return res.status(200).json(setupStatus);
-
-    } catch (error: any) {
-      console.error('Failed to get setup status:', error);
-      return res.status(500).json({
-        error: 'Failed to retrieve setup status',
-        details: error.message
-      });
     }
+
+    if (req.method === 'POST') {
+      const { complete, currentStep, completedSteps } = req.body;
+      
+      const newStatus: SetupStatus = {
+        isSetup: complete || false,
+        completedSteps: completedSteps || [],
+        currentStep: currentStep
+      };
+      
+      await updateSetupStatus(userId, newStatus);
+      
+      return res.status(200).json(newStatus);
+    }
+
+    res.setHeader('Allow', ['GET', 'POST']);
+    return res.status(405).json({ 
+      error: `Method ${req.method} not allowed`
+    });
 
   } catch (error: any) {
     console.error('Setup status API error:', error);

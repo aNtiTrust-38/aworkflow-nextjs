@@ -145,7 +145,7 @@ const Navigation: React.FC = () => {
                   />
                 </span>
                 <span style={{ fontSize: 10, color: usage.percentage >= 80 ? '#ef4444' : '#666', marginLeft: 2 }}>
-                  {usage.percentage.toFixed(0)}%
+                  {usage.percentage.toFixed(0)}<span>%</span>
                 </span>
               </span>
             )}

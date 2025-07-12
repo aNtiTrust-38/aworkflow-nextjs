@@ -86,20 +86,37 @@ export function SetupWizard() {
     loadSetupStatus();
   }, []);
 
+  // 1. Patch: Robustly parse setupStatus and restore wizard step on mount
+  useEffect(() => {
+    if (setupStatus && !loading && !error) {
+      // Defensive: handle corrupted/missing fields
+      const completedSteps = Array.isArray(setupStatus.completedSteps) ? setupStatus.completedSteps : [];
+      const nextStep = typeof setupStatus.nextStep === 'string' ? setupStatus.nextStep : null;
+      // Find step index by nextStep, fallback to 0
+      const stepIdx = nextStep ? steps.findIndex(s => s.id === nextStep) : 0;
+      setWizardState(prev => ({
+        ...prev,
+        currentStep: stepIdx >= 0 ? stepIdx : 0
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setupStatus, loading, error]);
+
+  // 2. Patch: Defensive error handling for corrupted/missing API data
   const loadSetupStatus = async () => {
     try {
       setLoading(true);
       setError(null);
-      
       const response = await fetch('/api/setup-status');
       if (!response.ok) {
         throw new Error('Failed to load setup status');
       }
-      
       const status = await response.json();
+      // Defensive: check for required fields
+      if (!status || typeof status !== 'object' || !('isSetup' in status)) {
+        throw new Error('Corrupted setup status data');
+      }
       setSetupStatus(status);
-      
-      // If setup is complete, we can show completion message
       if (status.isSetup) {
         setWizardState(prev => ({ ...prev, currentStep: steps.length }));
       }
@@ -314,12 +331,14 @@ export function SetupWizard() {
     }
   };
 
-  // Navigate to next step
+  // 3. Patch: Prevent rapid navigation from breaking flow
+  const [navLock, setNavLock] = useState(false);
   const nextStep = async () => {
-    if (!canProceed()) return;
-    
+    if (!canProceed() || navLock) return;
+    setNavLock(true);
     await saveCurrentStep();
     setWizardState(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
+    setTimeout(() => setNavLock(false), 300); // lock for 300ms to prevent rapid clicks
   };
 
   // Navigate to previous step
@@ -402,353 +421,352 @@ export function SetupWizard() {
   const currentStepData = steps[wizardState.currentStep];
   const isLastStep = wizardState.currentStep === steps.length - 1;
 
+  // --- PATCH: Only render current step's content and navigation ---
   return (
     <div className="max-w-2xl mx-auto p-6">
-      {/* Progress Bar */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-gray-600">Step {wizardState.currentStep + 1} of {steps.length}</span>
-          <span className="text-sm text-gray-600">{Math.round(((wizardState.currentStep + 1) / steps.length) * 100)}%</span>
+      {/* Progress Bar - only one instance, keyed by currentStep */}
+      <React.Fragment key={`progressbar-step-${wizardState.currentStep}`}>
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-600">Step {wizardState.currentStep + 1} of {steps.length}</span>
+            <span className="text-sm text-gray-600">{Math.round(((wizardState.currentStep + 1) / steps.length) * 100)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((wizardState.currentStep + 1) / steps.length) * 100}%` }}
+              role="progressbar"
+              aria-valuenow={wizardState.currentStep + 1}
+              aria-valuemin={0}
+              aria-valuemax={steps.length}
+            />
+          </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${((wizardState.currentStep + 1) / steps.length) * 100}%` }}
-            role="progressbar"
-            aria-valuenow={wizardState.currentStep + 1}
-            aria-valuemin={0}
-            aria-valuemax={steps.length}
-          />
-        </div>
-      </div>
-
-      {/* Step Content */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentStepData.title}</h2>
-        <p className="text-gray-600 mb-6">{currentStepData.description}</p>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-
-        {/* Step-specific content */}
-        {currentStepData.id === 'welcome' && (
-          <div className="space-y-4">
-            <p className="text-gray-700">
-              This wizard will help you configure your Academic Workflow Assistant with:
-            </p>
-            <ul className="list-disc list-inside text-gray-700 space-y-2">
-              <li>AI provider settings (API keys and preferences)</li>
-              <li>Academic preferences (citation style, language)</li>
-              <li>UI preferences (theme, accessibility)</li>
-            </ul>
-            <p className="text-gray-700">
-              Let's get started!
-            </p>
-          </div>
-        )}
-
-        {currentStepData.id === 'apiKeys' && (
-          <div className="space-y-6">
-            {/* Anthropic API Key */}
-            <div>
-              <label htmlFor="anthropicApiKey" className="block text-sm font-medium text-gray-700 mb-2">
-                Anthropic API Key *
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  id="anthropicApiKey"
-                  type="password"
-                  value={wizardState.settings.anthropicApiKey}
-                  onChange={(e) => handleInputChange('anthropicApiKey', e.target.value)}
-                  onBlur={() => handleBlur('anthropicApiKey')}
-                  className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    getFieldError('anthropicApiKey') ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="sk-ant-..."
-                  tabIndex={0}
-                />
-                <button
-                  type="button"
-                  onClick={() => testApiKey('anthropic')}
-                  disabled={!wizardState.settings.anthropicApiKey || wizardState.testing.anthropic}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-                >
-                  {wizardState.testing.anthropic ? 'Testing...' : 'Test Anthropic Key'}
-                </button>
-              </div>
-              {getFieldError('anthropicApiKey') && (
-                <p className="mt-1 text-sm text-red-600">{getFieldError('anthropicApiKey')}</p>
-              )}
-              {wizardState.testResults.anthropic && (
-                <div className={`mt-2 p-2 rounded ${wizardState.testResults.anthropic.valid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {wizardState.testResults.anthropic.valid ? '✓' : '✗'} {wizardState.testResults.anthropic.details?.message || 'Test completed'}
-                </div>
-              )}
+      </React.Fragment>
+      {/* Step Content - only render current step, keyed for remount */}
+      <React.Fragment key={`step-content-${wizardState.currentStep}`}>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{currentStepData.title}</h2>
+          <p className="text-gray-600 mb-6">{currentStepData.description}</p>
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
             </div>
-
-            {/* OpenAI API Key */}
-            <div>
-              <label htmlFor="openaiApiKey" className="block text-sm font-medium text-gray-700 mb-2">
-                OpenAI API Key (Optional)
-              </label>
-              <div className="flex space-x-2">
-                <input
-                  id="openaiApiKey"
-                  type="password"
-                  value={wizardState.settings.openaiApiKey}
-                  onChange={(e) => handleInputChange('openaiApiKey', e.target.value)}
-                  onBlur={() => handleBlur('openaiApiKey')}
-                  className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    getFieldError('openaiApiKey') ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="sk-..."
-                  tabIndex={0}
-                />
-                <button
-                  type="button"
-                  onClick={() => testApiKey('openai')}
-                  disabled={!wizardState.settings.openaiApiKey || wizardState.testing.openai}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-                >
-                  {wizardState.testing.openai ? 'Testing...' : 'Test OpenAI Key'}
-                </button>
-              </div>
-              {getFieldError('openaiApiKey') && (
-                <p className="mt-1 text-sm text-red-600">{getFieldError('openaiApiKey')}</p>
-              )}
-              {wizardState.testResults.openai && (
-                <div className={`mt-2 p-2 rounded ${wizardState.testResults.openai.valid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {wizardState.testResults.openai.valid ? '✓' : '✗'} {wizardState.testResults.openai.details?.message || 'Test completed'}
-                </div>
-              )}
-            </div>
-
-            {/* Monthly Budget */}
-            <div>
-              <label htmlFor="monthlyBudget" className="block text-sm font-medium text-gray-700 mb-2">
-                Monthly Budget ($) *
-              </label>
-              <input
-                id="monthlyBudget"
-                type="number"
-                value={wizardState.settings.monthlyBudget}
-                onChange={(e) => handleInputChange('monthlyBudget', parseFloat(e.target.value))}
-                onBlur={() => handleBlur('monthlyBudget')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  getFieldError('monthlyBudget') ? 'border-red-500' : 'border-gray-300'
-                }`}
-                min="0"
-                step="0.01"
-                tabIndex={0}
-              />
-              {getFieldError('monthlyBudget') && (
-                <p className="mt-1 text-sm text-red-600">{getFieldError('monthlyBudget')}</p>
-              )}
-            </div>
-
-            {/* Preferred Provider */}
-            <div>
-              <label htmlFor="preferredProvider" className="block text-sm font-medium text-gray-700 mb-2">
-                Preferred Provider
-              </label>
-              <select
-                id="preferredProvider"
-                value={wizardState.settings.preferredProvider}
-                onChange={(e) => handleInputChange('preferredProvider', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                tabIndex={0}
-              >
-                <option value="auto">Auto</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="openai">OpenAI</option>
-              </select>
-            </div>
-          </div>
-        )}
-
-        {currentStepData.id === 'preferences' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Citation Style */}
-              <div>
-                <label htmlFor="citationStyle" className="block text-sm font-medium text-gray-700 mb-2">
-                  Citation Style
-                </label>
-                <select
-                  id="citationStyle"
-                  value={wizardState.settings.citationStyle}
-                  onChange={(e) => handleInputChange('citationStyle', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  tabIndex={0}
-                >
-                  <option value="apa">APA</option>
-                  <option value="mla">MLA</option>
-                  <option value="chicago">Chicago</option>
-                  <option value="harvard">Harvard</option>
-                </select>
-              </div>
-
-              {/* Default Language */}
-              <div>
-                <label htmlFor="defaultLanguage" className="block text-sm font-medium text-gray-700 mb-2">
-                  Default Language
-                </label>
-                <select
-                  id="defaultLanguage"
-                  value={wizardState.settings.defaultLanguage}
-                  onChange={(e) => handleInputChange('defaultLanguage', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  tabIndex={0}
-                >
-                  <option value="en">English</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
-                  <option value="de">German</option>
-                </select>
-              </div>
-            </div>
-
-            {/* ADHD Friendly Mode */}
-            <div className="flex items-center">
-              <input
-                id="adhdFriendlyMode"
-                type="checkbox"
-                checked={wizardState.settings.adhdFriendlyMode}
-                onChange={(e) => handleInputChange('adhdFriendlyMode', e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="adhdFriendlyMode" className="ml-2 block text-sm text-gray-700">
-                ADHD Friendly Mode
-              </label>
-            </div>
-
-            {/* Theme */}
-            <div>
-              <label htmlFor="theme" className="block text-sm font-medium text-gray-700 mb-2">
-                Theme
-              </label>
-              <select
-                id="theme"
-                value={wizardState.settings.theme}
-                onChange={(e) => handleInputChange('theme', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                tabIndex={0}
-              >
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-            </div>
-
-            {/* Accessibility Options */}
-            <div className="space-y-3">
-              <div className="flex items-center">
-                <input
-                  id="reducedMotion"
-                  type="checkbox"
-                  checked={wizardState.settings.reducedMotion}
-                  onChange={(e) => handleInputChange('reducedMotion', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="reducedMotion" className="ml-2 block text-sm text-gray-700">
-                  Reduced Motion
-                </label>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  id="highContrast"
-                  type="checkbox"
-                  checked={wizardState.settings.highContrast}
-                  onChange={(e) => handleInputChange('highContrast', e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="highContrast" className="ml-2 block text-sm text-gray-700">
-                  High Contrast
-                </label>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {currentStepData.id === 'review' && (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Configuration Summary</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-medium text-gray-700">AI Provider:</h4>
-                <p className="text-gray-600">{wizardState.settings.preferredProvider}</p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-700">Monthly Budget:</h4>
-                <p className="text-gray-600">${wizardState.settings.monthlyBudget}</p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-700">Citation Style:</h4>
-                <p className="text-gray-600">{wizardState.settings.citationStyle.toUpperCase()}</p>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-700">Language:</h4>
-                <p className="text-gray-600">
-                  {wizardState.settings.defaultLanguage === 'en' ? 'English' : 
-                   wizardState.settings.defaultLanguage === 'es' ? 'Spanish' :
-                   wizardState.settings.defaultLanguage === 'fr' ? 'French' : 'German'}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-700 mb-2">Special Features:</h4>
-              <ul className="text-gray-600 space-y-1">
-                {wizardState.settings.adhdFriendlyMode && <li>• ADHD Friendly Mode enabled</li>}
-                {wizardState.settings.reducedMotion && <li>• Reduced Motion enabled</li>}
-                {wizardState.settings.highContrast && <li>• High Contrast enabled</li>}
-                <li>• Theme: {wizardState.settings.theme}</li>
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8">
-          <button
-            onClick={prevStep}
-            disabled={wizardState.currentStep === 0}
-            className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400"
-            tabIndex={0}
-          >
-            Back
-          </button>
-          
-          {isLastStep ? (
-            <button
-              onClick={completeSetup}
-              disabled={completing || !canProceed()}
-              className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
-              tabIndex={0}
-            >
-              {completing ? 'Completing Setup...' : 'Complete Setup'}
-            </button>
-          ) : (
-            <button
-              onClick={nextStep}
-              disabled={!canProceed()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-              tabIndex={0}
-            >
-              Continue
-            </button>
           )}
+          {/* Step-specific content */}
+          {currentStepData.id === 'welcome' && (
+            <div className="space-y-4">
+              <p className="text-gray-700">
+                This wizard will help you configure your Academic Workflow Assistant with:
+              </p>
+              <ul className="list-disc list-inside text-gray-700 space-y-2">
+                <li>AI provider settings (API keys and preferences)</li>
+                <li>Academic preferences (citation style, language)</li>
+                <li>UI preferences (theme, accessibility)</li>
+              </ul>
+              <p className="text-gray-700">
+                Let's get started!
+              </p>
+            </div>
+          )}
+          {currentStepData.id === 'apiKeys' && (
+            <div className="space-y-6">
+              {/* Anthropic API Key */}
+              <div>
+                <label htmlFor="anthropicApiKey" className="block text-sm font-medium text-gray-700 mb-2">
+                  Anthropic API Key *
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    id="anthropicApiKey"
+                    type="password"
+                    value={wizardState.settings.anthropicApiKey}
+                    onChange={(e) => handleInputChange('anthropicApiKey', e.target.value)}
+                    onBlur={() => handleBlur('anthropicApiKey')}
+                    className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      getFieldError('anthropicApiKey') ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="sk-ant-..."
+                    tabIndex={0}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => testApiKey('anthropic')}
+                    disabled={!wizardState.settings.anthropicApiKey || wizardState.testing.anthropic}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                  >
+                    {wizardState.testing.anthropic ? 'Testing...' : 'Test Anthropic Key'}
+                  </button>
+                </div>
+                {getFieldError('anthropicApiKey') && (
+                  <p className="mt-1 text-sm text-red-600">{getFieldError('anthropicApiKey')}</p>
+                )}
+                {wizardState.testResults.anthropic && (
+                  <div className={`mt-2 p-2 rounded ${wizardState.testResults.anthropic.valid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {wizardState.testResults.anthropic.valid ? '✓' : '✗'} {wizardState.testResults.anthropic.details?.message || 'Test completed'}
+                  </div>
+                )}
+              </div>
+
+              {/* OpenAI API Key */}
+              <div>
+                <label htmlFor="openaiApiKey" className="block text-sm font-medium text-gray-700 mb-2">
+                  OpenAI API Key (Optional)
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    id="openaiApiKey"
+                    type="password"
+                    value={wizardState.settings.openaiApiKey}
+                    onChange={(e) => handleInputChange('openaiApiKey', e.target.value)}
+                    onBlur={() => handleBlur('openaiApiKey')}
+                    className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      getFieldError('openaiApiKey') ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="sk-..."
+                    tabIndex={0}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => testApiKey('openai')}
+                    disabled={!wizardState.settings.openaiApiKey || wizardState.testing.openai}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                  >
+                    {wizardState.testing.openai ? 'Testing...' : 'Test OpenAI Key'}
+                  </button>
+                </div>
+                {getFieldError('openaiApiKey') && (
+                  <p className="mt-1 text-sm text-red-600">{getFieldError('openaiApiKey')}</p>
+                )}
+                {wizardState.testResults.openai && (
+                  <div className={`mt-2 p-2 rounded ${wizardState.testResults.openai.valid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {wizardState.testResults.openai.valid ? '✓' : '✗'} {wizardState.testResults.openai.details?.message || 'Test completed'}
+                  </div>
+                )}
+              </div>
+
+              {/* Monthly Budget */}
+              <div>
+                <label htmlFor="monthlyBudget" className="block text-sm font-medium text-gray-700 mb-2">
+                  Monthly Budget ($) *
+                </label>
+                <input
+                  id="monthlyBudget"
+                  type="number"
+                  value={wizardState.settings.monthlyBudget}
+                  onChange={(e) => handleInputChange('monthlyBudget', parseFloat(e.target.value))}
+                  onBlur={() => handleBlur('monthlyBudget')}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    getFieldError('monthlyBudget') ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  min="0"
+                  step="0.01"
+                  tabIndex={0}
+                />
+                {getFieldError('monthlyBudget') && (
+                  <p className="mt-1 text-sm text-red-600">{getFieldError('monthlyBudget')}</p>
+                )}
+              </div>
+
+              {/* Preferred Provider */}
+              <div>
+                <label htmlFor="preferredProvider" className="block text-sm font-medium text-gray-700 mb-2">
+                  Preferred Provider
+                </label>
+                <select
+                  id="preferredProvider"
+                  value={wizardState.settings.preferredProvider}
+                  onChange={(e) => handleInputChange('preferredProvider', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  tabIndex={0}
+                >
+                  <option value="auto">Auto</option>
+                  <option value="anthropic">Anthropic</option>
+                  <option value="openai">OpenAI</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {currentStepData.id === 'preferences' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Citation Style */}
+                <div>
+                  <label htmlFor="citationStyle" className="block text-sm font-medium text-gray-700 mb-2">
+                    Citation Style
+                  </label>
+                  <select
+                    id="citationStyle"
+                    value={wizardState.settings.citationStyle}
+                    onChange={(e) => handleInputChange('citationStyle', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    tabIndex={0}
+                  >
+                    <option value="apa">APA</option>
+                    <option value="mla">MLA</option>
+                    <option value="chicago">Chicago</option>
+                    <option value="harvard">Harvard</option>
+                  </select>
+                </div>
+
+                {/* Default Language */}
+                <div>
+                  <label htmlFor="defaultLanguage" className="block text-sm font-medium text-gray-700 mb-2">
+                    Default Language
+                  </label>
+                  <select
+                    id="defaultLanguage"
+                    value={wizardState.settings.defaultLanguage}
+                    onChange={(e) => handleInputChange('defaultLanguage', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    tabIndex={0}
+                  >
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* ADHD Friendly Mode */}
+              <div className="flex items-center">
+                <input
+                  id="adhdFriendlyMode"
+                  type="checkbox"
+                  checked={wizardState.settings.adhdFriendlyMode}
+                  onChange={(e) => handleInputChange('adhdFriendlyMode', e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="adhdFriendlyMode" className="ml-2 block text-sm text-gray-700">
+                  ADHD Friendly Mode
+                </label>
+              </div>
+
+              {/* Theme */}
+              <div>
+                <label htmlFor="theme" className="block text-sm font-medium text-gray-700 mb-2">
+                  Theme
+                </label>
+                <select
+                  id="theme"
+                  value={wizardState.settings.theme}
+                  onChange={(e) => handleInputChange('theme', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  tabIndex={0}
+                >
+                  <option value="system">System</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
+
+              {/* Accessibility Options */}
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <input
+                    id="reducedMotion"
+                    type="checkbox"
+                    checked={wizardState.settings.reducedMotion}
+                    onChange={(e) => handleInputChange('reducedMotion', e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="reducedMotion" className="ml-2 block text-sm text-gray-700">
+                    Reduced Motion
+                  </label>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    id="highContrast"
+                    type="checkbox"
+                    checked={wizardState.settings.highContrast}
+                    onChange={(e) => handleInputChange('highContrast', e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="highContrast" className="ml-2 block text-sm text-gray-700">
+                    High Contrast
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentStepData.id === 'review' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-gray-900">Configuration Summary</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium text-gray-700">AI Provider:</h4>
+                  <p className="text-gray-600">{wizardState.settings.preferredProvider}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-700">Monthly Budget:</h4>
+                  <p className="text-gray-600">${wizardState.settings.monthlyBudget}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-700">Citation Style:</h4>
+                  <p className="text-gray-600">{wizardState.settings.citationStyle.toUpperCase()}</p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-gray-700">Language:</h4>
+                  <p className="text-gray-600">
+                    {wizardState.settings.defaultLanguage === 'en' ? 'English' : 
+                     wizardState.settings.defaultLanguage === 'es' ? 'Spanish' :
+                     wizardState.settings.defaultLanguage === 'fr' ? 'French' : 'German'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Special Features:</h4>
+                <ul className="text-gray-600 space-y-1">
+                  {wizardState.settings.adhdFriendlyMode && <li>• ADHD Friendly Mode enabled</li>}
+                  {wizardState.settings.reducedMotion && <li>• Reduced Motion enabled</li>}
+                  {wizardState.settings.highContrast && <li>• High Contrast enabled</li>}
+                  <li>• Theme: {wizardState.settings.theme}</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          {/* Navigation Buttons - only one set per step */}
+          <div className="flex justify-between mt-8">
+            <button
+              onClick={prevStep}
+              disabled={wizardState.currentStep === 0}
+              className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400"
+              tabIndex={0}
+            >
+              Back
+            </button>
+            {isLastStep ? (
+              <button
+                onClick={completeSetup}
+                disabled={completing || !canProceed()}
+                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                tabIndex={0}
+              >
+                {completing ? 'Completing Setup...' : 'Complete Setup'}
+              </button>
+            ) : (
+              <button
+                onClick={nextStep}
+                disabled={!canProceed()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                tabIndex={0}
+              >
+                Continue
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      </React.Fragment>
     </div>
   );
 }

@@ -641,3 +641,97 @@ describe('SetupWizard', () => {
     });
   });
 });
+
+describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
+  it('should resume at correct step after partial completion (user leaves and returns)', async () => {
+    // Simulate API returning partial completion
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        isSetup: false,
+        completedSteps: ['welcome', 'apiKeys'],
+        nextStep: 'preferences',
+        requiredSettings: [],
+        missingSettings: []
+      })
+    } as Response);
+
+    renderWithSession(<SetupWizard />);
+    await waitFor(() => {
+      // Should resume at preferences step
+      expect(screen.getByRole('heading', { name: /Academic Preferences/i })).toBeInTheDocument();
+    });
+  });
+
+  it('should handle corrupted/missing settings from API', async () => {
+    // Simulate API returning corrupted data
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        isSetup: false,
+        completedSteps: null, // corrupted
+        nextStep: undefined, // missing
+        requiredSettings: undefined,
+        missingSettings: undefined
+      })
+    } as Response);
+
+    renderWithSession(<SetupWizard />);
+    await waitFor(() => {
+      expect(screen.getByText(/failed to load setup status/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should handle rapid navigation between steps (simulate fast user)', async () => {
+    // Simulate normal setup
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        isSetup: false,
+        completedSteps: [],
+        nextStep: 'welcome',
+        requiredSettings: ['anthropicApiKey'],
+        missingSettings: ['anthropicApiKey']
+      })
+    } as Response);
+
+    renderWithSession(<SetupWizard />);
+    await waitFor(() => screen.getByText('Welcome to Academic Workflow Assistant'));
+
+    // Rapidly click continue multiple times
+    const continueButton = screen.getByRole('button', { name: /continue/i });
+    fireEvent.click(continueButton);
+    fireEvent.click(continueButton);
+    fireEvent.click(continueButton);
+    // Should not crash or skip steps
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /AI Provider Configuration/i })).toBeInTheDocument();
+    });
+  });
+
+  it('should have correct ARIA attributes and support keyboard navigation (accessibility)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        isSetup: false,
+        completedSteps: [],
+        nextStep: 'welcome',
+        requiredSettings: ['anthropicApiKey'],
+        missingSettings: ['anthropicApiKey']
+      })
+    } as Response);
+
+    renderWithSession(<SetupWizard />);
+    await waitFor(() => screen.getByRole('progressbar'));
+    // Check ARIA attributes
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow');
+    // Simulate keyboard navigation
+    const continueButton = screen.getByRole('button', { name: /continue/i });
+    continueButton.focus();
+    expect(document.activeElement).toBe(continueButton);
+    // Simulate pressing Enter
+    fireEvent.keyDown(continueButton, { key: 'Enter', code: 'Enter' });
+    // Should still be accessible and not crash
+    expect(screen.getByRole('button', { name: /continue/i })).toBeInTheDocument();
+  });
+});

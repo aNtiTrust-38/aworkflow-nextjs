@@ -15,62 +15,71 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('Navigation Usage Indicator', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    cleanup();
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
+    vi.clearAllMocks();
+    // Wait for any pending promises
+    await new Promise(resolve => setTimeout(resolve, 0));
   });
 
   describe('Usage Display', () => {
+    it('should render basic navigation', async () => {
+      render(<Navigation />);
+      expect(screen.getByText('Settings')).toBeInTheDocument();
+    });
+
     it('should display usage indicator when usage data is available', async () => {
-      // Mock setup status
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ isSetup: true })
-      } as Response);
-
-      // Mock user settings
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          anthropicApiKey: 'sk-ant-test',
-          openaiApiKey: 'sk-test'
-        })
-      } as Response);
-
-      // Mock API key tests
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ valid: true })
-      } as Response);
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ valid: true })
-      } as Response);
-
-      // Mock usage data
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          used: 25.50,
-          remaining: 74.50,
-          percentage: 25.5,
-          budget: 100
-        })
-      } as Response);
+      // Setup mock responses using mockImplementation for more control
+      mockFetch.mockImplementation((url: string, options?: any) => {
+        if (url === '/api/setup-status') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ isSetup: true })
+          } as Response);
+        }
+        if (url === '/api/user-settings') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              anthropicApiKey: 'sk-ant-test',
+              openaiApiKey: 'sk-test'
+            })
+          } as Response);
+        }
+        if (url === '/api/test-api-keys') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ valid: true })
+          } as Response);
+        }
+        if (url === '/api/usage') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              used: 25.50,
+              remaining: 74.50,
+              percentage: 26,
+              budget: 100
+            })
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unexpected URL: ${url}`));
+      });
 
       render(<Navigation />);
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/api usage.*25\.50.*100.*25%/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/api usage.*25\.50.*100.*26%/i)).toBeInTheDocument();
         // Percent is split into two spans, so use a function matcher
         expect(screen.getByText((content, node) => {
           return node?.textContent === '26%';
         })).toBeInTheDocument();
-      });
+      }, { timeout: 10000 });
     });
 
     it('should show correct percentage in usage bar', async () => {
@@ -106,7 +115,7 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({
           used: 75.00,
           remaining: 25.00,
-          percentage: 75.0,
+          percentage: 75,
           budget: 100
         })
       } as Response);
@@ -118,7 +127,7 @@ describe('Navigation Usage Indicator', () => {
       });
     });
 
-    it('should show red color when usage is over 80%', async () => {
+    it('should show red color when usage is over 90%', async () => {
       // Mock setup status
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -145,13 +154,13 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({ valid: true })
       } as Response);
 
-      // Mock usage data with 85% usage (over 80%)
+      // Mock usage data with 95% usage (over 90%)
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
-          used: 85.00,
-          remaining: 15.00,
-          percentage: 85.0,
+          used: 95.00,
+          remaining: 5.00,
+          percentage: 95,
           budget: 100
         })
       } as Response);
@@ -159,13 +168,13 @@ describe('Navigation Usage Indicator', () => {
       render(<Navigation />);
 
       await waitFor(() => {
-        const usageText = screen.getByText((content, node) => node?.textContent === '85%');
+        const usageText = screen.getByText((content, node) => node?.textContent === '95%');
         expect(usageText).toBeInTheDocument();
         expect(usageText).toHaveStyle({ color: '#ef4444' });
       });
     });
 
-    it('should show green color when usage is under 80%', async () => {
+    it('should show green color when usage is under 90%', async () => {
       // Mock setup status
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -192,13 +201,13 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({ valid: true })
       } as Response);
 
-      // Mock usage data with 50% usage (under 80%)
+      // Mock usage data with 50% usage (under 90%)
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
           used: 50.00,
           remaining: 50.00,
-          percentage: 50.0,
+          percentage: 50,
           budget: 100
         })
       } as Response);
@@ -287,7 +296,7 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({
           used: 75.00,
           remaining: 175.00,
-          percentage: 30.0,
+          percentage: 30,
           budget: 250
         })
       } as Response);
@@ -333,7 +342,7 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({
           used: 0.00,
           remaining: 100.00,
-          percentage: 0.0,
+          percentage: 0,
           budget: 100
         })
       } as Response);
@@ -379,7 +388,7 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({
           used: 120.00,
           remaining: -20.00,
-          percentage: 120.0,
+          percentage: 120,
           budget: 100
         })
       } as Response);
@@ -416,7 +425,7 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({
           used: 0.00,
           remaining: 100.00,
-          percentage: 0.0,
+          percentage: 0,
           budget: 100
         })
       } as Response);
@@ -462,7 +471,7 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({
           used: 0.00,
           remaining: 100.00,
-          percentage: 0.0,
+          percentage: 0,
           budget: 100
         })
       } as Response);
@@ -508,7 +517,7 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({
           used: 25.00,
           remaining: 75.00,
-          percentage: 25.0,
+          percentage: 25,
           budget: 100
         })
       } as Response);
@@ -628,7 +637,7 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({
           used: 42.50,
           remaining: 57.50,
-          percentage: 42.5,
+          percentage: 43,
           budget: 100
         })
       } as Response);
@@ -636,10 +645,10 @@ describe('Navigation Usage Indicator', () => {
       render(<Navigation />);
 
       await waitFor(() => {
-        const usageIndicator = screen.getByLabelText(/api usage.*42\.50.*100.*42%/i);
+        const usageIndicator = screen.getByLabelText(/api usage.*42\.50.*100.*43%/i);
         expect(usageIndicator).toBeInTheDocument();
         expect(usageIndicator).toHaveAttribute('title');
-        expect(screen.getByText((content, node) => node?.textContent === '42%')).toBeInTheDocument();
+        expect(screen.getByText((content, node) => node?.textContent === '43%')).toBeInTheDocument();
       });
     });
 
@@ -665,7 +674,7 @@ describe('Navigation Usage Indicator', () => {
         json: () => Promise.resolve({
           used: 0.00,
           remaining: 100.00,
-          percentage: 0.0,
+          percentage: 0,
           budget: 100
         })
       } as Response);

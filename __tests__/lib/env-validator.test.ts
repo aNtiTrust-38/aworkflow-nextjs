@@ -113,7 +113,9 @@ describe('Environment Variable Validator', () => {
         NODE_ENV: 'production',
         NEXTAUTH_SECRET: 'test-secret-at-least-32-characters-long',
         NEXTAUTH_URL: 'https://example.com',
-        DATABASE_URL: 'file:./dev.db'
+        DATABASE_URL: 'file:./dev.db',
+        SETTINGS_ENCRYPTION_KEY: 'test-encryption-key-32-chars-long!!',
+        ANTHROPIC_API_KEY: 'sk-ant-test-key'
       }
 
       const result = validateEnvironment()

@@ -66,7 +66,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Build Docker image
-        run: docker build -t academic-workflow:${{ github.sha }} .
+        run: docker build -t academic-workflow:latest .
 
   deploy:
     needs: build

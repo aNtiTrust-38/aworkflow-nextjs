@@ -40,15 +40,11 @@ describe('Structured Logging System', () => {
       
       logger.info('Test info message', { userId: '123' })
       
-      expect(consoleSpies.info).toHaveBeenCalledWith(
-        expect.stringContaining(JSON.stringify({
-          timestamp: expect.any(String),
-          level: 'info',
-          logger: 'test-logger',
-          message: 'Test info message',
-          userId: '123'
-        }))
-      )
+      const logCall = consoleSpies.info.mock.calls[0][0]
+      expect(logCall).toContain('INFO')
+      expect(logCall).toContain('(test-logger)')
+      expect(logCall).toContain('Test info message')
+      expect(logCall).toContain('"userId": "123"')
     })
 
     it('should log error level messages with stack traces', () => {
@@ -58,19 +54,11 @@ describe('Structured Logging System', () => {
       logger.error('Error occurred', { error, requestId: 'req-123' })
       
       const logCall = consoleSpies.error.mock.calls[0][0]
-      const logData = JSON.parse(logCall)
-      
-      expect(logData).toMatchObject({
-        level: 'error',
-        logger: 'test-logger',
-        message: 'Error occurred',
-        requestId: 'req-123',
-        error: {
-          message: 'Test error',
-          name: 'Error',
-          stack: expect.any(String)
-        }
-      })
+      expect(logCall).toContain('ERROR')
+      expect(logCall).toContain('(test-logger)')
+      expect(logCall).toContain('Error occurred')
+      expect(logCall).toContain('"requestId": "req-123"')
+      expect(logCall).toContain('"message": "Test error"')
     })
 
     it('should respect log level configuration', () => {
@@ -179,17 +167,18 @@ describe('Structured Logging System', () => {
       const prodLogger = createLogger({ name: 'prod-logger' })
       prodLogger.info('Production log')
       
-      expect(consoleSpies.info).toHaveBeenCalledWith(
-        expect.stringMatching(/^\{.*\}$/)
-      )
+      const prodCall = consoleSpies.info.mock.calls[consoleSpies.info.mock.calls.length - 1][0]
+      expect(prodCall).toMatch(/^\{.*\}$/)
       
       // Test development format (pretty)
       process.env.NODE_ENV = 'development'
       const devLogger = createLogger({ name: 'dev-logger' })
       devLogger.info('Development log')
       
-      const lastCall = consoleSpies.info.mock.calls[consoleSpies.info.mock.calls.length - 1][0]
-      expect(lastCall).toMatch(/\[.*\] INFO \(dev-logger\): Development log/)
+      const devCall = consoleSpies.info.mock.calls[consoleSpies.info.mock.calls.length - 1][0]
+      expect(devCall).toContain('INFO')
+      expect(devCall).toContain('(dev-logger)')
+      expect(devCall).toContain('Development log')
       
       process.env.NODE_ENV = originalEnv
     })

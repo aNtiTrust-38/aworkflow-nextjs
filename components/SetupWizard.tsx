@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { useSession } from 'next-auth/react';
 
 interface SetupStatus {
@@ -337,27 +338,46 @@ export function SetupWizard() {
   };
 
   // 3. Patch: Prevent rapid navigation from breaking flow
-  const [navLock, setNavLock] = useState(false);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const nextStep = async () => {
-    if (!canProceed() || navLock) return;
-    setNavLock(true);
+    if (!canProceed()) return;
     
-    await saveCurrentStep();
-    setWizardState(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
+    // Clear any pending navigation
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
     
-    // Brief timeout to prevent rapid clicking
-    setTimeout(() => setNavLock(false), 150);
+    // Debounce rapid clicks to prevent multiple state updates
+    debounceTimeoutRef.current = setTimeout(async () => {
+      try {
+        await saveCurrentStep();
+        
+        // Force synchronous rendering to prevent overlapping renders
+        flushSync(() => {
+          setWizardState(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
+        });
+      } catch (error) {
+        console.error('Navigation error:', error);
+      }
+    }, 50); // Very short debounce, just enough to prevent rapid clicking
   };
 
   // Navigate to previous step
   const prevStep = () => {
-    if (wizardState.currentStep <= 0 || navLock) return;
-    setNavLock(true);
+    if (wizardState.currentStep <= 0) return;
     
-    setWizardState(prev => ({ ...prev, currentStep: prev.currentStep - 1 }));
+    // Clear any pending navigation
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
     
-    setTimeout(() => setNavLock(false), 150);
+    // Debounce rapid clicks to prevent multiple state updates
+    debounceTimeoutRef.current = setTimeout(() => {
+      flushSync(() => {
+        setWizardState(prev => ({ ...prev, currentStep: prev.currentStep - 1 }));
+      });
+    }, 50);
   };
 
   // Complete setup
@@ -434,16 +454,9 @@ export function SetupWizard() {
   const isLastStep = wizardState.currentStep === steps.length - 1;
 
   // --- PATCH: Only render current step's content and navigation ---
-  // PATCH: Prevent duplicate rendering by hiding navigation buttons and content while navLock is true
-  if (navLock) {
-    return (
-      <div className="max-w-2xl mx-auto p-6" data-testid="setupwizard-container-loading">
-        <div className="text-center">Loading...</div>
-      </div>
-    );
-  }
+  // PATCH: Ensure single container render with proper React key for remounting
   return (
-    <div className="max-w-2xl mx-auto p-6" data-testid="setupwizard-container" key={`container-step-${wizardState.currentStep}`}> // PATCH: key by currentStep
+    <div className="max-w-2xl mx-auto p-6" data-testid="setupwizard-container" key={`container-step-${wizardState.currentStep}`}> {/* PATCH: key by currentStep */}
       {/* Progress Bar - only one instance, keyed by currentStep */}
       <React.Fragment key={`progressbar-step-${wizardState.currentStep}`}>
         <div className="mb-8">
@@ -761,7 +774,7 @@ export function SetupWizard() {
           <div className="flex justify-between mt-8" data-testid="setupwizard-nav-buttons">
             <button
               onClick={prevStep}
-              disabled={wizardState.currentStep === 0 || navLock}
+              disabled={wizardState.currentStep === 0}
               className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400"
               tabIndex={0}
               data-testid="setupwizard-back-btn"
@@ -771,7 +784,7 @@ export function SetupWizard() {
             {isLastStep ? (
               <button
                 onClick={completeSetup}
-                disabled={completing || !canProceed() || navLock}
+                disabled={completing || !canProceed()}
                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
                 tabIndex={0}
                 data-testid="setupwizard-complete-btn"
@@ -781,7 +794,7 @@ export function SetupWizard() {
             ) : (
               <button
                 onClick={nextStep}
-                disabled={!canProceed() || navLock}
+                disabled={!canProceed()}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
                 tabIndex={0}
                 data-testid="setupwizard-continue-btn"

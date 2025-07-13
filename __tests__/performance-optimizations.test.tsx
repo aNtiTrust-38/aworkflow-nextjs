@@ -73,21 +73,30 @@ describe('Performance Optimizations', () => {
   describe('Bundle Optimization', () => {
     it('should use code splitting for step-specific components', () => {
       // Verify that heavy components are dynamically imported
-      const stepComponents = [
-        'CitationManager',
-        'ResearchAssistant', 
-        'ContentAnalysis',
-        'CommandPalette'
-      ];
-
-      stepComponents.forEach(componentName => {
-        mockDynamic(() => import(`../src/app/${componentName}`), {
-          loading: () => <div>Loading {componentName}...</div>,
-          ssr: false
-        });
+      // Mock individual components instead of using dynamic template literals
+      mockDynamic(() => import('../src/app/CitationManager'), {
+        loading: () => <div>Loading CitationManager...</div>,
+        ssr: false
+      });
+      
+      mockDynamic(() => import('../src/app/ResearchAssistant'), {
+        loading: () => <div>Loading ResearchAssistant...</div>,
+        ssr: false
+      });
+      
+      mockDynamic(() => import('../src/app/ContentAnalysis'), {
+        loading: () => <div>Loading ContentAnalysis...</div>,
+        ssr: false
+      });
+      
+      mockDynamic(() => import('../components/CommandPalette'), {
+        loading: () => <div>Loading CommandPalette...</div>,
+        ssr: false
       });
 
-      expect(mockDynamic).toHaveBeenCalledTimes(stepComponents.length);
+      const expectedCallCount = 4;
+
+      expect(mockDynamic).toHaveBeenCalledTimes(expectedCallCount);
     });
 
     it('should preload critical components for next step', async () => {

@@ -458,6 +458,30 @@ const WorkflowUI: React.FC = () => {
     }
   }, []);
 
+  const updateStepCompletion = useCallback((stepNumber: number) => {
+    const hasContent = (() => {
+      switch (stepNumber) {
+        case 1: return !!state.prompt;
+        case 2: return !!state.goals;
+        case 3: return Array.isArray(state.researchResults) && state.researchResults.length > 0;
+        case 4: return !!state.generatedContent;
+        case 5: return !!state.contentAnalysis;
+        case 6: return !!state.exportData;
+        default: return false;
+      }
+    })();
+
+    dispatch({
+      type: 'UPDATE_STEP_COMPLETION',
+      value: {
+        step: stepNumber,
+        completed: hasContent,
+        hasContent,
+        contentPreview: getStepContentPreview(stepNumber)
+      }
+    });
+  }, [state.prompt, state.goals, state.researchResults, state.generatedContent, state.contentAnalysis, state.exportData]);
+
   // Track step completion when content changes
   useEffect(() => {
     updateStepCompletion(1);
@@ -580,30 +604,6 @@ const WorkflowUI: React.FC = () => {
         return '';
     }
   };
-
-  const updateStepCompletion = useCallback((stepNumber: number) => {
-    const hasContent = (() => {
-      switch (stepNumber) {
-        case 1: return !!state.prompt;
-        case 2: return !!state.goals;
-        case 3: return Array.isArray(state.researchResults) && state.researchResults.length > 0;
-        case 4: return !!state.generatedContent;
-        case 5: return !!state.contentAnalysis;
-        case 6: return !!state.exportData;
-        default: return false;
-      }
-    })();
-
-    dispatch({
-      type: 'UPDATE_STEP_COMPLETION',
-      value: {
-        step: stepNumber,
-        completed: hasContent,
-        hasContent,
-        contentPreview: getStepContentPreview(stepNumber)
-      }
-    });
-  }, [state.prompt, state.goals, state.researchResults, state.generatedContent, state.contentAnalysis, state.exportData]);
 
   // Workflow state persistence
   const saveWorkflowState = useCallback(() => {

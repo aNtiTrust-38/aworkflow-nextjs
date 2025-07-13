@@ -38,6 +38,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   workflowState,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [inputValue, setInputValue] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const commandListRef = useRef<HTMLDivElement>(null);
@@ -502,6 +503,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
     command.action();
     onClose();
     setSearchTerm('');
+    setInputValue('');
     setSelectedIndex(0);
   }, [onClose]);
 
@@ -560,10 +562,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   // Track search performance metrics on search
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    // Update input value immediately for responsive UI
+    setInputValue(newValue);
+    
     const start = performance.now();
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      setSearchTerm(e.target.value);
+      setSearchTerm(newValue);
       if (typeof window !== 'undefined') {
         (window as any).__COMMAND_PALETTE_DEBOUNCED__ = true;
       }
@@ -631,7 +637,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
               type="text"
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Search commands..."
-              value={searchTerm}
+              value={inputValue}
               onChange={handleSearchChange}
               aria-label="Search commands"
             />
@@ -662,7 +668,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         >
           {filteredCommands.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
-              No commands found for "{searchTerm}"
+              No commands found for "{inputValue || searchTerm}"
             </div>
           ) : (
             <div className="py-2">

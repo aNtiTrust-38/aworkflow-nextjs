@@ -51,4 +51,25 @@ class CommandHistory {
 // Global instance
 const commandHistory = new CommandHistory();
 
+// Export individual functions for easier testing and usage
+export const getRecentCommands = (limit: number = 10): string[] => {
+  return commandHistory.getRecentCommands(limit).map(entry => entry.command);
+};
+
+export const addCommandUsage = (command: string, context?: string, result?: string): void => {
+  commandHistory.addCommand(command, context, result);
+};
+
+export const searchHistory = (query: string): CommandHistoryEntry[] => {
+  return commandHistory.searchHistory(query);
+};
+
+export const clearHistory = (): void => {
+  commandHistory.clearHistory();
+};
+
+export const getHistory = (): CommandHistoryEntry[] => {
+  return commandHistory.getHistory();
+};
+
 export default commandHistory;

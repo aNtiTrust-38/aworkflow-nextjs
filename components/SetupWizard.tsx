@@ -87,12 +87,17 @@ export function SetupWizard() {
   }, []);
 
   // 1. Patch: Robustly parse setupStatus and restore wizard step on mount
+  // Defensive: handle corrupted/missing fields
   useEffect(() => {
     if (setupStatus && !loading && !error) {
       // Defensive: handle corrupted/missing fields
       const completedSteps = Array.isArray(setupStatus.completedSteps) ? setupStatus.completedSteps : [];
       const nextStep = typeof setupStatus.nextStep === 'string' ? setupStatus.nextStep : null;
-      // Find step index by nextStep, fallback to 0
+      if (!Array.isArray(setupStatus.completedSteps) || typeof setupStatus.nextStep !== 'string') {
+        setError('Failed to load setup status: Corrupted setup status data');
+        setSetupStatus(null); // force error state
+        return;
+      }
       const stepIdx = nextStep ? steps.findIndex(s => s.id === nextStep) : 0;
       setWizardState(prev => ({
         ...prev,
@@ -429,8 +434,16 @@ export function SetupWizard() {
   const isLastStep = wizardState.currentStep === steps.length - 1;
 
   // --- PATCH: Only render current step's content and navigation ---
+  // PATCH: Prevent duplicate rendering by hiding navigation buttons and content while navLock is true
+  if (navLock) {
+    return (
+      <div className="max-w-2xl mx-auto p-6" data-testid="setupwizard-container-loading">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
   return (
-    <div className="max-w-2xl mx-auto p-6" data-testid="setupwizard-container">
+    <div className="max-w-2xl mx-auto p-6" data-testid="setupwizard-container" key={`container-step-${wizardState.currentStep}`}> // PATCH: key by currentStep
       {/* Progress Bar - only one instance, keyed by currentStep */}
       <React.Fragment key={`progressbar-step-${wizardState.currentStep}`}>
         <div className="mb-8">
@@ -748,7 +761,7 @@ export function SetupWizard() {
           <div className="flex justify-between mt-8" data-testid="setupwizard-nav-buttons">
             <button
               onClick={prevStep}
-              disabled={wizardState.currentStep === 0}
+              disabled={wizardState.currentStep === 0 || navLock}
               className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400"
               tabIndex={0}
               data-testid="setupwizard-back-btn"
@@ -758,7 +771,7 @@ export function SetupWizard() {
             {isLastStep ? (
               <button
                 onClick={completeSetup}
-                disabled={completing || !canProceed()}
+                disabled={completing || !canProceed() || navLock}
                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
                 tabIndex={0}
                 data-testid="setupwizard-complete-btn"
@@ -768,7 +781,7 @@ export function SetupWizard() {
             ) : (
               <button
                 onClick={nextStep}
-                disabled={!canProceed()}
+                disabled={!canProceed() || navLock}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
                 tabIndex={0}
                 data-testid="setupwizard-continue-btn"

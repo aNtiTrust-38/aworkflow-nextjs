@@ -428,6 +428,164 @@ const WorkflowUI: React.FC = () => {
     ] });
   }, []);
 
+  // Export Functionality Handlers
+  const handlePDFExport = useCallback(() => {
+    try {
+      const pdf = new jsPDF();
+      
+      // Add title
+      pdf.setFontSize(20);
+      pdf.text('Academic Paper Export', 20, 30);
+      
+      // Add content sections
+      let yPosition = 50;
+      
+      if (state.prompt) {
+        pdf.setFontSize(16);
+        pdf.text('Research Prompt:', 20, yPosition);
+        yPosition += 10;
+        pdf.setFontSize(12);
+        const promptLines = pdf.splitTextToSize(state.prompt, 170);
+        pdf.text(promptLines, 20, yPosition);
+        yPosition += promptLines.length * 5 + 10;
+      }
+      
+      if (state.goals) {
+        pdf.setFontSize(16);
+        pdf.text('Goals & Outline:', 20, yPosition);
+        yPosition += 10;
+        pdf.setFontSize(12);
+        const goalLines = pdf.splitTextToSize(state.goals, 170);
+        pdf.text(goalLines, 20, yPosition);
+        yPosition += goalLines.length * 5 + 10;
+      }
+      
+      if (state.generatedContent) {
+        if (yPosition > 250) {
+          pdf.addPage();
+          yPosition = 30;
+        }
+        pdf.setFontSize(16);
+        pdf.text('Generated Content:', 20, yPosition);
+        yPosition += 10;
+        pdf.setFontSize(12);
+        const contentLines = pdf.splitTextToSize(state.generatedContent, 170);
+        pdf.text(contentLines, 20, yPosition);
+      }
+      
+      // Save the PDF
+      pdf.save('academic-paper.pdf');
+    } catch (error) {
+      console.error('PDF export failed:', error);
+    }
+  }, [state.prompt, state.goals, state.generatedContent]);
+
+  const handleDOCXExport = useCallback(async () => {
+    try {
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Academic Paper Export",
+                  bold: true,
+                  size: 32,
+                }),
+              ],
+            }),
+            ...(state.prompt ? [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Research Prompt:",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: state.prompt,
+                    size: 20,
+                  }),
+                ],
+              }),
+            ] : []),
+            ...(state.goals ? [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Goals & Outline:",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: state.goals,
+                    size: 20,
+                  }),
+                ],
+              }),
+            ] : []),
+            ...(state.generatedContent ? [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "Generated Content:",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: state.generatedContent,
+                    size: 20,
+                  }),
+                ],
+              }),
+            ] : []),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'academic-paper.docx';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('DOCX export failed:', error);
+    }
+  }, [state.prompt, state.goals, state.generatedContent]);
+
+  const handleZoteroExport = useCallback(() => {
+    // Placeholder implementation for Zotero export
+    // In a real implementation, this would integrate with Zotero API
+    console.log('Zotero export - sending research data to Zotero library');
+    
+    // For now, just show an alert with the research data that would be sent
+    const researchData = {
+      title: `Research Paper: ${state.prompt?.substring(0, 50)}...`,
+      content: state.generatedContent,
+      references: state.researchResults || []
+    };
+    
+    alert(`Zotero Export Ready:\n${JSON.stringify(researchData, null, 2)}`);
+  }, [state.prompt, state.generatedContent, state.researchResults]);
+
   // Determine stepper test IDs for responsive tests
   // Responsive test IDs for stepper
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
@@ -1070,28 +1228,19 @@ const WorkflowUI: React.FC = () => {
               <div className="space-y-1">
                 <button 
                   className="w-full text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-2 rounded flex items-center justify-center gap-1"
-                  onClick={() => {
-                    // TODO: Implement PDF export
-                    console.log('PDF export');
-                  }}
+                  onClick={handlePDFExport}
                 >
                   📄 Export PDF
                 </button>
                 <button 
                   className="w-full text-xs bg-green-100 hover:bg-green-200 text-green-800 py-1 px-2 rounded flex items-center justify-center gap-1"
-                  onClick={() => {
-                    // TODO: Implement DOCX export
-                    console.log('DOCX export');
-                  }}
+                  onClick={handleDOCXExport}
                 >
                   📝 Export DOCX
                 </button>
                 <button 
                   className="w-full text-xs bg-purple-100 hover:bg-purple-200 text-purple-800 py-1 px-2 rounded flex items-center justify-center gap-1"
-                  onClick={() => {
-                    // TODO: Implement Zotero integration
-                    console.log('Zotero export');
-                  }}
+                  onClick={handleZoteroExport}
                 >
                   📚 Send to Zotero
                 </button>

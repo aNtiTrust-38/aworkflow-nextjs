@@ -1,16 +1,38 @@
 'use client';
 
-import React, { useReducer, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useReducer, useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { jsPDF } from 'jspdf';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
-import { ADHDFriendlyGoals } from './ADHDFriendlyGoals';
-import { ResearchAssistant } from './ResearchAssistant';
-import { ContentAnalysis } from './ContentAnalysis';
-import { CitationManager } from './CitationManager';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ProgressBar from '../../components/ProgressBar';
 import ErrorMessage from '../../components/ErrorMessage';
-import CommandPalette from '../../components/CommandPalette';
+
+// Lazy load heavy components
+const ADHDFriendlyGoals = dynamic(() => import('./ADHDFriendlyGoals').then(mod => ({ default: mod.ADHDFriendlyGoals })), {
+  loading: () => <LoadingSpinner message="Loading Goals Manager..." />,
+  ssr: false
+});
+
+const ResearchAssistant = dynamic(() => import('./ResearchAssistant').then(mod => ({ default: mod.ResearchAssistant })), {
+  loading: () => <LoadingSpinner message="Loading Research Assistant..." />,
+  ssr: false
+});
+
+const ContentAnalysis = dynamic(() => import('./ContentAnalysis').then(mod => ({ default: mod.ContentAnalysis })), {
+  loading: () => <LoadingSpinner message="Loading Content Analysis..." />,
+  ssr: false
+});
+
+const CitationManager = dynamic(() => import('./CitationManager').then(mod => ({ default: mod.CitationManager })), {
+  loading: () => <LoadingSpinner message="Loading Citation Manager..." />,
+  ssr: false
+});
+
+const CommandPalette = dynamic(() => import('../../components/CommandPalette'), {
+  loading: () => null,
+  ssr: false
+});
 
 const steps = [
   'PROMPT',

@@ -11,6 +11,10 @@ export interface UserSettings {
   openaiApiKey?: string;
   monthlyBudget?: number;
   
+  // Zotero integration settings
+  zoteroApiKey?: string;
+  zoteroUserId?: string;
+  
   // Academic preferences
   citationStyle?: 'APA' | 'MLA' | 'Chicago' | 'Harvard';
   language?: string;
@@ -29,6 +33,8 @@ export const SETTING_KEYS = {
   ANTHROPIC_API_KEY: 'anthropic_api_key',
   OPENAI_API_KEY: 'openai_api_key',
   MONTHLY_BUDGET: 'monthly_budget',
+  ZOTERO_API_KEY: 'zotero_api_key',
+  ZOTERO_USER_ID: 'zotero_user_id',
   CITATION_STYLE: 'citation_style',
   LANGUAGE: 'language',
   THEME: 'theme',

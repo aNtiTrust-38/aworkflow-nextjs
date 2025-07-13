@@ -59,6 +59,8 @@ interface WorkflowState {
   navigationDisabled: boolean;
   loadingState: LoadingState;
   errorState: ErrorState;
+  zoteroExporting: boolean;
+  zoteroMessage: string | null;
 }
 
 type Action = 
@@ -74,7 +76,9 @@ type Action =
   | { type: 'SET_ERROR'; value: string | null }
   | { type: 'SET_NAVIGATION_DISABLED'; value: boolean }
   | { type: 'SET_LOADING_STATE'; value: Partial<LoadingState> }
-  | { type: 'SET_ERROR_STATE'; value: Partial<ErrorState> };
+  | { type: 'SET_ERROR_STATE'; value: Partial<ErrorState> }
+  | { type: 'SET_ZOTERO_EXPORTING'; value: boolean }
+  | { type: 'SET_ZOTERO_MESSAGE'; value: string | null };
 
 function workflowReducer(state: WorkflowState, action: Action): WorkflowState {
   switch (action.type) {
@@ -104,6 +108,10 @@ function workflowReducer(state: WorkflowState, action: Action): WorkflowState {
       return { ...state, loadingState: { ...state.loadingState, ...action.value } };
     case 'SET_ERROR_STATE':
       return { ...state, errorState: { ...state.errorState, ...action.value } };
+    case 'SET_ZOTERO_EXPORTING':
+      return { ...state, zoteroExporting: action.value };
+    case 'SET_ZOTERO_MESSAGE':
+      return { ...state, zoteroMessage: action.value };
     default:
       return state;
   }
@@ -134,6 +142,8 @@ const initialState: WorkflowState = {
     retryCount: 0,
     canRetry: false,
   },
+  zoteroExporting: false,
+  zoteroMessage: null,
 };
 
 const WorkflowUI: React.FC = () => {
@@ -571,20 +581,72 @@ const WorkflowUI: React.FC = () => {
     }
   }, [state.prompt, state.goals, state.generatedContent]);
 
-  const handleZoteroExport = useCallback(() => {
-    // Placeholder implementation for Zotero export
-    // In a real implementation, this would integrate with Zotero API
-    console.log('Zotero export - sending research data to Zotero library');
-    
-    // For now, just show an alert with the research data that would be sent
-    const researchData = {
-      title: `Research Paper: ${state.prompt?.substring(0, 50)}...`,
-      content: state.generatedContent,
-      references: state.researchResults || []
-    };
-    
-    alert(`Zotero Export Ready:\n${JSON.stringify(researchData, null, 2)}`);
-  }, [state.prompt, state.generatedContent, state.researchResults]);
+  const handleZoteroExport = useCallback(async () => {
+    try {
+      // Set loading state
+      dispatch({ type: 'SET_ZOTERO_EXPORTING', value: true });
+      dispatch({ type: 'SET_ZOTERO_MESSAGE', value: null });
+
+      // First, get Zotero settings from user settings
+      const settingsResponse = await fetch('/api/user-settings');
+      if (!settingsResponse.ok) {
+        throw new Error('Failed to load Zotero settings');
+      }
+      
+      const settings = await settingsResponse.json();
+      
+      if (!settings.zoteroApiKey || !settings.zoteroUserId) {
+        throw new Error('Zotero API key and User ID must be configured in settings');
+      }
+
+      // Prepare export data
+      const exportData = {
+        references: state.researchResults || [],
+        metadata: {
+          title: state.prompt?.substring(0, 100) || 'Academic Workflow Export',
+          content: state.generatedContent,
+          goals: state.goals,
+        }
+      };
+
+      // Call Zotero export API
+      const exportResponse = await fetch('/api/zotero/export', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(exportData),
+      });
+
+      if (!exportResponse.ok) {
+        const errorData = await exportResponse.json();
+        throw new Error(errorData.error || 'Export failed');
+      }
+
+      const result = await exportResponse.json();
+      
+      // Handle conflicts if any
+      if (result.conflicts && result.conflicts.length > 0) {
+        const conflictMessage = `Export completed with ${result.conflicts.length} conflicts. Some items may need manual review in Zotero.`;
+        dispatch({ type: 'SET_ZOTERO_MESSAGE', value: conflictMessage });
+      } else {
+        const successMessage = `Successfully exported ${result.exported || 0} references to Zotero!`;
+        dispatch({ type: 'SET_ZOTERO_MESSAGE', value: successMessage });
+      }
+
+    } catch (error) {
+      console.error('Zotero export failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Export failed';
+      dispatch({ type: 'SET_ZOTERO_MESSAGE', value: `Error: ${errorMessage}` });
+    } finally {
+      dispatch({ type: 'SET_ZOTERO_EXPORTING', value: false });
+      
+      // Clear message after 5 seconds
+      setTimeout(() => {
+        dispatch({ type: 'SET_ZOTERO_MESSAGE', value: null });
+      }, 5000);
+    }
+  }, [state.prompt, state.generatedContent, state.researchResults, state.goals]);
 
   // Determine stepper test IDs for responsive tests
   // Responsive test IDs for stepper
@@ -1239,12 +1301,30 @@ const WorkflowUI: React.FC = () => {
                   📝 Export DOCX
                 </button>
                 <button 
-                  className="w-full text-xs bg-purple-100 hover:bg-purple-200 text-purple-800 py-1 px-2 rounded flex items-center justify-center gap-1"
+                  className={`w-full text-xs py-1 px-2 rounded flex items-center justify-center gap-1 ${
+                    state.zoteroExporting 
+                      ? 'bg-purple-200 text-purple-600 cursor-wait' 
+                      : 'bg-purple-100 hover:bg-purple-200 text-purple-800'
+                  }`}
                   onClick={handleZoteroExport}
+                  disabled={state.zoteroExporting}
                 >
-                  📚 Send to Zotero
+                  {state.zoteroExporting ? '⏳ Exporting...' : '📚 Send to Zotero'}
                 </button>
               </div>
+              
+              {/* Zotero status message */}
+              {state.zoteroMessage && (
+                <div className={`mt-2 p-2 text-xs rounded ${
+                  state.zoteroMessage.startsWith('Error:') 
+                    ? 'bg-red-50 text-red-700 border border-red-200' 
+                    : state.zoteroMessage.includes('conflicts')
+                    ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                    : 'bg-green-50 text-green-700 border border-green-200'
+                }`}>
+                  {state.zoteroMessage}
+                </div>
+              )}
             </div>
             
             {/* Progress indicator */}

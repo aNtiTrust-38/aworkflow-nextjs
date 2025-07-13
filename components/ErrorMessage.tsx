@@ -20,7 +20,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, details, actions }
       </svg>
       <div className="flex-1">
         <h3 className="text-red-800 font-medium mb-2">{message}</h3>
-        {details && <p className="text-red-700 mb-4">{details}</p>}
+        {details && <div className="text-red-700 mb-4">{details}</div>}
         {actions && actions.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {actions.map((action, idx) => (

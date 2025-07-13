@@ -155,6 +155,10 @@ export class ExportTemplateManager {
       ...template,
       ...updates,
       metadata: {
+        version: '1.0.0',
+        author: 'System',
+        created: new Date(),
+        tags: [],
         ...template.metadata,
         ...updates.metadata,
         modified: new Date()
@@ -173,8 +177,10 @@ export class ExportTemplateManager {
       ...source,
       ...config,
       metadata: {
-        ...source.metadata,
         version: '1.0.0',
+        author: 'System',
+        tags: [],
+        ...source.metadata,
         created: new Date(),
         modified: new Date()
       }

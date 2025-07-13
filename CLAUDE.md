@@ -30,6 +30,9 @@ npx vitest run __tests__/components/                   # Component tests
 npx vitest run __tests__/api/                         # API endpoint tests
 ```
 
+## First Line Directive
+- CLAUDE.md MUST be followed explicitly.
+
 ## Architecture Overview
 
 ### Multi-LLM AI Provider System

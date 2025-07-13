@@ -4,6 +4,20 @@ export interface SetupStatus {
   currentStep?: number;
 }
 
+export interface EncryptionResult {
+  encrypted: string;
+  iv: string;
+  salt: string;
+  tag: string;
+}
+
+export interface DecryptionRequest {
+  encrypted: string;
+  iv: string;
+  salt: string;
+  tag: string;
+}
+
 export interface UserSettings {
   // AI Provider settings
   aiProvider?: 'auto' | 'anthropic' | 'openai';

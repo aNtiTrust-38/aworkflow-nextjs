@@ -117,7 +117,7 @@ Please write comprehensive academic content that:
 Write detailed paragraphs for each section. Include in-text citations in the format (Author, Year).
 `;
 
-    const result = await router.generateWithFailover(generatePrompt, TaskType.WRITING);
+    const result = await (await router).generateWithFailover(generatePrompt, TaskType.WRITING);
     
     // Validate citations in generated content
     const citationSet = new Set(references.map(r => r.citation));

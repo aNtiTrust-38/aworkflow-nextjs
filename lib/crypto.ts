@@ -83,7 +83,8 @@ export function encrypt(plaintext: string): EncryptionResult {
     return {
       encrypted: encryptedWithTag,
       salt: salt.toString('base64'),
-      iv: iv.toString('base64')
+      iv: iv.toString('base64'),
+      tag: tag ? tag.toString('base64') : ''
     };
   } catch (error: any) {
     throw new Error(`Encryption failed: ${error.message}`);

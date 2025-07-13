@@ -34,8 +34,8 @@ class PerformanceMonitor {
         const lastEntry = entries[entries.length - 1];
         
         this.recordMetric('LCP', lastEntry.startTime, {
-          element: lastEntry.element?.tagName,
-          url: lastEntry.url
+          element: (lastEntry as any).element?.tagName,
+          url: (lastEntry as any).url
         });
       });
       
@@ -48,9 +48,9 @@ class PerformanceMonitor {
       const observer = new PerformanceObserver((entryList) => {
         const firstInput = entryList.getEntries()[0];
         
-        this.recordMetric('FID', firstInput.processingStart - firstInput.startTime, {
+        this.recordMetric('FID', (firstInput as any).processingStart - firstInput.startTime, {
           eventType: firstInput.name,
-          target: firstInput.target?.tagName
+          target: (firstInput as any).target?.tagName
         });
       });
       
@@ -64,8 +64,8 @@ class PerformanceMonitor {
       
       const observer = new PerformanceObserver((entryList) => {
         for (const entry of entryList.getEntries()) {
-          if (!entry.hadRecentInput) {
-            clsValue += entry.value;
+          if (!(entry as any).hadRecentInput) {
+            clsValue += (entry as any).value;
           }
         }
         

@@ -1,7 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+// Create a function to get prisma instance for easier testing
+function getPrismaClient() {
+  return new PrismaClient()
+}
 
 interface HealthCheckResponse {
   status: 'healthy' | 'unhealthy' | 'degraded'
@@ -120,6 +123,7 @@ async function handler(
 
 async function checkDatabaseHealth() {
   const startTime = Date.now()
+  const prisma = getPrismaClient()
   
   try {
     await prisma.$connect()

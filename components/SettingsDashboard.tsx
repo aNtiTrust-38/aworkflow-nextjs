@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 
@@ -151,7 +152,7 @@ export function SettingsDashboard() {
     Object.keys(settings).forEach(key => {
       const field = key as keyof UserSettings;
       if (settings[field] !== originalSettings[field]) {
-        changes[field] = settings[field];
+        (changes as any)[field] = settings[field];
       }
     });
     

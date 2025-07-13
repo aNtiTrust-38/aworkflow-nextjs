@@ -174,7 +174,7 @@ export class Logger {
       let output = `[${timestamp}] ${levelUpper} ${loggerName}: ${message}`
       
       // Add metadata if present
-      const metadata = { ...entry }
+      const metadata: Partial<LogEntry> = { ...entry }
       delete metadata.timestamp
       delete metadata.level
       delete metadata.logger
@@ -233,6 +233,11 @@ export function createLogger(config?: Partial<LoggerConfig>): Logger {
         id: user.id,
         email: user.email
         // Exclude sensitive fields like password
+      }),
+      error: (error: Error) => ({
+        name: error.name,
+        message: error.message,
+        stack: error.stack
       }),
       ...config?.serializers
     },

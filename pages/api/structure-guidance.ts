@@ -89,7 +89,7 @@ Format your response as JSON with these keys:
 - checklist: array of strings
 `;
 
-    const result = await router.generateWithFailover(structurePrompt, TaskType.OUTLINE);
+    const result = await (await router).generateWithFailover(structurePrompt, TaskType.OUTLINE);
     
     // Try to parse as JSON first, fallback to structured text
     let response;

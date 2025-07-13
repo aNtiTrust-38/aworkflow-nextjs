@@ -45,6 +45,7 @@ export interface ContainerTestResult {
   containerId?: string
   status?: string
   isRunning?: boolean
+  warnings?: string[]
   healthCheck?: {
     url: string
     status: number

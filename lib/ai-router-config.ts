@@ -4,8 +4,8 @@ import { OpenAIProvider } from './ai-providers/openai';
 import { AIRouter } from './ai-providers/router';
 
 export interface AIRouterConfig {
-  providers: Record<string, AIProvider>;
-  defaultProvider: string;
+  providers?: Record<string, AIProvider>;
+  defaultProvider?: string;
   budget?: {
     monthly: number;
     current: number;
@@ -13,25 +13,24 @@ export interface AIRouterConfig {
 }
 
 export async function getAIRouter(config?: Partial<AIRouterConfig>): Promise<AIRouter> {
-  const providers: Record<string, AIProvider> = {};
+  const providers: AIProvider[] = [];
   
-  // Initialize providers based on available API keys
-  if (config?.providers?.anthropic || process.env.ANTHROPIC_API_KEY) {
-    providers.anthropic = new AnthropicProvider({
-      apiKey: config?.providers?.anthropic?.getApiKey?.() || process.env.ANTHROPIC_API_KEY || '',
-    });
+  // Use provided providers or initialize from environment variables
+  if (config?.providers) {
+    providers.push(...Object.values(config.providers));
+  } else {
+    // Initialize from environment variables
+    if (process.env.ANTHROPIC_API_KEY) {
+      providers.push(new AnthropicProvider(process.env.ANTHROPIC_API_KEY));
+    }
+    
+    if (process.env.OPENAI_API_KEY) {
+      providers.push(new OpenAIProvider(process.env.OPENAI_API_KEY));
+    }
   }
   
-  if (config?.providers?.openai || process.env.OPENAI_API_KEY) {
-    providers.openai = new OpenAIProvider({
-      apiKey: config?.providers?.openai?.getApiKey?.() || process.env.OPENAI_API_KEY || '',
-    });
-  }
-  
-  const router = new AIRouter({
-    providers,
-    defaultProvider: config?.defaultProvider || 'anthropic',
-    budget: config?.budget,
+  const router = new AIRouter(providers, {
+    monthlyBudget: config?.budget?.monthly || 100,
   });
   
   return router;
@@ -49,15 +48,11 @@ export async function createAIRouterFromSettings(userSettings: any): Promise<AIR
   const providers: Record<string, AIProvider> = {};
   
   if (userSettings.anthropicApiKey) {
-    providers.anthropic = new AnthropicProvider({
-      apiKey: userSettings.anthropicApiKey,
-    });
+    providers.anthropic = new AnthropicProvider(userSettings.anthropicApiKey);
   }
   
   if (userSettings.openaiApiKey) {
-    providers.openai = new OpenAIProvider({
-      apiKey: userSettings.openaiApiKey,
-    });
+    providers.openai = new OpenAIProvider(userSettings.openaiApiKey);
   }
   
   config.providers = providers;

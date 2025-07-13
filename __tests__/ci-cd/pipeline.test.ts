@@ -178,7 +178,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "${{ secrets.API_KEY }}" > api-key.txt
+      - run: echo "\${{ secrets.API_KEY }}" > api-key.txt
       - run: curl -X POST https://api.example.com/deploy
       `)
 
@@ -273,7 +273,7 @@ jobs:
     it('should validate caching configuration', () => {
       const steps = [
         { name: 'setup-node', action: 'actions/setup-node@v4', with: { cache: 'npm' } },
-        { name: 'cache-deps', action: 'actions/cache@v3', with: { path: 'node_modules', key: 'deps-${{ hashFiles("package-lock.json") }}' } }
+        { name: 'cache-deps', action: 'actions/cache@v3', with: { path: 'node_modules', key: 'deps-\${{ hashFiles("package-lock.json") }}' } }
       ]
 
       const result = validatePipelineSteps(steps)
@@ -407,7 +407,7 @@ jobs:
           steps: ['deploy.sh'],
           environment: {
             NODE_ENV: 'production',
-            API_URL: '${{ secrets.PROD_API_URL }}'
+            API_URL: '\${{ secrets.PROD_API_URL }}'
           },
           requiredSecrets: ['PROD_API_URL', 'DEPLOY_KEY']
         }
@@ -421,7 +421,7 @@ jobs:
       expect(result.validationResults.deploy.requiredSecrets).toEqual(['PROD_API_URL', 'DEPLOY_KEY'])
       expect(result.validationResults.deploy.environmentVariables).toEqual({
         NODE_ENV: 'production',
-        API_URL: '${{ secrets.PROD_API_URL }}'
+        API_URL: '\${{ secrets.PROD_API_URL }}'
       })
     })
 

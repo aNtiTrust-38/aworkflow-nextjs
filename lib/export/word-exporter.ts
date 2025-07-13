@@ -273,7 +273,7 @@ export class WordExporter {
   private processRevisions(revisions: Revision[], settings: WordSettings): ProcessedRevision[] {
     return revisions.map(revision => ({
       ...revision,
-      visible: settings.trackChanges && !settings.acceptAllChanges,
+      visible: Boolean(settings.trackChanges && !settings.acceptAllChanges),
       processed: true
     }));
   }
@@ -308,8 +308,8 @@ export class WordExporter {
 
   // Table formatting
   private formatTable(table: WordTable, settings: WordSettings): FormattedWordTable {
-    const numbered = settings.numberTables;
-    const captioned = settings.includeTableCaptions;
+    const numbered = Boolean(settings.numberTables);
+    const captioned = Boolean(settings.includeTableCaptions);
     
     return {
       ...table,
@@ -319,15 +319,17 @@ export class WordExporter {
         ...table.styling,
         headerStyle: table.styling?.headerStyle || 'table-header',
         cellStyle: table.styling?.cellStyle || 'table-cell',
-        borderStyle: table.styling?.borderStyle || 'solid'
+        borderStyle: table.styling?.borderStyle || 'solid',
+        alternateRowColors: Boolean(table.styling?.alternateRowColors),
+        width: table.styling?.width || 'auto'
       }
     };
   }
 
   // Figure handling
   private processFigure(figure: WordFigure, settings: WordSettings): ProcessedWordFigure {
-    const numbered = settings.numberFigures;
-    const captioned = settings.includeFigureCaptions;
+    const numbered = Boolean(settings.numberFigures);
+    const captioned = Boolean(settings.includeFigureCaptions);
     
     return {
       ...figure,
@@ -363,7 +365,7 @@ export class WordExporter {
   private processComments(comments: Comment[], settings: WordSettings): ProcessedComment[] {
     return comments.map(comment => ({
       ...comment,
-      visible: settings.showComments,
+      visible: Boolean(settings.showComments),
       processed: true
     }));
   }

@@ -812,8 +812,8 @@ const WorkflowUI: React.FC = () => {
       // Helper function to add text with page breaks
       const addTextWithPageBreak = (text: string, fontSize: number, isBold = false, isTitle = false) => {
         pdf.setFontSize(fontSize);
-        if (isBold) pdf.setFont(undefined, 'bold');
-        else pdf.setFont(undefined, 'normal');
+        if (isBold) pdf.setFont('helvetica', 'bold');
+        else pdf.setFont('helvetica', 'normal');
         
         const lines = pdf.splitTextToSize(text, contentWidth);
         
@@ -825,7 +825,7 @@ const WorkflowUI: React.FC = () => {
             // Add header on new pages (except first)
             if (pdf.getNumberOfPages() > 1) {
               pdf.setFontSize(10);
-              pdf.setFont(undefined, 'normal');
+              pdf.setFont('helvetica', 'normal');
               pdf.text('Academic Research Export', margin, 15);
               pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, 15);
               yPosition = margin + 10;
@@ -898,7 +898,7 @@ const WorkflowUI: React.FC = () => {
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
         pdf.setFontSize(8);
-        pdf.setFont(undefined, 'normal');
+        pdf.setFont('helvetica', 'normal');
         const exportDate = new Date().toLocaleDateString();
         const footerText = `Generated on ${exportDate} | Citation Style: ${citationStyle}`;
         pdf.text(footerText, margin, pageHeight - 10);
@@ -2049,13 +2049,13 @@ const WorkflowUI: React.FC = () => {
               <div className="space-y-1">
                 <button 
                   className="w-full text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 py-1 px-2 rounded flex items-center justify-center gap-1"
-                  onClick={handlePDFExport}
+                  onClick={() => handlePDFExport()}
                 >
                   📄 Export PDF
                 </button>
                 <button 
                   className="w-full text-xs bg-green-100 hover:bg-green-200 text-green-800 py-1 px-2 rounded flex items-center justify-center gap-1"
-                  onClick={handleDOCXExport}
+                  onClick={() => handleDOCXExport()}
                 >
                   📝 Export DOCX
                 </button>
@@ -2065,7 +2065,7 @@ const WorkflowUI: React.FC = () => {
                       ? 'bg-purple-200 text-purple-600 cursor-wait' 
                       : 'bg-purple-100 hover:bg-purple-200 text-purple-800'
                   }`}
-                  onClick={handleZoteroExport}
+                  onClick={() => handleZoteroExport()}
                   disabled={state.zoteroExporting}
                 >
                   {state.zoteroExporting ? '⏳ Exporting...' : '📚 Send to Zotero'}

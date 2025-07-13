@@ -438,131 +438,317 @@ const WorkflowUI: React.FC = () => {
     ] });
   }, []);
 
-  // Export Functionality Handlers
-  const handlePDFExport = useCallback(() => {
+  // Enhanced PDF Export with Academic Formatting
+  const handlePDFExport = useCallback((citationStyle = 'APA', citations: Reference[] = [], selectedSections: string[] = []) => {
     try {
       const pdf = new jsPDF();
-      
-      // Add title
-      pdf.setFontSize(20);
-      pdf.text('Academic Paper Export', 20, 30);
-      
-      // Add content sections
-      let yPosition = 50;
-      
-      if (state.prompt) {
-        pdf.setFontSize(16);
-        pdf.text('Research Prompt:', 20, yPosition);
-        yPosition += 10;
-        pdf.setFontSize(12);
-        const promptLines = pdf.splitTextToSize(state.prompt, 170);
-        pdf.text(promptLines, 20, yPosition);
-        yPosition += promptLines.length * 5 + 10;
-      }
-      
-      if (state.goals) {
-        pdf.setFontSize(16);
-        pdf.text('Goals & Outline:', 20, yPosition);
-        yPosition += 10;
-        pdf.setFontSize(12);
-        const goalLines = pdf.splitTextToSize(state.goals, 170);
-        pdf.text(goalLines, 20, yPosition);
-        yPosition += goalLines.length * 5 + 10;
-      }
-      
-      if (state.generatedContent) {
-        if (yPosition > 250) {
-          pdf.addPage();
-          yPosition = 30;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 25;
+      const contentWidth = pageWidth - (margin * 2);
+      let yPosition = margin;
+
+      // Helper function to add text with page breaks
+      const addTextWithPageBreak = (text: string, fontSize: number, isBold = false, isTitle = false) => {
+        pdf.setFontSize(fontSize);
+        if (isBold) pdf.setFont(undefined, 'bold');
+        else pdf.setFont(undefined, 'normal');
+        
+        const lines = pdf.splitTextToSize(text, contentWidth);
+        
+        for (let i = 0; i < lines.length; i++) {
+          if (yPosition > pageHeight - margin - 20) {
+            pdf.addPage();
+            yPosition = margin;
+            
+            // Add header on new pages (except first)
+            if (pdf.getNumberOfPages() > 1) {
+              pdf.setFontSize(10);
+              pdf.setFont(undefined, 'normal');
+              pdf.text('Academic Research Export', margin, 15);
+              pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - margin - 20, 15);
+              yPosition = margin + 10;
+            }
+          }
+          
+          if (isTitle && i === 0) {
+            // Center title
+            const textWidth = pdf.getTextWidth(lines[i]);
+            pdf.text(lines[i], (pageWidth - textWidth) / 2, yPosition);
+          } else {
+            pdf.text(lines[i], margin, yPosition);
+          }
+          yPosition += fontSize * 0.4 + 2;
         }
-        pdf.setFontSize(16);
-        pdf.text('Generated Content:', 20, yPosition);
-        yPosition += 10;
-        pdf.setFontSize(12);
-        const contentLines = pdf.splitTextToSize(state.generatedContent, 170);
-        pdf.text(contentLines, 20, yPosition);
+        yPosition += 5; // Extra spacing after sections
+      };
+
+      // Academic Paper Title
+      addTextWithPageBreak('Academic Research Document', 18, true, true);
+      yPosition += 10;
+
+      // Research Prompt Section
+      if (state.prompt && (selectedSections.length === 0 || selectedSections.includes('Introduction'))) {
+        addTextWithPageBreak('Research Prompt', 14, true);
+        addTextWithPageBreak(state.prompt, 11);
+        yPosition += 5;
       }
+
+      // Goals & Outline Section
+      if (state.goals && (selectedSections.length === 0 || selectedSections.includes('Methods'))) {
+        addTextWithPageBreak('Goals & Methodology', 14, true);
+        addTextWithPageBreak(state.goals, 11);
+        yPosition += 5;
+      }
+
+      // Generated Content Section
+      if (state.generatedContent && (selectedSections.length === 0 || selectedSections.includes('Results'))) {
+        addTextWithPageBreak('Research Results', 14, true);
+        addTextWithPageBreak(state.generatedContent, 11);
+        yPosition += 5;
+      }
+
+      // Content Analysis Section
+      if (state.contentAnalysis && (selectedSections.length === 0 || selectedSections.includes('Discussion'))) {
+        addTextWithPageBreak('Analysis & Discussion', 14, true);
+        addTextWithPageBreak(state.contentAnalysis, 11);
+        yPosition += 5;
+      }
+
+      // References Section
+      if (citations && citations.length > 0) {
+        // Start references on new page if we're already past halfway
+        if (yPosition > pageHeight / 2) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+        
+        addTextWithPageBreak('References', 14, true);
+        yPosition += 5;
+
+        citations.forEach((citation, index) => {
+          const citationText = citation.citation || `${citation.authors.join(', ')} (${citation.year}). ${citation.title}.`;
+          addTextWithPageBreak(`${index + 1}. ${citationText}`, 10);
+        });
+      }
+
+      // Footer with export info
+      const totalPages = pdf.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setFont(undefined, 'normal');
+        const exportDate = new Date().toLocaleDateString();
+        const footerText = `Generated on ${exportDate} | Citation Style: ${citationStyle}`;
+        pdf.text(footerText, margin, pageHeight - 10);
+      }
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      const filename = `academic-research-${timestamp}.pdf`;
       
-      // Save the PDF
-      pdf.save('academic-paper.pdf');
+      pdf.save(filename);
     } catch (error) {
       console.error('PDF export failed:', error);
+      dispatch({ type: 'SET_ERROR', value: 'PDF export failed. Please try again.' });
     }
-  }, [state.prompt, state.goals, state.generatedContent]);
+  }, [state.prompt, state.goals, state.generatedContent, state.contentAnalysis]);
 
-  const handleDOCXExport = useCallback(async () => {
+  // Enhanced DOCX Export with Academic Formatting  
+  const handleDOCXExport = useCallback(async (citationStyle = 'APA', citations: Reference[] = [], selectedSections: string[] = []) => {
     try {
-      const doc = new Document({
-        sections: [{
-          properties: {},
+      const children = [];
+
+      // Title
+      children.push(
+        new Paragraph({
+          alignment: 'center',
+          spacing: { after: 400 },
           children: [
+            new TextRun({
+              text: "Academic Research Document",
+              bold: true,
+              size: 36,
+              font: 'Times New Roman'
+            }),
+          ],
+        })
+      );
+
+      // Add spacing
+      children.push(new Paragraph({ text: "" }));
+
+      // Research Prompt Section
+      if (state.prompt && (selectedSections.length === 0 || selectedSections.includes('Introduction'))) {
+        children.push(
+          new Paragraph({
+            spacing: { before: 200, after: 120 },
+            children: [
+              new TextRun({
+                text: "Research Prompt",
+                bold: true,
+                size: 28,
+                font: 'Times New Roman'
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 200 },
+            children: [
+              new TextRun({
+                text: state.prompt,
+                size: 24,
+                font: 'Times New Roman'
+              }),
+            ],
+          })
+        );
+      }
+
+      // Goals & Methodology Section
+      if (state.goals && (selectedSections.length === 0 || selectedSections.includes('Methods'))) {
+        children.push(
+          new Paragraph({
+            spacing: { before: 200, after: 120 },
+            children: [
+              new TextRun({
+                text: "Goals & Methodology",
+                bold: true,
+                size: 28,
+                font: 'Times New Roman'
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 200 },
+            children: [
+              new TextRun({
+                text: state.goals,
+                size: 24,
+                font: 'Times New Roman'
+              }),
+            ],
+          })
+        );
+      }
+
+      // Research Results Section
+      if (state.generatedContent && (selectedSections.length === 0 || selectedSections.includes('Results'))) {
+        children.push(
+          new Paragraph({
+            spacing: { before: 200, after: 120 },
+            children: [
+              new TextRun({
+                text: "Research Results",
+                bold: true,
+                size: 28,
+                font: 'Times New Roman'
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 200 },
+            children: [
+              new TextRun({
+                text: state.generatedContent,
+                size: 24,
+                font: 'Times New Roman'
+              }),
+            ],
+          })
+        );
+      }
+
+      // Analysis & Discussion Section
+      if (state.contentAnalysis && (selectedSections.length === 0 || selectedSections.includes('Discussion'))) {
+        children.push(
+          new Paragraph({
+            spacing: { before: 200, after: 120 },
+            children: [
+              new TextRun({
+                text: "Analysis & Discussion",
+                bold: true,
+                size: 28,
+                font: 'Times New Roman'
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 200 },
+            children: [
+              new TextRun({
+                text: state.contentAnalysis,
+                size: 24,
+                font: 'Times New Roman'
+              }),
+            ],
+          })
+        );
+      }
+
+      // References Section
+      if (citations && citations.length > 0) {
+        children.push(
+          new Paragraph({
+            spacing: { before: 400, after: 120 },
+            children: [
+              new TextRun({
+                text: "References",
+                bold: true,
+                size: 28,
+                font: 'Times New Roman'
+              }),
+            ],
+          })
+        );
+
+        citations.forEach((citation, index) => {
+          const citationText = citation.citation || `${citation.authors.join(', ')} (${citation.year}). ${citation.title}.`;
+          children.push(
             new Paragraph({
+              spacing: { after: 120 },
               children: [
                 new TextRun({
-                  text: "Academic Paper Export",
-                  bold: true,
-                  size: 32,
+                  text: citationText,
+                  size: 22,
+                  font: 'Times New Roman'
                 }),
               ],
+            })
+          );
+        });
+      }
+
+      // Footer with export info
+      const exportDate = new Date().toLocaleDateString();
+      children.push(
+        new Paragraph({
+          spacing: { before: 400 },
+          children: [
+            new TextRun({
+              text: `Generated on ${exportDate} | Citation Style: ${citationStyle}`,
+              size: 18,
+              italics: true,
+              color: '666666',
+              font: 'Times New Roman'
             }),
-            ...(state.prompt ? [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Research Prompt:",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: state.prompt,
-                    size: 20,
-                  }),
-                ],
-              }),
-            ] : []),
-            ...(state.goals ? [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Goals & Outline:",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: state.goals,
-                    size: 20,
-                  }),
-                ],
-              }),
-            ] : []),
-            ...(state.generatedContent ? [
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "Generated Content:",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: state.generatedContent,
-                    size: 20,
-                  }),
-                ],
-              }),
-            ] : []),
           ],
+        })
+      );
+
+      const doc = new Document({
+        sections: [{
+          properties: {
+            page: {
+              margin: {
+                top: 1440,    // 1 inch
+                right: 1440,  // 1 inch  
+                bottom: 1440, // 1 inch
+                left: 1440,   // 1 inch
+              },
+            },
+          },
+          children,
         }],
       });
 
@@ -570,7 +756,11 @@ const WorkflowUI: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'academic-paper.docx';
+      
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      link.download = `academic-research-${timestamp}.docx`;
+      
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
@@ -578,10 +768,12 @@ const WorkflowUI: React.FC = () => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('DOCX export failed:', error);
+      dispatch({ type: 'SET_ERROR', value: 'DOCX export failed. Please try again.' });
     }
-  }, [state.prompt, state.goals, state.generatedContent]);
+  }, [state.prompt, state.goals, state.generatedContent, state.contentAnalysis]);
 
-  const handleZoteroExport = useCallback(async () => {
+  // Enhanced Zotero Export with BibTeX Support
+  const handleZoteroExport = useCallback(async (citations: Reference[] = [], exportFormat: 'json' | 'bibtex' = 'json') => {
     try {
       // Set loading state
       dispatch({ type: 'SET_ZOTERO_EXPORTING', value: true });
@@ -599,13 +791,32 @@ const WorkflowUI: React.FC = () => {
         throw new Error('Zotero API key and User ID must be configured in settings');
       }
 
-      // Prepare export data
+      // Combine workflow references with passed citations
+      const allReferences = [
+        ...(state.researchResults || []),
+        ...citations
+      ];
+
+      // Remove duplicates based on title and authors
+      const uniqueReferences = allReferences.filter((ref, index, self) => 
+        index === self.findIndex(r => 
+          r.title === ref.title && 
+          JSON.stringify(r.authors) === JSON.stringify(ref.authors)
+        )
+      );
+
+      // Prepare enhanced export data
       const exportData = {
-        references: state.researchResults || [],
+        references: uniqueReferences,
+        format: exportFormat,
+        apiKey: settings.zoteroApiKey,
+        userId: settings.zoteroUserId,
         metadata: {
           title: state.prompt?.substring(0, 100) || 'Academic Workflow Export',
           content: state.generatedContent,
           goals: state.goals,
+          exportDate: new Date().toISOString(),
+          totalReferences: uniqueReferences.length
         }
       };
 
@@ -620,18 +831,37 @@ const WorkflowUI: React.FC = () => {
 
       if (!exportResponse.ok) {
         const errorData = await exportResponse.json();
-        throw new Error(errorData.error || 'Export failed');
+        throw new Error(errorData.details || errorData.error || 'Export failed');
       }
 
       const result = await exportResponse.json();
       
-      // Handle conflicts if any
-      if (result.conflicts && result.conflicts.length > 0) {
+      // Handle different response scenarios
+      if (result.exported && result.exported.length > 0) {
+        let successMessage = `Successfully exported ${result.exported.length} references to Zotero!`;
+        
+        // If BibTeX format was requested, also save the BibTeX file
+        if (exportFormat === 'bibtex' && result.bibtex) {
+          const blob = new Blob([result.bibtex], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'zotero-export.bib';
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          
+          successMessage += ' BibTeX file downloaded.';
+        }
+        
+        dispatch({ type: 'SET_ZOTERO_MESSAGE', value: successMessage });
+      } else if (result.conflicts && result.conflicts.length > 0) {
         const conflictMessage = `Export completed with ${result.conflicts.length} conflicts. Some items may need manual review in Zotero.`;
         dispatch({ type: 'SET_ZOTERO_MESSAGE', value: conflictMessage });
       } else {
-        const successMessage = `Successfully exported ${result.exported || 0} references to Zotero!`;
-        dispatch({ type: 'SET_ZOTERO_MESSAGE', value: successMessage });
+        dispatch({ type: 'SET_ZOTERO_MESSAGE', value: 'Export completed, but no items were processed.' });
       }
 
     } catch (error) {

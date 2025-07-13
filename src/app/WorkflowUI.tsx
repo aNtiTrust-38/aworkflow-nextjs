@@ -391,6 +391,43 @@ const WorkflowUI: React.FC = () => {
     }
   }, [handleReset]);
 
+  // Research Assistant Error Recovery Handlers
+  const handleTryDifferentKeywords = useCallback(() => {
+    // Clear error state
+    dispatch({ type: 'SET_ERROR_STATE', value: { hasError: false } });
+    dispatch({ type: 'SET_ERROR', value: null });
+    
+    // For now, just show a prompt for different keywords (placeholder implementation)
+    const newKeywords = prompt('Enter different keywords for your research:');
+    if (newKeywords && newKeywords.trim()) {
+      // Update prompt with new keywords and retry research
+      dispatch({ type: 'SET_PROMPT', value: state.prompt + ' ' + newKeywords.trim() });
+      // Reset research results to trigger new search
+      dispatch({ type: 'SET_RESEARCH_RESULTS', value: null });
+    }
+  }, [state.prompt]);
+
+  const handleSkipResearch = useCallback(() => {
+    // Clear error state and move to next step without research results
+    dispatch({ type: 'SET_ERROR_STATE', value: { hasError: false } });
+    dispatch({ type: 'SET_ERROR', value: null });
+    
+    // Set empty research results and advance to next step
+    dispatch({ type: 'SET_RESEARCH_RESULTS', value: [] });
+    dispatch({ type: 'SET_STEP', value: 4 }); // Move to GENERATE step
+  }, []);
+
+  const handleManualResearch = useCallback(() => {
+    // Clear error state and show manual research interface
+    dispatch({ type: 'SET_ERROR_STATE', value: { hasError: false } });
+    dispatch({ type: 'SET_ERROR', value: null });
+    
+    // For now, set placeholder manual research data
+    dispatch({ type: 'SET_RESEARCH_RESULTS', value: [
+      { title: 'Manual Research Entry', authors: ['User'], year: new Date().getFullYear(), citation: 'User-provided manual research' }
+    ] });
+  }, []);
+
   // Determine stepper test IDs for responsive tests
   // Responsive test IDs for stepper
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
@@ -680,9 +717,9 @@ const WorkflowUI: React.FC = () => {
                 ...(state.errorState.canRetry ? [{ label: 'Retry', onClick: handleRetry, variant: 'danger' as const }] : []),
                 ...(state.errorState.retryCount >= 2 ? [{ label: 'Start Over', onClick: handleReset, variant: 'secondary' as const }] : []),
                 ...(state.errorState.errorStep === 3 ? [
-                  { label: 'Try Different Keywords', onClick: () => { /* TODO: implement keyword change */ }, variant: 'primary' as const },
-                  { label: 'Skip Research', onClick: () => { /* TODO: implement skip */ }, variant: 'primary' as const },
-                  { label: 'Manual Research', onClick: () => { /* TODO: implement manual */ }, variant: 'primary' as const },
+                  { label: 'Try Different Keywords', onClick: handleTryDifferentKeywords, variant: 'primary' as const },
+                  { label: 'Skip Research', onClick: handleSkipResearch, variant: 'primary' as const },
+                  { label: 'Manual Research', onClick: handleManualResearch, variant: 'primary' as const },
                 ] : []),
                 { label: 'Dismiss', onClick: () => {
                   dispatch({ type: 'SET_ERROR_STATE', value: { hasError: false } });

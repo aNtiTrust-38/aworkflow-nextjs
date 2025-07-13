@@ -21,10 +21,12 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 }) => {
   // Respect prefers-reduced-motion
   let prefersReducedMotion = false;
-  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-    try {
+  try {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    } catch {}
+    }
+  } catch {
+    // Gracefully handle any window/matchMedia errors
   }
 
   // Use fallbackProgress if progress is 0 or undefined

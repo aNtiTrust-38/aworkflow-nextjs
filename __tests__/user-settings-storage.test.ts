@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { PrismaClient } from '@prisma/client';
 import { UserSettingsStorage } from '../lib/user-settings-storage';
 import { generateMasterKey } from '../lib/crypto';
@@ -300,6 +300,8 @@ describe('UserSettingsStorage', () => {
 
   describe('Edge Cases', () => {
     it('should handle corrupted data gracefully', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      
       // Corrupt the existing userSettings row for the test user
       await prisma.userSettings.update({
         where: { userId: testUser.id },
@@ -324,6 +326,8 @@ describe('UserSettingsStorage', () => {
       expect(prefs.citationStyle).toBe('apa');
       const ai = await settingsStorage.getAiSettings(testUser.id);
       expect(ai.monthlyBudget).toBe(100);
+      
+      consoleErrorSpy.mockRestore();
     });
 
     it('should handle missing fields in DB gracefully', async () => {

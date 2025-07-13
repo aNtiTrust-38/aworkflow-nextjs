@@ -175,6 +175,8 @@ describe('/api/user-settings', () => {
     });
 
     it('should handle database errors gracefully', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      
       mockStorage.getCompleteSettings.mockRejectedValue(new Error('Database error'));
 
       const { req, res } = createMocks({
@@ -188,6 +190,8 @@ describe('/api/user-settings', () => {
         error: 'Failed to retrieve user settings',
         details: expect.any(String)
       });
+      
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -320,6 +324,8 @@ describe('/api/user-settings', () => {
     });
 
     it('should handle encryption errors', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      
       const updateData = {
         anthropicApiKey: 'sk-test-key'
       };
@@ -339,6 +345,8 @@ describe('/api/user-settings', () => {
         error: 'Failed to update user settings',
         details: expect.any(String)
       });
+      
+      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -424,6 +432,8 @@ describe('/api/user-settings', () => {
 
   describe('Error Handling', () => {
     it('should handle unexpected errors gracefully', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      
       mockGetServerSession.mockRejectedValue(new Error('Auth service down'));
 
       const { req, res } = createMocks({
@@ -437,6 +447,8 @@ describe('/api/user-settings', () => {
         error: 'Internal server error',
         details: expect.any(String)
       });
+      
+      consoleErrorSpy.mockRestore();
     });
   });
 });

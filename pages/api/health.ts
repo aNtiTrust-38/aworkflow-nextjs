@@ -43,7 +43,7 @@ let metrics = {
   lastMinuteRequests: [] as number[]
 }
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse<HealthCheckResponse | { error: string }>
 ) {
@@ -194,3 +194,5 @@ function calculateOverallStatus(
   
   return 'healthy'
 }
+
+export default handler

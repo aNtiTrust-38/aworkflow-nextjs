@@ -71,9 +71,9 @@ export function createDatabaseConfig(): DatabaseConfig {
     idleTimeout
   }
 
-  // SSL configuration
+  // SSL configuration  
   let ssl: DatabaseConfig['ssl'] = false
-  if (provider !== 'sqlite' && isProduction) {
+  if (provider !== 'sqlite') {
     ssl = {
       rejectUnauthorized: true,
       ...(process.env.DATABASE_SSL_CA && { ca: process.env.DATABASE_SSL_CA })

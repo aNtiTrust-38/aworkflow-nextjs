@@ -20,7 +20,110 @@ const steps = [
   'REFINE',
   'EXPORT'
 ];
+
+const stepConfig = [
+  {
+    name: 'PROMPT',
+    title: 'Research Prompt',
+    description: 'Define your research question and objectives',
+    icon: '📝',
+    estimatedTime: '2-5 minutes'
+  },
+  {
+    name: 'GOALS',
+    title: 'Goals & Methodology',
+    description: 'Develop structured goals and research approach',
+    icon: '🎯',
+    estimatedTime: '5-10 minutes'
+  },
+  {
+    name: 'RESEARCH',
+    title: 'Research Assistant',
+    description: 'AI-powered research and source gathering',
+    icon: '🔍',
+    estimatedTime: '3-8 minutes'
+  },
+  {
+    name: 'GENERATE',
+    title: 'Content Generation',
+    description: 'Generate academic content based on research',
+    icon: '✍️',
+    estimatedTime: '5-12 minutes'
+  },
+  {
+    name: 'REFINE',
+    title: 'Content Analysis',
+    description: 'Review, analyze and refine your content',
+    icon: '🔬',
+    estimatedTime: '3-7 minutes'
+  },
+  {
+    name: 'EXPORT',
+    title: 'Export & Citations',
+    description: 'Export your work in professional formats',
+    icon: '📄',
+    estimatedTime: '2-5 minutes'
+  }
+];
+
 const TOTAL_STEPS = steps.length;
+
+const workflowTemplates = [
+  {
+    id: 'research-paper',
+    title: 'Research Paper',
+    description: 'Traditional academic research paper with literature review',
+    icon: '📄',
+    prompt: 'Write a research paper analyzing [topic]. Include a comprehensive literature review, methodology, analysis, and conclusions.',
+    estimatedTime: '45-60 minutes',
+    tags: ['academic', 'research', 'formal']
+  },
+  {
+    id: 'argumentative-essay',
+    title: 'Argumentative Essay',
+    description: 'Persuasive essay with evidence-based arguments',
+    icon: '💭',
+    prompt: 'Write an argumentative essay about [topic]. Present a clear thesis, supporting evidence, counterarguments, and a compelling conclusion.',
+    estimatedTime: '30-45 minutes',
+    tags: ['essay', 'argument', 'persuasive']
+  },
+  {
+    id: 'literature-review',
+    title: 'Literature Review',
+    description: 'Systematic review of existing research on a topic',
+    icon: '📚',
+    prompt: 'Conduct a literature review on [topic]. Analyze current research, identify gaps, and synthesize findings from multiple sources.',
+    estimatedTime: '60-90 minutes',
+    tags: ['review', 'synthesis', 'academic']
+  },
+  {
+    id: 'case-study',
+    title: 'Case Study Analysis',
+    description: 'In-depth analysis of a specific case or example',
+    icon: '🔍',
+    prompt: 'Analyze the case study of [subject]. Examine the background, key issues, methodology, findings, and implications.',
+    estimatedTime: '40-55 minutes',
+    tags: ['analysis', 'case study', 'specific']
+  },
+  {
+    id: 'lab-report',
+    title: 'Lab Report',
+    description: 'Scientific report with methodology and results',
+    icon: '🧪',
+    prompt: 'Write a lab report for [experiment]. Include purpose, hypothesis, methodology, results, analysis, and conclusions.',
+    estimatedTime: '35-50 minutes',
+    tags: ['science', 'experiment', 'technical']
+  },
+  {
+    id: 'blank',
+    title: 'Blank Workflow',
+    description: 'Start with a custom prompt',
+    icon: '✏️',
+    prompt: '',
+    estimatedTime: 'Variable',
+    tags: ['custom', 'flexible']
+  }
+];
 
 interface Reference {
   title: string;
@@ -45,6 +148,15 @@ interface ErrorState {
   canRetry: boolean;
 }
 
+interface StepCompletionStatus {
+  [stepNumber: number]: {
+    completed: boolean;
+    hasContent: boolean;
+    timestamp?: Date;
+    contentPreview?: string;
+  };
+}
+
 interface WorkflowState {
   step: number;
   prompt: string;
@@ -61,6 +173,9 @@ interface WorkflowState {
   errorState: ErrorState;
   zoteroExporting: boolean;
   zoteroMessage: string | null;
+  stepCompletion: StepCompletionStatus;
+  workflowStartTime: Date | null;
+  lastSaved: Date | null;
 }
 
 type Action = 
@@ -78,7 +193,11 @@ type Action =
   | { type: 'SET_LOADING_STATE'; value: Partial<LoadingState> }
   | { type: 'SET_ERROR_STATE'; value: Partial<ErrorState> }
   | { type: 'SET_ZOTERO_EXPORTING'; value: boolean }
-  | { type: 'SET_ZOTERO_MESSAGE'; value: string | null };
+  | { type: 'SET_ZOTERO_MESSAGE'; value: string | null }
+  | { type: 'UPDATE_STEP_COMPLETION'; value: { step: number; completed: boolean; hasContent: boolean; contentPreview?: string } }
+  | { type: 'SAVE_WORKFLOW_STATE'; value?: any }
+  | { type: 'LOAD_WORKFLOW_STATE'; value: Partial<WorkflowState> }
+  | { type: 'RESET_WORKFLOW'; value?: any };
 
 function workflowReducer(state: WorkflowState, action: Action): WorkflowState {
   switch (action.type) {
@@ -112,6 +231,29 @@ function workflowReducer(state: WorkflowState, action: Action): WorkflowState {
       return { ...state, zoteroExporting: action.value };
     case 'SET_ZOTERO_MESSAGE':
       return { ...state, zoteroMessage: action.value };
+    case 'UPDATE_STEP_COMPLETION':
+      return {
+        ...state,
+        stepCompletion: {
+          ...state.stepCompletion,
+          [action.value.step]: {
+            completed: action.value.completed,
+            hasContent: action.value.hasContent,
+            timestamp: new Date(),
+            contentPreview: action.value.contentPreview
+          }
+        }
+      };
+    case 'SAVE_WORKFLOW_STATE':
+      return { ...state, lastSaved: new Date() };
+    case 'LOAD_WORKFLOW_STATE':
+      return { ...state, ...action.value };
+    case 'RESET_WORKFLOW':
+      return {
+        ...initialState,
+        workflowStartTime: new Date(),
+        stepCompletion: {}
+      };
     default:
       return state;
   }
@@ -144,6 +286,9 @@ const initialState: WorkflowState = {
   },
   zoteroExporting: false,
   zoteroMessage: null,
+  stepCompletion: {},
+  workflowStartTime: null,
+  lastSaved: null,
 };
 
 const WorkflowUI: React.FC = () => {
@@ -158,6 +303,7 @@ const WorkflowUI: React.FC = () => {
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const stepButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Check if mobile on mount and resize
@@ -283,6 +429,38 @@ const WorkflowUI: React.FC = () => {
     }
   }, [state.step]);
 
+  // Initialize workflow tracking
+  useEffect(() => {
+    if (!state.workflowStartTime) {
+      dispatch({ type: 'RESET_WORKFLOW' });
+    }
+  }, []);
+
+  // Track step completion when content changes
+  useEffect(() => {
+    updateStepCompletion(1);
+  }, [state.prompt, updateStepCompletion]);
+
+  useEffect(() => {
+    updateStepCompletion(2);
+  }, [state.goals, updateStepCompletion]);
+
+  useEffect(() => {
+    updateStepCompletion(3);
+  }, [state.researchResults, updateStepCompletion]);
+
+  useEffect(() => {
+    updateStepCompletion(4);
+  }, [state.generatedContent, updateStepCompletion]);
+
+  useEffect(() => {
+    updateStepCompletion(5);
+  }, [state.contentAnalysis, updateStepCompletion]);
+
+  useEffect(() => {
+    updateStepCompletion(6);
+  }, [state.exportData, updateStepCompletion]);
+
   // Stepper keyboard navigation handler for accessibility
   const handleStepperKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const currentIdx = state.step - 1;
@@ -300,13 +478,32 @@ const WorkflowUI: React.FC = () => {
 
   const getLoadingMessage = (step: number): string => {
     switch (step) {
-      case 1: return 'Analyzing your prompt...';
-      case 2: return 'Loading outline...';
-      case 3: return 'Loading research...';
-      case 4: return 'Generating content...';
-      case 5: return 'Analyzing and refining content...';
-      case 6: return 'Preparing export...';
+      case 1: return 'Processing your research prompt...';
+      case 2: return 'Generating structured goals and methodology...';
+      case 3: return 'Searching academic databases and sources...';
+      case 4: return 'Generating academic content based on research...';
+      case 5: return 'Analyzing and refining your content...';
+      case 6: return 'Preparing professional export formats...';
       default: return 'Processing...';
+    }
+  };
+
+  const getLoadingSubsteps = (step: number): string[] => {
+    switch (step) {
+      case 1: 
+        return ['Analyzing prompt structure', 'Identifying key research areas', 'Setting up workflow'];
+      case 2: 
+        return ['Analyzing prompt requirements', 'Generating ADHD-friendly structure', 'Creating methodology framework', 'Formatting goals'];
+      case 3: 
+        return ['Connecting to research databases', 'Searching relevant sources', 'Filtering academic content', 'Compiling results'];
+      case 4: 
+        return ['Analyzing research data', 'Structuring academic content', 'Generating sections', 'Formatting output'];
+      case 5: 
+        return ['Reviewing content quality', 'Checking academic standards', 'Analyzing structure', 'Providing recommendations'];
+      case 6: 
+        return ['Formatting citations', 'Preparing PDF export', 'Generating DOCX', 'Finalizing documents'];
+      default: 
+        return [];
     }
   };
 
@@ -336,6 +533,148 @@ const WorkflowUI: React.FC = () => {
         return error.message || 'An unexpected error occurred.';
     }
   };
+
+  // Step completion tracking utilities
+  const getStepCompletionStatus = (stepNumber: number): boolean => {
+    return state.stepCompletion[stepNumber]?.completed || false;
+  };
+
+  const getStepContentPreview = (stepNumber: number): string => {
+    switch (stepNumber) {
+      case 1:
+        return state.prompt ? state.prompt.substring(0, 50) + '...' : '';
+      case 2:
+        return state.goals ? state.goals.substring(0, 50) + '...' : '';
+      case 3:
+        return Array.isArray(state.researchResults) && state.researchResults.length > 0 
+          ? `${state.researchResults.length} sources found` : '';
+      case 4:
+        return state.generatedContent ? state.generatedContent.substring(0, 50) + '...' : '';
+      case 5:
+        return state.contentAnalysis ? state.contentAnalysis.substring(0, 50) + '...' : '';
+      case 6:
+        return state.exportData ? 'Export ready' : '';
+      default:
+        return '';
+    }
+  };
+
+  const updateStepCompletion = useCallback((stepNumber: number) => {
+    const hasContent = (() => {
+      switch (stepNumber) {
+        case 1: return !!state.prompt;
+        case 2: return !!state.goals;
+        case 3: return Array.isArray(state.researchResults) && state.researchResults.length > 0;
+        case 4: return !!state.generatedContent;
+        case 5: return !!state.contentAnalysis;
+        case 6: return !!state.exportData;
+        default: return false;
+      }
+    })();
+
+    dispatch({
+      type: 'UPDATE_STEP_COMPLETION',
+      value: {
+        step: stepNumber,
+        completed: hasContent,
+        hasContent,
+        contentPreview: getStepContentPreview(stepNumber)
+      }
+    });
+  }, [state.prompt, state.goals, state.researchResults, state.generatedContent, state.contentAnalysis, state.exportData]);
+
+  // Workflow state persistence
+  const saveWorkflowState = useCallback(() => {
+    try {
+      const stateToSave = {
+        step: state.step,
+        prompt: state.prompt,
+        goals: state.goals,
+        outline: state.outline,
+        researchResults: state.researchResults,
+        generatedContent: state.generatedContent,
+        contentAnalysis: state.contentAnalysis,
+        exportData: state.exportData,
+        stepCompletion: state.stepCompletion,
+        workflowStartTime: state.workflowStartTime,
+        lastSaved: new Date()
+      };
+      localStorage.setItem('aworkflow_state', JSON.stringify(stateToSave));
+      dispatch({ type: 'SAVE_WORKFLOW_STATE' });
+    } catch (error) {
+      console.warn('Failed to save workflow state:', error);
+    }
+  }, [state]);
+
+  const loadWorkflowState = useCallback(() => {
+    try {
+      const savedState = localStorage.getItem('aworkflow_state');
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        // Convert date strings back to Date objects
+        if (parsedState.workflowStartTime) {
+          parsedState.workflowStartTime = new Date(parsedState.workflowStartTime);
+        }
+        if (parsedState.lastSaved) {
+          parsedState.lastSaved = new Date(parsedState.lastSaved);
+        }
+        dispatch({ type: 'LOAD_WORKFLOW_STATE', value: parsedState });
+        return true;
+      }
+    } catch (error) {
+      console.warn('Failed to load workflow state:', error);
+    }
+    return false;
+  }, []);
+
+  const clearWorkflowState = useCallback(() => {
+    try {
+      localStorage.removeItem('aworkflow_state');
+    } catch (error) {
+      console.warn('Failed to clear workflow state:', error);
+    }
+  }, []);
+
+  // Template handling
+  const applyTemplate = useCallback((template: typeof workflowTemplates[0]) => {
+    dispatch({ type: 'RESET_WORKFLOW' });
+    if (template.prompt) {
+      dispatch({ type: 'SET_PROMPT', value: template.prompt });
+    }
+    setShowTemplateModal(false);
+  }, []);
+
+  const handleNewWorkflow = useCallback(() => {
+    if (state.prompt || state.goals || state.generatedContent) {
+      if (confirm('Are you sure you want to start a new workflow? This will clear all current progress.')) {
+        clearWorkflowState();
+        setShowTemplateModal(true);
+      }
+    } else {
+      setShowTemplateModal(true);
+    }
+  }, [state.prompt, state.goals, state.generatedContent, clearWorkflowState]);
+
+  // Auto-save workflow state
+  useEffect(() => {
+    const autoSaveInterval = setInterval(() => {
+      if (state.prompt || state.goals || state.generatedContent) {
+        saveWorkflowState();
+      }
+    }, 30000); // Auto-save every 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [saveWorkflowState, state.prompt, state.goals, state.generatedContent]);
+
+  // Load saved state on mount
+  useEffect(() => {
+    const hasLoadedState = loadWorkflowState();
+    if (!hasLoadedState && !state.workflowStartTime) {
+      dispatch({ type: 'RESET_WORKFLOW' });
+      // Show template modal for new users
+      setShowTemplateModal(true);
+    }
+  }, [loadWorkflowState]);
 
   const handleRetry = useCallback(() => {
     dispatch({ type: 'SET_ERROR_STATE', value: { 
@@ -893,15 +1232,74 @@ const WorkflowUI: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Skip Links for Accessibility */}
+      <div className="sr-only focus-within:not-sr-only">
+        <a 
+          href="#main-content" 
+          className="fixed top-4 left-4 z-50 px-4 py-2 bg-blue-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Skip to main content
+        </a>
+        <a 
+          href="#workflow-stepper" 
+          className="fixed top-4 left-32 z-50 px-4 py-2 bg-blue-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Skip to navigation
+        </a>
+      </div>
+
       {/* Enhanced Academic header with responsive design */}
-      <h1 
-        data-testid="academic-header" 
-        className="text-xl md:text-2xl lg:text-3xl font-bold text-center mb-4 md:mb-6 tracking-tight font-serif text-academic-primary landscape:text-xl short:text-lg short:mb-2"
-        role="heading" 
-        aria-level={1}
-      >
-        Academic Paper Workflow
-      </h1>
+      <header role="banner">
+        <h1 
+          data-testid="academic-header" 
+          className="text-xl md:text-2xl lg:text-3xl font-bold text-center mb-4 md:mb-6 tracking-tight font-serif text-academic-primary landscape:text-xl short:text-lg short:mb-2"
+          role="heading" 
+          aria-level={1}
+        >
+          Academic Paper Workflow
+        </h1>
+      </header>
+
+      {/* Workflow State Management Bar */}
+      <div className="max-w-4xl mx-auto mb-6">
+        <div className="bg-white rounded-lg shadow-sm border p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <span className={`w-2 h-2 rounded-full ${state.lastSaved ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span className="text-sm text-gray-600">
+                  {state.lastSaved 
+                    ? `Saved ${new Date(state.lastSaved).toLocaleTimeString()}` 
+                    : 'Not saved'
+                  }
+                </span>
+              </div>
+              {state.workflowStartTime && (
+                <div className="text-sm text-gray-600">
+                  Started {new Date(state.workflowStartTime).toLocaleString()}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={saveWorkflowState}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Save workflow state"
+              >
+                Save Now
+              </button>
+              <button
+                onClick={handleNewWorkflow}
+                className="px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                aria-label="Start new workflow"
+              >
+                New Workflow
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* Desktop multi-panel grid layout */}
       <div
@@ -926,8 +1324,11 @@ const WorkflowUI: React.FC = () => {
         
         {/* Main panel (always visible) */}
         <main
+          id="main-content"
           data-testid="main-panel"
           className="@container prose-sm sm:prose-lg mx-auto my-4 md:my-8 bg-academic-bg p-4 md:p-8 shadow-academic max-w-4xl tablet:grid-cols-2 short:py-2"
+          role="main"
+          aria-label="Academic workflow main content"
         >
           <div data-testid="workflow-main" className="prose-sm sm:prose-lg mx-auto my-8 bg-academic-bg p-8 shadow-academic @container landscape:py-4 short:py-2 tablet:grid-cols-2">
           {/* Error Modal for responsive test (always rendered, hidden unless error) */}
@@ -1009,50 +1410,131 @@ const WorkflowUI: React.FC = () => {
             </div>
           ) : (
             <div>
-               {/* Stepper navigation (always visible for tests) */}
+               {/* Enhanced Workflow Stepper with Progress Indicators */}
                <div
                  data-testid="workflow-stepper"
-                 className="academic-stepper bg-academic-muted rounded px-4 py-2 mb-4 flex flex-wrap gap-2 justify-center tablet:gap-1 focus:outline-none focus:ring-2 focus:ring-blue-500 high-contrast:border-2 high-contrast:border-black motion-reduce:animate-none flex-col sm:flex-row"
+                 className="bg-white rounded-lg shadow-sm border p-6 mb-6"
                  role="tablist"
                  aria-label="Workflow Steps"
                  tabIndex={0}
                  onKeyDown={handleStepperKeyDown}
                >
-                 {[...Array(TOTAL_STEPS)].map((_, idx) => (
-                   <button
-                     key={idx}
-                     type="button"
-                     role="tab"
-                     aria-label={`Step ${idx + 1}`}
-                     aria-controls={`step-${idx + 1}-panel`}
-                     aria-selected={state.step === idx + 1}
-                     {...(state.step === idx + 1 && { 'aria-current': 'step' })}
-                     tabIndex={state.step === idx + 1 ? 0 : -1}
-                     className={
-                       `step-btn px-3 py-2 rounded transition-all touch:min-h-11 touch:min-w-11 touch:py-3 touch:px-6
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                       high-contrast:border-2 high-contrast:border-black
-                       motion-reduce:animate-none
-                       ${state.step === idx + 1 
-                         ? 'bg-academic-primary text-white font-bold' 
-                         : 'bg-white text-academic-primary border hover:bg-gray-50'
-                       }
-                       ${(state.navigationDisabled || state.loading) ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}
-                       `
-                     }
-                     data-testid={`step-tab-${idx + 1}`}
-                     aria-describedby={`step-desc-${idx + 1}`}
-                     style={{ overflow: 'visible' }}
-                     onClick={() => !(state.navigationDisabled || state.loading) && dispatch({ type: 'SET_STEP', value: idx + 1 })}
-                     disabled={state.navigationDisabled || state.loading}
-                     ref={el => { stepButtonRefs.current[idx] = el; }}
-                   >
-                     Step {idx + 1}
-                     <span id={`step-desc-${idx + 1}`} className="sr-only">Go to step {idx + 1}: {steps[idx].replace(/_/g, ' ')}</span>
-                   </button>
-                 ))}
+                 {/* Overall Progress Bar */}
+                 <div className="mb-6">
+                   <div className="flex justify-between items-center mb-2">
+                     <h3 className="text-lg font-semibold text-gray-900">Workflow Progress</h3>
+                     <span className="text-sm text-gray-600">
+                       {Object.values(state.stepCompletion).filter(s => s.completed).length} of {TOTAL_STEPS} steps completed
+                     </span>
+                   </div>
+                   <div className="w-full bg-gray-200 rounded-full h-2">
+                     <div 
+                       className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                       style={{ 
+                         width: `${(Object.values(state.stepCompletion).filter(s => s.completed).length / TOTAL_STEPS) * 100}%` 
+                       }}
+                     />
+                   </div>
+                 </div>
+
+                 {/* Step Cards */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {stepConfig.map((step, idx) => {
+                     const stepNumber = idx + 1;
+                     const isActive = state.step === stepNumber;
+                     const isCompleted = getStepCompletionStatus(stepNumber);
+                     const hasContent = state.stepCompletion[stepNumber]?.hasContent || false;
+
+                     return (
+                       <button
+                         key={idx}
+                         type="button"
+                         role="tab"
+                         aria-label={`Step ${stepNumber}: ${step.title}`}
+                         aria-controls={`step-${stepNumber}-panel`}
+                         aria-selected={isActive}
+                         {...(isActive && { 'aria-current': 'step' })}
+                         tabIndex={isActive ? 0 : -1}
+                         className={`
+                           relative p-4 rounded-lg border-2 transition-all duration-200 text-left
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                           ${isActive 
+                             ? 'border-blue-600 bg-blue-50 shadow-md' 
+                             : isCompleted 
+                               ? 'border-green-500 bg-green-50 hover:bg-green-100'
+                               : hasContent
+                                 ? 'border-yellow-500 bg-yellow-50 hover:bg-yellow-100'
+                                 : 'border-gray-300 bg-white hover:bg-gray-50'
+                           }
+                           ${(state.navigationDisabled || state.loading) ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-sm'}
+                         `}
+                         data-testid={`step-tab-${stepNumber}`}
+                         onClick={() => !(state.navigationDisabled || state.loading) && dispatch({ type: 'SET_STEP', value: stepNumber })}
+                         disabled={state.navigationDisabled || state.loading}
+                         ref={el => { stepButtonRefs.current[idx] = el; }}
+                       >
+                         {/* Step Status Icon */}
+                         <div className="flex items-center justify-between mb-2">
+                           <div className="flex items-center space-x-2">
+                             <span className="text-2xl">{step.icon}</span>
+                             <div className={`
+                               w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
+                               ${isActive 
+                                 ? 'bg-blue-600 text-white' 
+                                 : isCompleted 
+                                   ? 'bg-green-500 text-white'
+                                   : hasContent
+                                     ? 'bg-yellow-500 text-white'
+                                     : 'bg-gray-300 text-gray-600'
+                               }
+                             `}>
+                               {isCompleted ? '✓' : stepNumber}
+                             </div>
+                           </div>
+                           {isActive && (
+                             <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
+                           )}
+                         </div>
+
+                         {/* Step Info */}
+                         <div className="mb-2">
+                           <h4 className={`font-medium text-sm ${isActive ? 'text-blue-900' : 'text-gray-900'}`}>
+                             {step.title}
+                           </h4>
+                           <p className={`text-xs mt-1 ${isActive ? 'text-blue-700' : 'text-gray-600'}`}>
+                             {step.description}
+                           </p>
+                         </div>
+
+                         {/* Content Preview */}
+                         {hasContent && state.stepCompletion[stepNumber]?.contentPreview && (
+                           <div className="mt-2 p-2 bg-white rounded border">
+                             <p className="text-xs text-gray-600 truncate">
+                               {state.stepCompletion[stepNumber].contentPreview}
+                             </p>
+                           </div>
+                         )}
+
+                         {/* Estimated Time */}
+                         <div className={`mt-2 text-xs ${isActive ? 'text-blue-600' : 'text-gray-500'}`}>
+                           ⏱️ {step.estimatedTime}
+                         </div>
+
+                         {/* Completion Timestamp */}
+                         {isCompleted && state.stepCompletion[stepNumber]?.timestamp && (
+                           <div className="absolute top-2 right-2">
+                             <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                               <span className="text-white text-xs">✓</span>
+                             </div>
+                           </div>
+                         )}
+                       </button>
+                     );
+                   })}
+                 </div>
+
                  <span data-testid="stepper-live" className="sr-only" aria-live="polite">
-                   Step {state.step} of {TOTAL_STEPS}
+                   Step {state.step} of {TOTAL_STEPS}: {stepConfig[state.step - 1]?.title}
                  </span>
                </div>
             </div>
@@ -1080,41 +1562,62 @@ const WorkflowUI: React.FC = () => {
             </button>
           </div>
 
-          {/* Enhanced Section Title with mini-outline */}
-          <div data-testid="section-title-wrapper" className="p-2 md:p-4 lg:p-6 mb-4 md:mb-6 lg:mb-8">
-            <h2 
-              data-testid="section-title" 
-              className="text-lg md:text-xl font-semibold mt-4 mb-4 md:mb-6 lg:mb-8"
-              role="heading"
-              aria-level={2}
-            >
-              {steps[state.step - 1].replace(/_/g, ' ')}
-            </h2>
-            
-            {/* Mini-outline for current step (desktop only) */}
-            <div className="hidden lg:block bg-gray-50 rounded-lg p-3 mt-4">
-              <div className="text-sm font-medium text-gray-700 mb-2">Step Overview</div>
-              <div className="text-xs text-gray-600 space-y-1">
-                {state.step === 1 && (
-                  <div>• Enter your assignment or research prompt</div>
-                )}
-                {state.step === 2 && (
-                  <div>• Generate ADHD-friendly, structured goals</div>
-                )}
-                {state.step === 3 && (
-                  <div>• Find relevant academic sources and research</div>
-                )}
-                {state.step === 4 && (
-                  <div>• Generate structured academic content</div>
-                )}
-                {state.step === 5 && (
-                  <div>• Review and refine your content</div>
-                )}
-                {state.step === 6 && (
-                  <div>• Export and manage citations</div>
-                )}
+          {/* Enhanced Section Header */}
+          <div data-testid="section-title-wrapper" className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <span className="text-3xl">{stepConfig[state.step - 1]?.icon}</span>
+                <div>
+                  <h2 
+                    data-testid="section-title" 
+                    className="text-xl font-bold text-gray-900"
+                    role="heading"
+                    aria-level={2}
+                  >
+                    {stepConfig[state.step - 1]?.title}
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {stepConfig[state.step - 1]?.description}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <div className="flex items-center space-x-1">
+                  <span>⏱️</span>
+                  <span>{stepConfig[state.step - 1]?.estimatedTime}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <span className={`w-2 h-2 rounded-full ${getStepCompletionStatus(state.step) ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <span>{getStepCompletionStatus(state.step) ? 'Completed' : 'In Progress'}</span>
+                </div>
               </div>
             </div>
+
+            {/* Step Progress Indicator */}
+            <div className="flex items-center space-x-2 mb-4">
+              <span className="text-sm text-gray-600">Step {state.step} of {TOTAL_STEPS}</span>
+              <div className="flex-1 bg-gray-200 rounded-full h-1">
+                <div 
+                  className="bg-blue-600 h-1 rounded-full transition-all duration-300"
+                  style={{ width: `${(state.step / TOTAL_STEPS) * 100}%` }}
+                />
+              </div>
+              <span className="text-sm text-gray-600">{Math.round((state.step / TOTAL_STEPS) * 100)}%</span>
+            </div>
+
+            {/* Content Preview for Completed Steps */}
+            {getStepCompletionStatus(state.step) && state.stepCompletion[state.step]?.contentPreview && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-green-600">✓</span>
+                  <span className="text-sm font-medium text-green-800">Step Completed</span>
+                </div>
+                <p className="text-sm text-green-700">
+                  {state.stepCompletion[state.step].contentPreview}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Content grid for responsive grid layout test */}
@@ -1156,6 +1659,10 @@ const WorkflowUI: React.FC = () => {
             fallbackProgress={Math.round((state.step / TOTAL_STEPS) * 100)}
             cancellable={false}
             visible={state.loading || state.loadingState.isLoading}
+            stepIcon={stepConfig[state.step - 1]?.icon}
+            stepTitle={stepConfig[state.step - 1]?.title}
+            substeps={getLoadingSubsteps(state.step)}
+            currentSubstep={Math.floor((state.loadingState.progress || 0) / 25)}
           />
 
           {/* Enhanced Error Handling */}
@@ -1592,6 +2099,77 @@ const WorkflowUI: React.FC = () => {
           loading: state.loading,
         }}
       />
+
+      {/* Workflow Template Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] overflow-y-auto m-4 w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Choose a Workflow Template</h2>
+                <button
+                  onClick={() => setShowTemplateModal(false)}
+                  className="text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                  aria-label="Close template modal"
+                >
+                  <span className="sr-only">Close</span>
+                  <span className="text-2xl">×</span>
+                </button>
+              </div>
+
+              <p className="text-gray-600 mb-6">
+                Select a template to get started with a structured workflow, or choose "Blank Workflow" to start from scratch.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {workflowTemplates.map((template) => (
+                  <button
+                    key={template.id}
+                    onClick={() => applyTemplate(template)}
+                    className="text-left p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <div className="flex items-center space-x-3 mb-3">
+                      <span className="text-3xl">{template.icon}</span>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{template.title}</h3>
+                        <p className="text-sm text-gray-600">{template.estimatedTime}</p>
+                      </div>
+                    </div>
+                    
+                    <p className="text-sm text-gray-700 mb-3">{template.description}</p>
+                    
+                    {template.prompt && (
+                      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        <strong>Sample prompt:</strong> {template.prompt.substring(0, 100)}...
+                      </div>
+                    )}
+                    
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {template.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowTemplateModal(false)}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

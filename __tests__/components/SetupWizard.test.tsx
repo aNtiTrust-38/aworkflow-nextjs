@@ -682,6 +682,60 @@ describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
     });
   });
 
+  it('should navigate steps sequentially without skipping (TDD RED)', async () => {
+    // Mock setup status for starting at welcome step
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({
+        isSetup: false,
+        completedSteps: [],
+        nextStep: 'welcome',
+        requiredSettings: ['anthropicApiKey'],
+        missingSettings: ['anthropicApiKey']
+      })
+    } as Response);
+
+    renderWithSession(<SetupWizard />);
+    
+    // Wait for welcome step to render
+    await waitFor(() => {
+      expect(screen.getByText('Welcome to Academic Workflow Assistant')).toBeInTheDocument();
+      expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
+    });
+
+    // Click continue button and wait for step 2
+    const continueButton = screen.getByTestId('setupwizard-continue-btn');
+    fireEvent.click(continueButton);
+
+    // Should navigate to step 2 - API Provider Configuration
+    await waitFor(() => {
+      expect(screen.getByText('AI Provider Configuration')).toBeInTheDocument();
+      expect(screen.getByText('Step 2 of 4')).toBeInTheDocument();
+    }, { timeout: 1000 });
+
+    // Add API key to allow navigation past step 2
+    const anthropicApiKeyInput = screen.getByTestId('setupwizard-anthropic-api-key');
+    fireEvent.change(anthropicApiKeyInput, { target: { value: 'sk-ant-test-key-123' } });
+
+    // Wait for API key to be set and button to be enabled
+    await waitFor(() => {
+      expect(screen.getByTestId('setupwizard-continue-btn')).not.toBeDisabled();
+    });
+
+    // Click continue again to navigate to step 3
+    const continueButton2 = screen.getByTestId('setupwizard-continue-btn');
+    fireEvent.click(continueButton2);
+
+    // Should navigate to step 3 - Academic Preferences
+    await waitFor(() => {
+      expect(screen.getByText('Academic Preferences')).toBeInTheDocument();
+      expect(screen.getByText('Step 3 of 4')).toBeInTheDocument();
+    }, { timeout: 1000 });
+
+    // Should NOT skip to final step (step 4)
+    expect(screen.queryByText('Review & Complete')).not.toBeInTheDocument();
+  });
+
   it('should handle rapid navigation between steps (simulate fast user)', async () => {
     // Simulate normal setup
     mockFetch.mockResolvedValueOnce({

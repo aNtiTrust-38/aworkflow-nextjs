@@ -338,46 +338,38 @@ export function SetupWizard() {
   };
 
   // 3. Patch: Prevent rapid navigation from breaking flow
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
   
   const nextStep = async () => {
-    if (!canProceed()) return;
+    if (!canProceed() || isNavigating) return;
     
-    // Clear any pending navigation
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
+    setIsNavigating(true);
+    try {
+      await saveCurrentStep();
+      
+      // Use flushSync for immediate state update
+      flushSync(() => {
+        setWizardState(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
+      });
+    } catch (error) {
+      console.error('Navigation error:', error);
+    } finally {
+      setIsNavigating(false);
     }
-    
-    // Debounce rapid clicks to prevent multiple state updates
-    debounceTimeoutRef.current = setTimeout(async () => {
-      try {
-        await saveCurrentStep();
-        
-        // Force synchronous rendering to prevent overlapping renders
-        flushSync(() => {
-          setWizardState(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
-        });
-      } catch (error) {
-        console.error('Navigation error:', error);
-      }
-    }, 50); // Very short debounce, just enough to prevent rapid clicking
   };
 
   // Navigate to previous step
   const prevStep = () => {
-    if (wizardState.currentStep <= 0) return;
+    if (wizardState.currentStep <= 0 || isNavigating) return;
     
-    // Clear any pending navigation
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-    
-    // Debounce rapid clicks to prevent multiple state updates
-    debounceTimeoutRef.current = setTimeout(() => {
+    setIsNavigating(true);
+    try {
       flushSync(() => {
         setWizardState(prev => ({ ...prev, currentStep: prev.currentStep - 1 }));
       });
-    }, 50);
+    } finally {
+      setIsNavigating(false);
+    }
   };
 
   // Complete setup
@@ -774,7 +766,7 @@ export function SetupWizard() {
           <div className="flex justify-between mt-8" data-testid="setupwizard-nav-buttons">
             <button
               onClick={prevStep}
-              disabled={wizardState.currentStep === 0}
+              disabled={wizardState.currentStep === 0 || isNavigating}
               className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400"
               tabIndex={0}
               data-testid="setupwizard-back-btn"
@@ -784,7 +776,7 @@ export function SetupWizard() {
             {isLastStep ? (
               <button
                 onClick={completeSetup}
-                disabled={completing || !canProceed()}
+                disabled={completing || !canProceed() || isNavigating}
                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
                 tabIndex={0}
                 data-testid="setupwizard-complete-btn"
@@ -794,7 +786,7 @@ export function SetupWizard() {
             ) : (
               <button
                 onClick={nextStep}
-                disabled={!canProceed()}
+                disabled={!canProceed() || isNavigating}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
                 tabIndex={0}
                 data-testid="setupwizard-continue-btn"

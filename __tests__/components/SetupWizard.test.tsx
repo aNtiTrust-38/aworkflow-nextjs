@@ -37,10 +37,12 @@ const renderWithSession = (component: React.ReactElement) => {
 
 describe('SetupWizard', () => {
   beforeEach(() => {
+    // Clear all mocks to prevent contamination between tests
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    // Clean up any mounted components
     cleanup();
   });
 
@@ -106,8 +108,10 @@ describe('SetupWizard', () => {
   });
 
   describe('Step Navigation', () => {
-    beforeEach(async () => {
-      // Step 1: Welcome
+    // Note: Each test in this block will handle its own rendering
+
+    it('should show progress indicators for all steps', async () => {
+      // Setup initial state - welcome step
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -119,48 +123,8 @@ describe('SetupWizard', () => {
         })
       } as Response);
 
-      // Step 2: API Keys
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome'],
-          nextStep: 'apiKeys',
-          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
-          missingSettings: []
-        })
-      } as Response);
-
-      // Step 3: Preferences
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome', 'apiKeys'],
-          nextStep: 'preferences',
-          requiredSettings: [],
-          missingSettings: []
-        })
-      } as Response);
-
-      // Step 4: Review
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome', 'apiKeys', 'preferences'],
-          nextStep: 'review',
-          requiredSettings: [],
-          missingSettings: []
-        })
-      } as Response);
-
       renderWithSession(<SetupWizard />);
-      await waitFor(() => screen.getByTestId('setupwizard-step-title'));
-    });
-
-    it('should show progress indicators for all steps', async () => {
-      renderWithSession(<SetupWizard />);
+      
       await waitFor(() => {
         expect(screen.getByTestId('setupwizard-step-counter')).toBeInTheDocument();
         expect(screen.getByTestId('setupwizard-progressbar')).toBeInTheDocument();
@@ -168,110 +132,7 @@ describe('SetupWizard', () => {
     });
 
     it('should navigate to next step on continue', async () => {
-      // Clear previous mocks and set up fresh mock for step 1 navigation
-      mockFetch.mockClear();
-      
-      // Mock for saveCurrentStep call when clicking continue
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome'],
-          nextStep: 'apiKeys',
-          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
-          missingSettings: []
-        })
-      } as Response);
-
-      const continueButton = screen.getByTestId('setupwizard-continue-btn');
-      fireEvent.click(continueButton);
-
-      await waitFor(() => {
-        // Use getAllByText to handle multiple renders and check the last one
-        const titles = screen.getAllByText('AI Provider Configuration');
-        expect(titles.length).toBeGreaterThan(0);
-        const stepCounters = screen.getAllByText(/Step 2 of \d+/);
-        expect(stepCounters.length).toBeGreaterThan(0);
-      });
-    });
-
-    it('should navigate to previous step on back', async () => {
-      // Clear previous mocks and set up fresh mock for step 1 navigation
-      mockFetch.mockClear();
-      
-      // Mock for saveCurrentStep call when clicking continue
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome'],
-          nextStep: 'apiKeys',
-          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
-          missingSettings: []
-        })
-      } as Response);
-
-      // First navigate to step 2
-      const continueButton = screen.getByTestId('setupwizard-continue-btn');
-      fireEvent.click(continueButton);
-
-      await waitFor(() => {
-        // Use getAllByText to handle multiple renders and check the last one
-        const titles = screen.getAllByText('AI Provider Configuration');
-        expect(titles.length).toBeGreaterThan(0);
-      });
-
-      // Then navigate back
-      const backButton = screen.getByRole('button', { name: /back/i });
-      fireEvent.click(backButton);
-
-      await waitFor(() => {
-        // Use getAllByText to handle multiple renders and check the last one
-        const welcomeTitles = screen.getAllByText('Welcome to Academic Workflow Assistant');
-        expect(welcomeTitles.length).toBeGreaterThan(0);
-      });
-    });
-
-    it('should disable back button on first step', async () => {
-      await waitFor(() => {
-        const backButton = screen.getByRole('button', { name: /back/i });
-        expect(backButton).toBeDisabled();
-      });
-    });
-
-    it('should show finish button on last step', async () => {
-      // Navigate to last step
-      const continueButton = screen.getByTestId('setupwizard-continue-btn');
-      
-      // Step 1 to 2
-      fireEvent.click(continueButton);
-      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
-      
-      // Provide required API key before navigating
-      const anthropicInput = screen.getAllByLabelText(/anthropic api key/i)[0];
-      fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
-      
-      // Provide required API key and budget before navigating
-      const anthropicInput2 = screen.getAllByLabelText(/anthropic api key/i)[0];
-      fireEvent.change(anthropicInput2, { target: { value: 'sk-ant-valid-key' } });
-      const budgetInput = screen.getByLabelText(/monthly budget/i);
-      fireEvent.change(budgetInput, { target: { value: '100' } });
-      // Step 2 to 3
-      fireEvent.click(continueButton);
-      await waitFor(() => screen.getAllByRole('heading').find(h => /Academic Preferences/i.test(h.textContent)));
-      
-      // Step 3 to 4
-      fireEvent.click(continueButton);
-      await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Review & Complete/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /complete setup/i })).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('API Keys Configuration Step', () => {
-    beforeEach(async () => {
-      // Step 1: Welcome
+      // Setup initial state - welcome step
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -283,25 +144,170 @@ describe('SetupWizard', () => {
         })
       } as Response);
 
-      // Step 2: API Keys
+      renderWithSession(<SetupWizard />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Welcome to Academic Workflow Assistant')).toBeInTheDocument();
+        expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
+      });
+
+      // Mock successful settings save when navigation occurs
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+      } as Response);
+
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
+      fireEvent.click(continueButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('AI Provider Configuration')).toBeInTheDocument();
+        expect(screen.getByText('Step 2 of 4')).toBeInTheDocument();
+      });
+    });
+
+    it('should navigate to previous step on back', async () => {
+      // Setup initial state - welcome step
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
           isSetup: false,
-          completedSteps: ['welcome'],
-          nextStep: 'apiKeys',
+          completedSteps: [],
+          nextStep: 'welcome',
           requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
-          missingSettings: []
+          missingSettings: ['anthropicApiKey', 'monthlyBudget']
+        })
+      } as Response);
+
+      renderWithSession(<SetupWizard />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Welcome to Academic Workflow Assistant')).toBeInTheDocument();
+      });
+
+      // Mock successful settings save for navigation to step 2
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+      } as Response);
+
+      // First navigate to step 2
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
+      fireEvent.click(continueButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('AI Provider Configuration')).toBeInTheDocument();
+        expect(screen.getByText('Step 2 of 4')).toBeInTheDocument();
+      });
+
+      // Then navigate back
+      const backButton = screen.getByRole('button', { name: /back/i });
+      fireEvent.click(backButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Welcome to Academic Workflow Assistant')).toBeInTheDocument();
+        expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
+      });
+    });
+
+    it('should disable back button on first step', async () => {
+      // Setup initial state - welcome step
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: [],
+          nextStep: 'welcome',
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: ['anthropicApiKey', 'monthlyBudget']
+        })
+      } as Response);
+
+      renderWithSession(<SetupWizard />);
+      
+      await waitFor(() => {
+        const backButton = screen.getByRole('button', { name: /back/i });
+        expect(backButton).toBeDisabled();
+      });
+    });
+
+    it('should show finish button on last step', async () => {
+      // Setup initial state - welcome step
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: [],
+          nextStep: 'welcome',
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: ['anthropicApiKey', 'monthlyBudget']
+        })
+      } as Response);
+
+      renderWithSession(<SetupWizard />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Welcome to Academic Workflow Assistant')).toBeInTheDocument();
+      });
+
+      // Mock successful settings save for each navigation step
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) } as Response)  // Step 1 to 2
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) } as Response)  // Step 2 to 3
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) } as Response); // Step 3 to 4
+
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
+      
+      // Step 1 to 2
+      fireEvent.click(continueButton);
+      await waitFor(() => screen.getByText('AI Provider Configuration'));
+      
+      // Provide required API key before navigating
+      const anthropicInput = screen.getByTestId('setupwizard-anthropic-api-key');
+      fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
+      
+      // Step 2 to 3
+      fireEvent.click(continueButton);
+      await waitFor(() => screen.getByText('Academic Preferences'));
+      
+      // Step 3 to 4
+      fireEvent.click(continueButton);
+      await waitFor(() => {
+        expect(screen.getByText('Review & Complete')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /complete setup/i })).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('API Keys Configuration Step', () => {
+    beforeEach(async () => {
+      // Clear all mocks to prevent contamination
+      vi.clearAllMocks();
+      
+      // Setup initial welcome step
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: [],
+          nextStep: 'welcome',
+          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
+          missingSettings: ['anthropicApiKey', 'monthlyBudget']
         })
       } as Response);
 
       renderWithSession(<SetupWizard />);
       await waitFor(() => screen.getByTestId('setupwizard-step-title'));
       
-      // Navigate to API keys step
+      // Mock successful navigation and navigate to API keys step
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+      } as Response);
+      
       const continueButton = screen.getByTestId('setupwizard-continue-btn');
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
+      await waitFor(() => screen.getByText('AI Provider Configuration'));
     });
 
     it('should display API key input fields', async () => {
@@ -372,7 +378,10 @@ describe('SetupWizard', () => {
 
   describe('Academic Preferences Step', () => {
     beforeEach(async () => {
-      // Step 1: Welcome
+      // Clear all mocks to prevent contamination
+      vi.clearAllMocks();
+      
+      // Setup initial welcome step
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -384,49 +393,27 @@ describe('SetupWizard', () => {
         })
       } as Response);
 
-      // Step 2: API Keys
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome'],
-          nextStep: 'apiKeys',
-          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
-          missingSettings: []
-        })
-      } as Response);
-
-      // Step 3: Preferences
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome', 'apiKeys'],
-          nextStep: 'preferences',
-          requiredSettings: [],
-          missingSettings: []
-        })
-      } as Response);
-
       renderWithSession(<SetupWizard />);
       await waitFor(() => screen.getByTestId('setupwizard-step-title'));
       
-      // Navigate to preferences step
-      const continueButton = screen.getByTestId('setupwizard-continue-btn');
-      fireEvent.click(continueButton);
-      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
+      // Navigate to preferences step through API keys
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) } as Response)  // Step 1 to 2
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) } as Response); // Step 2 to 3
       
-      // Provide required API key before navigating
-      const anthropicInput = screen.getAllByLabelText(/anthropic api key/i)[0];
+      const continueButton = screen.getByTestId('setupwizard-continue-btn');
+      
+      // Step 1 to 2 (API keys)
+      fireEvent.click(continueButton);
+      await waitFor(() => screen.getByText('AI Provider Configuration'));
+      
+      // Provide required API key before navigating to step 3
+      const anthropicInput = screen.getByTestId('setupwizard-anthropic-api-key');
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       
-      // Provide required API key and budget before navigating
-      const anthropicInput2 = screen.getAllByLabelText(/anthropic api key/i)[0];
-      fireEvent.change(anthropicInput2, { target: { value: 'sk-ant-valid-key' } });
-      const budgetInput = screen.getByLabelText(/monthly budget/i);
-      fireEvent.change(budgetInput, { target: { value: '100' } });
+      // Step 2 to 3 (preferences)
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getAllByRole('heading').find(h => /Academic Preferences/i.test(h.textContent)));
+      await waitFor(() => screen.getByText('Academic Preferences'));
     });
 
     it('should display preference settings', async () => {
@@ -459,7 +446,10 @@ describe('SetupWizard', () => {
 
   describe('Review & Complete Step', () => {
     beforeEach(async () => {
-      // Step 1: Welcome
+      // Clear all mocks to prevent contamination
+      vi.clearAllMocks();
+      
+      // Setup initial welcome step
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({
@@ -471,62 +461,30 @@ describe('SetupWizard', () => {
         })
       } as Response);
 
-      // Step 2: API Keys
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome'],
-          nextStep: 'apiKeys',
-          requiredSettings: ['anthropicApiKey', 'monthlyBudget'],
-          missingSettings: []
-        })
-      } as Response);
-
-      // Step 3: Preferences
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome', 'apiKeys'],
-          nextStep: 'preferences',
-          requiredSettings: [],
-          missingSettings: []
-        })
-      } as Response);
-
-      // Step 4: Review
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          isSetup: false,
-          completedSteps: ['welcome', 'apiKeys', 'preferences'],
-          nextStep: 'review',
-          requiredSettings: [],
-          missingSettings: []
-        })
-      } as Response);
-
       renderWithSession(<SetupWizard />);
       await waitFor(() => screen.getByTestId('setupwizard-step-title'));
       
-      // Navigate to review step
+      // Navigate to review step through all steps
+      mockFetch
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) } as Response)  // Step 1 to 2
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) } as Response)  // Step 2 to 3
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ success: true }) } as Response); // Step 3 to 4
+      
       const continueButton = screen.getByTestId('setupwizard-continue-btn');
+      
+      // Step 1 to 2 (API keys)
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
+      await waitFor(() => screen.getByText('AI Provider Configuration'));
       
       // Provide required API key before navigating
-      const anthropicInput = screen.getAllByLabelText(/anthropic api key/i)[0];
+      const anthropicInput = screen.getByTestId('setupwizard-anthropic-api-key');
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-valid-key' } });
       
-      // Provide required API key and budget before navigating
-      const anthropicInput2 = screen.getAllByLabelText(/anthropic api key/i)[0];
-      fireEvent.change(anthropicInput2, { target: { value: 'sk-ant-valid-key' } });
-      const budgetInput = screen.getByLabelText(/monthly budget/i);
-      fireEvent.change(budgetInput, { target: { value: '100' } });
+      // Step 2 to 3 (preferences)
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getAllByRole('heading').find(h => /Academic Preferences/i.test(h.textContent)));
+      await waitFor(() => screen.getByText('Academic Preferences'));
       
+      // Step 3 to 4 (review)
       fireEvent.click(continueButton);
       await waitFor(() => screen.getByText('Review & Complete'));
     });
@@ -630,37 +588,44 @@ describe('SetupWizard', () => {
 
   describe('Data Persistence', () => {
     it('should save progress between steps', async () => {
-      // Step 1: Welcome
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({
-            isSetup: false,
-            completedSteps: [],
-            nextStep: 'welcome',
-            requiredSettings: ['anthropicApiKey'],
-            missingSettings: ['anthropicApiKey']
-          })
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            message: 'Settings saved'
-          })
-        } as Response);
+      // Clear all mocks
+      vi.clearAllMocks();
+      
+      // Setup initial welcome step
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          isSetup: false,
+          completedSteps: [],
+          nextStep: 'welcome',
+          requiredSettings: ['anthropicApiKey'],
+          missingSettings: ['anthropicApiKey']
+        })
+      } as Response);
 
       renderWithSession(<SetupWizard />);
       await waitFor(() => screen.getByTestId('setupwizard-step-title'));
 
+      // Mock successful navigation to API keys step
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+      } as Response);
+
       // Navigate to API keys step
       const continueButton = screen.getByTestId('setupwizard-continue-btn');
       fireEvent.click(continueButton);
-      await waitFor(() => screen.getByRole('heading', { name: /AI Provider Configuration/i }));
+      await waitFor(() => screen.getByText('AI Provider Configuration'));
 
       // Fill in API key
-      const anthropicInput = screen.getAllByLabelText(/anthropic api key/i)[0];
+      const anthropicInput = screen.getByTestId('setupwizard-anthropic-api-key');
       fireEvent.change(anthropicInput, { target: { value: 'sk-ant-test-key' } });
+
+      // Mock successful settings save for next navigation
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, message: 'Settings saved' })
+      } as Response);
 
       // Navigate to next step (should save automatically)
       fireEvent.click(continueButton);
@@ -680,6 +645,10 @@ describe('SetupWizard', () => {
 });
 
 describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should resume at correct step after partial completion (user leaves and returns)', async () => {
     // Simulate API returning partial completion
     mockFetch.mockResolvedValueOnce({
@@ -696,7 +665,8 @@ describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
     renderWithSession(<SetupWizard />);
     await waitFor(() => {
       // Should resume at preferences step
-      expect(screen.getAllByRole('heading').find(h => /Academic Preferences/i.test(h.textContent))).toBeInTheDocument();
+      expect(screen.getByText('Academic Preferences')).toBeInTheDocument();
+      expect(screen.getByText('Step 3 of 4')).toBeInTheDocument();
     });
   });
 

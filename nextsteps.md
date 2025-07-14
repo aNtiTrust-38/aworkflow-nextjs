@@ -1,124 +1,164 @@
-# Next Steps
+# Next Steps - v1.7 Beta Development Plan
 
-## Current Status: Desktop Packaging Complete ✅
+## Current Status: Planning Complete, Awaiting Approval ⏳
 
-The Academic Workflow Assistant now has a complete desktop packaging system that creates professional .dmg installers with the exact drag-to-Applications experience you requested.
+The v1.7 Beta development plan has been fully researched, designed, and documented. All critical blockers have been identified and solutions planned.
 
-## What's Been Implemented
+## Development Summary
 
-### 🎉 Desktop Packaging System
-- **Professional .dmg installer** with custom background and layout
-- **Drag-to-Applications interface** matching macOS standards (like Chrome screenshot)
-- **Electron wrapper** with Next.js server integration
-- **Database configuration** for desktop environment
-- **Security features** with encrypted settings storage
-- **Auto-cleanup** - macOS prompts to move DMG to trash after installation
+### 🎯 **v1.7 Beta Objective**
+Implement missing user-friendly GUI features for file management, folder configuration, and enhanced user experience to address the gaps identified in our UX analysis.
 
-### 🚀 Ready-to-Use Commands
-```bash
-# Test desktop app in development
-npm run electron:dev
+### 📋 **What's Been Planned**
 
-# Create production DMG installer
-npm run electron:build
+#### **Research Completed**
+- **Codebase Analysis**: Comprehensive review of existing GUI capabilities
+- **Gap Identification**: Missing drag-and-drop, folder management, export configuration
+- **Blocker Analysis**: Critical issues preventing development identified
+- **Technical Specifications**: Database schema, API endpoints, and component requirements defined
 
-# Package without publishing
-npm run electron:pack
+#### **Development Plan Created**
+- **4-Phase Implementation**: Foundation fixes → Infrastructure → GUI → Testing
+- **Critical Blockers**: Test failures, TypeScript issues, missing dependencies
+- **Technical Requirements**: Database extensions, new components, API endpoints
+- **Success Criteria**: User-friendly file management with system stability
 
-# Validate configuration
-node scripts/test-packaging.js
+### 🚦 **Current Blockers Identified**
+
+#### **Critical (Must Fix First)**
+1. **Navigation Component Tests**: 21/21 failing - IntersectionObserver polyfill needed
+2. **TypeScript Compilation**: 4 explicit `any` type violations in `lib/database/desktop-config.ts`
+3. **SetupWizard Issues**: API response handling needs improvement
+4. **Missing Dependencies**: No drag-and-drop infrastructure
+
+#### **Infrastructure Needed**
+- `react-dropzone@14.2.3` for drag-and-drop functionality
+- `file-type@19.0.0` for file validation
+- Database schema extensions for folder hierarchy
+- New API endpoints for folder management
+
+### 📁 **Planned Features for v1.7 Beta**
+
+#### **User-Friendly File Management**
+- **Drag-and-Drop Upload**: Modern drop zones with progress indicators
+- **Folder Management**: Directory tree visualization and organization
+- **Export Configuration**: GUI for setting export/download folders
+- **File Browser**: Preview and bulk operations interface
+
+#### **Enhanced Settings Dashboard**
+- Export folder configuration panel
+- Persistent folder selection
+- File organization tools
+- Download location management
+
+### 🛠️ **Implementation Phases**
+
+#### **Phase 1: Foundation Fixes (Critical)**
+- Fix test environment with IntersectionObserver polyfill
+- Resolve TypeScript compilation errors
+- Stabilize SetupWizard API handling
+- Ensure existing functionality remains intact
+
+#### **Phase 2: Infrastructure Building**
+- Add drag-and-drop dependencies
+- Extend database schema for folder hierarchy
+- Create folder management API endpoints
+- Implement file validation utilities
+
+#### **Phase 3: GUI Implementation**
+- Build drag-and-drop file upload component
+- Create folder management dashboard
+- Extend Settings Dashboard with export configuration
+- Implement file browser interface
+
+#### **Phase 4: Integration & Testing**
+- Comprehensive testing for all new features
+- Accessibility compliance verification
+- Performance optimization
+- Integration testing
+
+### 📊 **Technical Specifications Ready**
+
+#### **New Components Planned**
+- `components/FileUploadZone.tsx` - Drag-and-drop upload interface
+- `components/FolderManager.tsx` - Directory management
+- `components/FileBrowser.tsx` - File browsing interface
+- `components/ExportSettings.tsx` - Export configuration panel
+
+#### **Database Extensions Designed**
+```sql
+-- Folder model for hierarchical organization
+model Folder {
+  id        String   @id @default(uuid())
+  name      String
+  path      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  parentId  String?
+  parent    Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderHierarchy")
+  files     File[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 ```
 
-## Summary of Development
+#### **API Endpoints Specified**
+- `/api/folders` - CRUD operations for folder management
+- `/api/files/upload` - Enhanced upload with folder support
+- `/api/export/settings` - Export configuration management
 
-Following the CLAUDE.md development bible, this implementation:
+### ✅ **Success Criteria Defined**
+1. **User-Friendly File Management**: Drag-and-drop upload, folder organization, export configuration
+2. **System Stability**: All existing tests passing, no regressions, clean TypeScript compilation
+3. **Performance**: Responsive file operations, maintained ADHD-friendly design, accessibility compliance
 
-1. **Followed TDD**: Created comprehensive tests first, then implemented features
-2. **Used subagents**: Researched packaging solutions and best practices
-3. **Planned thoroughly**: Analyzed current architecture and designed optimal solution
-4. **Implemented efficiently**: Created minimal but complete solution
-5. **Tested comprehensively**: All packaging tests pass (11/11 ✅)
-6. **Documented thoroughly**: Complete guide and troubleshooting docs
+### 🎯 **Development Guidelines Established**
+- **TDD Methodology**: Write tests first, implement to pass, commit when complete
+- **Quality Standards**: WCAG 2.1 AA compliance, ADHD-friendly design, TypeScript strict mode
+- **Code Conventions**: Follow existing patterns, maintain security standards
 
-## Key Features Delivered
+## Ready for Implementation
 
-### 🏗️ Architecture
-- **Electron main process** manages app lifecycle and server
-- **Next.js standalone server** runs on dynamic port
-- **SQLite database** in user data directory
-- **Secure IPC communication** via preload scripts
+### **Documentation Updated**
+- ✅ **instructions.md**: Complete development plan with phases and specifications
+- ✅ **nextsteps.md**: Current status and immediate actions (this file)
+- ✅ **Blocker Analysis**: Comprehensive technical review completed
+- ✅ **Requirements**: All technical specifications defined
 
-### 📦 Installation Experience
-- **Professional DMG** with custom background
-- **Drag-to-Applications** interface (exactly like your screenshot)
-- **Auto-cleanup prompt** to move DMG to trash
-- **Native macOS integration** with proper app bundle
+### **Next Action Required**
+**🔄 AWAITING APPROVAL TO BEGIN DEVELOPMENT**
 
-### 🔐 Security
-- **Context isolation** enabled
-- **Node integration** disabled in renderer
-- **Encrypted API keys** using AES-256-GCM
-- **Secure database** in user data directory
+The planning phase is complete per CLAUDE.md rules. All blockers have been identified, solutions designed, and implementation phases planned. Development awaits approval to proceed with Phase 1 critical fixes.
 
-## Files Created/Modified
+### **Immediate Actions After Approval**
+1. **Phase 1 Start**: Fix IntersectionObserver polyfill for Navigation tests
+2. **TypeScript Fixes**: Resolve `any` type violations in `lib/database/desktop-config.ts`
+3. **SetupWizard Stability**: Improve API response handling
+4. **Foundation Solidification**: Ensure all existing functionality remains stable
 
-### Core Implementation
-- `electron/main.js` - Main Electron process with server management
-- `electron/preload.js` - Secure IPC bridge
-- `electron/package.json` - Electron configuration
-- `lib/database/desktop-config.ts` - Desktop database configuration
+### **Development Timeline Estimate**
+- **Phase 1 (Critical Fixes)**: 1-2 days
+- **Phase 2 (Infrastructure)**: 2-3 days  
+- **Phase 3 (GUI Implementation)**: 4-5 days
+- **Phase 4 (Testing & Integration)**: 2-3 days
+- **Total Estimated**: 9-13 days for complete v1.7 Beta
 
-### Build System
-- `package.json` - Added electron-builder configuration and scripts
-- `next.config.ts` - Enabled standalone output for packaging
-- `build/icon.icns` - Application icon
-- `build/background.png` - DMG background image
+## Files Created/Modified in Planning
 
-### Testing & Validation
-- `__tests__/desktop-packaging.test.ts` - Comprehensive packaging tests
-- `scripts/test-packaging.js` - Configuration validation script
+### **Updated Documentation**
+- `instructions.md` - Complete v1.7 beta development plan
+- `nextsteps.md` - Current status and immediate actions
+- Analysis completed using subagents for blocker identification
 
-### Documentation
-- `docs/desktop-packaging.md` - Complete packaging guide
-- `instructions.md` - Updated development instructions
+### **Research Artifacts**
+- Comprehensive codebase analysis for GUI capabilities
+- Technical debt assessment and resolution plan
+- Database schema extensions designed
+- Component architecture specifications
 
-## Installation Process
+## Ready to Proceed! 🚀
 
-When users run `npm run electron:build`, they get:
+The v1.7 Beta development plan is comprehensive, well-researched, and ready for implementation. All CLAUDE.md rules have been followed: documentation reviewed, blockers identified, plan created, and approval requested before beginning development.
 
-1. **Professional DMG file** named "Academic Workflow Assistant-0.1.0.dmg"
-2. **Custom installer** with drag-to-Applications interface
-3. **Branded background** with clear installation instructions
-4. **Auto-cleanup prompt** after installation
-5. **Native app bundle** in Applications folder
-
-## Testing Results
-
-All packaging tests pass:
-- ✅ Electron main process configuration
-- ✅ Package.json build scripts
-- ✅ Electron-builder configuration
-- ✅ DMG layout and Applications link
-- ✅ Asset files (icon, background)
-- ✅ Next.js standalone output
-- ✅ Database configuration
-
-## Next Priority (Optional)
-
-The desktop packaging system is complete and production-ready. Future enhancements could include:
-
-1. **Code Signing** - Add Apple Developer certificate
-2. **Auto-Updates** - Implement update system
-3. **Cross-Platform** - Windows and Linux support
-4. **App Store** - Mac App Store submission
-5. **Performance** - Bundle optimization
-
-## Ready for Use! 🎉
-
-The desktop packaging priority has been successfully implemented. Users can now:
-- Create professional .dmg installers
-- Distribute the app with a native macOS experience
-- Enjoy the exact drag-to-Applications interface you requested
-- Benefit from auto-cleanup and professional appearance
-
-All tests are passing, documentation is complete, and the implementation follows all CLAUDE.md guidelines.
+**Status: PLANNING COMPLETE - AWAITING DEVELOPMENT APPROVAL**

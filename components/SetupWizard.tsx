@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { useSession } from 'next-auth/react';
 
@@ -91,7 +91,7 @@ export function SetupWizard() {
   // Load setup status on component mount
   useEffect(() => {
     loadSetupStatus();
-  }, []);
+  }, [loadSetupStatus]);
 
   // 1. Patch: Robustly parse setupStatus and restore wizard step on mount
   // Defensive: handle corrupted/missing fields
@@ -116,7 +116,8 @@ export function SetupWizard() {
   }, [setupStatus, loading, error]);
 
   // 2. Patch: Defensive error handling for corrupted/missing API data
-  const loadSetupStatus = async () => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const loadSetupStatus = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -139,7 +140,7 @@ export function SetupWizard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Validate field
   const validateField = (field: string, value: string | number | boolean): string | null => {

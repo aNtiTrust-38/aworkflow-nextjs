@@ -372,7 +372,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         
         return 0;
       });
-  }, [searchTerm, allCommands, currentStep, workflowState]);
+  }, [searchTerm, currentStep, workflowState]);
 
   // Reset selected index when search changes
   useEffect(() => {

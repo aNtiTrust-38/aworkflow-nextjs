@@ -359,12 +359,17 @@ describe('LoadingSpinner', () => {
         });
       }
       
+      // Store original and temporarily remove matchMedia
+      const originalMatchMedia = window.matchMedia;
       // @ts-ignore
       delete window.matchMedia;
       
       expect(() => {
         render(<LoadingSpinner />);
       }).not.toThrow();
+      
+      // Restore original matchMedia
+      window.matchMedia = originalMatchMedia;
     });
   });
 });

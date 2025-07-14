@@ -1,0 +1,11 @@
+{
+  "name": "academic-workflow-desktop",
+  "version": "1.0.0",
+  "description": "Academic Workflow Assistant - Desktop Application",
+  "main": "main.js",
+  "author": "Academic Workflow Team",
+  "license": "MIT",
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  }
+}

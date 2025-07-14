@@ -87,13 +87,30 @@ export class DesktopDatabaseConfig {
 }
 
 // Type definitions for Electron API
+interface ElectronDialogOptions {
+  title?: string;
+  defaultPath?: string;
+  buttonLabel?: string;
+  filters?: Array<{
+    name: string;
+    extensions: string[];
+  }>;
+  properties?: Array<'openFile' | 'openDirectory' | 'multiSelections' | 'showHiddenFiles' | 'createDirectory' | 'promptToCreate' | 'noResolveAliases' | 'treatPackageAsDirectory' | 'dontAddToRecent'>;
+}
+
+interface ElectronDialogResult {
+  canceled: boolean;
+  filePaths?: string[];
+  filePath?: string;
+}
+
 declare global {
   interface Window {
     electronAPI?: {
       getAppVersion: () => Promise<string>;
       getUserDataPath: () => Promise<string>;
-      showSaveDialog: (options: any) => Promise<any>;
-      showOpenDialog: (options: any) => Promise<any>;
+      showSaveDialog: (options: ElectronDialogOptions) => Promise<ElectronDialogResult>;
+      showOpenDialog: (options: ElectronDialogOptions) => Promise<ElectronDialogResult>;
       platform: string;
       isElectron: boolean;
       nodeVersion: string;

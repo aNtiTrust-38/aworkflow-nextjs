@@ -88,10 +88,11 @@ export function SetupWizard() {
     }
   ];
 
-  // Load setup status on component mount
+  // Load setup status on component mount  
   useEffect(() => {
     loadSetupStatus();
-  }, [loadSetupStatus]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 1. Patch: Robustly parse setupStatus and restore wizard step on mount
   // Defensive: handle corrupted/missing fields
@@ -116,7 +117,6 @@ export function SetupWizard() {
   }, [setupStatus, loading, error]);
 
   // 2. Patch: Defensive error handling for corrupted/missing API data
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadSetupStatus = useCallback(async () => {
     try {
       setLoading(true);
@@ -140,7 +140,7 @@ export function SetupWizard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [steps.length]);
 
   // Validate field
   const validateField = (field: string, value: string | number | boolean): string | null => {

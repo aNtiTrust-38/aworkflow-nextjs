@@ -18,6 +18,8 @@ export default defineConfig({
     globals: true, // Enable global test APIs
     clearMocks: true, // Auto-clear mocks between tests
     restoreMocks: true, // Restore original implementations after tests
+    unstubEnvs: true, // Auto-cleanup environment variables
+    unstubGlobals: true, // Auto-cleanup global stubs 
     sequence: {
       shuffle: false, // Disable shuffling for more predictable test execution
       concurrent: false // Disable concurrent execution to avoid timing issues

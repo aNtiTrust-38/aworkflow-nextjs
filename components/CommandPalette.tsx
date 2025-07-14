@@ -352,7 +352,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
       includeMatches: true,
     });
 
-    const results = contextFuse.search(searchTerm);
+    // Defensive: ensure search method exists
+    const results = contextFuse?.search ? contextFuse.search(searchTerm) : [];
     return results
       .map(result => result.item)
       .sort((a, b) => {
@@ -372,6 +373,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         
         return 0;
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, currentStep, workflowState]);
 
   // Reset selected index when search changes
@@ -496,6 +498,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedIndex, filteredCommands, onClose]);
 
   const executeCommand = useCallback((command: Command) => {

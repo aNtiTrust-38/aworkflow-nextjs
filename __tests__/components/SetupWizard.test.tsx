@@ -766,7 +766,7 @@ describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
     fireEvent.click(continueButtons[0]);
     // Should not crash or skip steps
     await waitFor(() => {
-      expect(screen.getAllByRole('heading').find(h => /AI Provider Configuration/i.test(h.textContent))).toBeInTheDocument();
+      expect(screen.getAllByRole('heading').find(h => /AI Provider Configuration/i.test(h.textContent || ''))).toBeInTheDocument();
     });
   });
 

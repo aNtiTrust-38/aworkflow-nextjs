@@ -114,7 +114,7 @@ describe('/api/health', () => {
       rss: 1.6e9,       // 1.6GB (above 1.5GB warning threshold)
       external: 1e8,    // 100MB
       arrayBuffers: 0
-    })
+    }) as any
 
     mockPrismaInstance.$connect.mockResolvedValue(undefined)
     mockPrismaInstance.user.count.mockResolvedValue(0)

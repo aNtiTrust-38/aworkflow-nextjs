@@ -296,7 +296,7 @@ jobs:
       const result = validatePipelineSteps([], { jobs })
 
       expect(result.parallelJobs).toEqual(['lint', 'test', 'type-check'])
-      expect(result.jobDependencies.build).toEqual(['lint', 'test', 'type-check'])
+      expect(result.jobDependencies?.build).toEqual(['lint', 'test', 'type-check'])
     })
   })
 
@@ -418,8 +418,8 @@ jobs:
         validateSecrets: true 
       })
 
-      expect(result.validationResults.deploy.requiredSecrets).toEqual(['PROD_API_URL', 'DEPLOY_KEY'])
-      expect(result.validationResults.deploy.environmentVariables).toEqual({
+      expect(result.validationResults?.deploy.requiredSecrets).toEqual(['PROD_API_URL', 'DEPLOY_KEY'])
+      expect(result.validationResults?.deploy.environmentVariables).toEqual({
         NODE_ENV: 'production',
         API_URL: '\${{ secrets.PROD_API_URL }}'
       })
@@ -440,7 +440,7 @@ jobs:
 
       const result = await testPipelineJobs(jobs, { runner: mockJobRunner })
 
-      expect(result.matrixResults.test).toHaveLength(6) // 3 node versions × 2 OS
+      expect(result.matrixResults?.test).toHaveLength(6) // 3 node versions × 2 OS
       expect(mockJobRunner).toHaveBeenCalledTimes(6)
     })
 

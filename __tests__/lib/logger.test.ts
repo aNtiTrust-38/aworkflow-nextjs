@@ -13,7 +13,7 @@ describe('Structured Logging System', () => {
 
   beforeEach(() => {
     originalNodeEnv = process.env.NODE_ENV
-    process.env.NODE_ENV = 'production'  // Force JSON output for easier testing
+    vi.stubEnv('NODE_ENV', 'production')  // Force JSON output for easier testing
     consoleSpies = {
       log: vi.spyOn(console, 'log').mockImplementation(() => {}),
       error: vi.spyOn(console, 'error').mockImplementation(() => {}),
@@ -25,7 +25,7 @@ describe('Structured Logging System', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
-    process.env.NODE_ENV = originalNodeEnv
+    vi.unstubAllEnvs()
   })
 
   describe('Logger', () => {
@@ -182,7 +182,7 @@ describe('Structured Logging System', () => {
       const originalEnv = process.env.NODE_ENV
       
       // Test production format (JSON)
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       const prodLogger = createLogger({ name: 'prod-logger' })
       prodLogger.info('Production log')
       
@@ -190,7 +190,7 @@ describe('Structured Logging System', () => {
       expect(prodCall).toMatch(/^\{.*\}$/)
       
       // Test development format (pretty)
-      process.env.NODE_ENV = 'development'
+      vi.stubEnv('NODE_ENV', 'development')
       const devLogger = createLogger({ name: 'dev-logger' })
       devLogger.info('Development log')
       
@@ -199,7 +199,7 @@ describe('Structured Logging System', () => {
       expect(devCall).toContain('(dev-logger)')
       expect(devCall).toContain('Development log')
       
-      process.env.NODE_ENV = originalEnv
+      vi.unstubAllEnvs()
     })
 
     it('should support request logging middleware', () => {
@@ -251,7 +251,7 @@ describe('Structured Logging System', () => {
       
       logger.info('Outside context')
       
-      const calls = consoleSpies.info.mock.calls.map(call => JSON.parse(call[0]))
+      const calls = consoleSpies.info.mock.calls.map((call: any) => JSON.parse(call[0]))
       
       expect(calls[0]).toMatchObject({ requestId: 'req-123' })
       expect(calls[1]).toMatchObject({ requestId: 'req-123' })

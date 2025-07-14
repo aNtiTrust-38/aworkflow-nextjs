@@ -23,8 +23,6 @@ const { getUserSettingsStorage } = await import('../../lib/user-settings-storage
 const mockGetServerSession = vi.mocked(getServerSession);
 const mockGetUserSettingsStorage = vi.mocked(getUserSettingsStorage);
 const mockStorage = {
-  prisma: {} as any,
-  encryptionService: {} as any,
   getCompleteSettings: vi.fn(),
   storeCompleteSettings: vi.fn(),
   deleteUserSettings: vi.fn(),
@@ -34,7 +32,7 @@ const mockStorage = {
   getPreferences: vi.fn(),
   storeAiSettings: vi.fn(),
   getAiSettings: vi.fn()
-};
+} as any;
 
 describe('/api/user-settings', () => {
   beforeEach(() => {

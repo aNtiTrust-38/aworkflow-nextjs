@@ -102,7 +102,7 @@ describe('EncryptionService', () => {
       
       vi.unstubAllEnvs();
       if (originalEnv) {
-        process.env.NODE_ENV = originalEnv;
+        vi.unstubAllEnvs();
       }
     });
   });
@@ -134,7 +134,8 @@ describe('EncryptionService', () => {
       const invalidRequest = {
         encrypted: 'invalid',
         salt: 'invalid',
-        iv: 'invalid'
+        iv: 'invalid',
+        tag: 'invalid'
       };
       
       await expect(encryptionService.decryptApiKey(invalidRequest))

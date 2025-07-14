@@ -158,7 +158,7 @@ describe('Advanced Export Features', () => {
           fontSize: 11,
           fontFamily: 'Helvetica',
           margins: { top: 1.2, bottom: 1.2, left: 1, right: 1 },
-          spacing: 'single',
+          spacing: 'single' as 'single' | 'double' | number,
           includePageNumbers: true,
           headerText: 'Research Paper - {title}',
           footerText: 'Page {page} of {totalPages}'
@@ -178,6 +178,7 @@ describe('Advanced Export Features', () => {
         title: 'Complex Research Paper',
         subtitle: 'A Comprehensive Study',
         author: 'John Doe',
+        content: 'This is a comprehensive research paper examining various aspects of the subject matter.',
         sections: [
           {
             title: 'Introduction',
@@ -226,7 +227,7 @@ describe('Advanced Export Features', () => {
         bibliography: [
           {
             id: 'smith2023',
-            type: 'article',
+            type: 'article' as 'article' | 'book' | 'website' | 'report',
             title: 'Research Methods in Modern Science',
             author: 'Smith, J.',
             year: '2023',
@@ -236,7 +237,7 @@ describe('Advanced Export Features', () => {
           },
           {
             id: 'jones2022',
-            type: 'book',
+            type: 'book' as 'article' | 'book' | 'website' | 'report',
             title: 'Advanced Research Techniques',
             author: 'Jones, A., Brown, B., & Wilson, C.',
             year: '2022',
@@ -275,8 +276,8 @@ describe('Advanced Export Features', () => {
         title: 'Word Document',
         content: 'This is content with changes.',
         revisions: [
-          { type: 'insert', text: 'new text', author: 'John Doe', timestamp: Date.now() },
-          { type: 'delete', text: 'old text', author: 'Jane Smith', timestamp: Date.now() - 1000 }
+          { type: 'insert' as 'insert' | 'delete' | 'format', text: 'new text', author: 'John Doe', timestamp: Date.now() },
+          { type: 'delete' as 'insert' | 'delete' | 'format', text: 'old text', author: 'Jane Smith', timestamp: Date.now() - 1000 }
         ]
       };
 
@@ -382,7 +383,7 @@ describe('Advanced Export Features', () => {
         bibliography: [
           {
             id: 'ref1',
-            type: 'article',
+            type: 'article' as 'article' | 'book' | 'website' | 'report' | 'thesis' | 'conference',
             title: 'Important Research',
             author: 'Smith, J.',
             year: '2023'
@@ -407,9 +408,9 @@ describe('Advanced Export Features', () => {
     it('should handle bulk import with deduplication', async () => {
       const bulkData = {
         items: [
-          { type: 'article', title: 'Article 1', author: 'Author 1' },
-          { type: 'book', title: 'Book 1', author: 'Author 2' },
-          { type: 'article', title: 'Article 1', author: 'Author 1' } // Duplicate
+          { type: 'article' as 'article' | 'book' | 'website' | 'report' | 'thesis' | 'conference', title: 'Article 1', author: 'Author 1' },
+          { type: 'book' as 'article' | 'book' | 'website' | 'report' | 'thesis' | 'conference', title: 'Book 1', author: 'Author 2' },
+          { type: 'article' as 'article' | 'book' | 'website' | 'report' | 'thesis' | 'conference', title: 'Article 1', author: 'Author 1' } // Duplicate
         ]
       };
 
@@ -443,7 +444,7 @@ describe('Advanced Export Features', () => {
 
     it('should export with custom metadata fields', async () => {
       const itemWithMetadata = {
-        type: 'article',
+        type: 'article' as 'article' | 'book' | 'website' | 'report' | 'thesis' | 'conference',
         title: 'Custom Metadata Test',
         author: 'Test Author',
         customFields: {
@@ -481,7 +482,7 @@ describe('Advanced Export Features', () => {
         steps: [
           { format: 'pdf', template: 'apa-research-paper', enabled: true },
           { format: 'docx', template: 'word-standard', enabled: true },
-          { format: 'zotero', collection: 'Research Collection', enabled: false }
+          { format: 'zotero', template: 'zotero-standard', collection: 'Research Collection', enabled: false }
         ],
         outputDirectory: './exports',
         filenamePattern: '{title}_{format}_{timestamp}'

@@ -68,7 +68,7 @@ describe('Production Database Configuration', () => {
 
     it('should create SQLite configuration with warnings', () => {
       process.env.DATABASE_URL = 'file:./test.db'
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       
       const config = createDatabaseConfig()
       
@@ -91,7 +91,7 @@ describe('Production Database Configuration', () => {
     })
 
     it('should configure connection pooling for production', () => {
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/proddb'
       process.env.DATABASE_MAX_CONNECTIONS = '50'
       process.env.DATABASE_CONNECTION_TIMEOUT = '60000'
@@ -106,7 +106,7 @@ describe('Production Database Configuration', () => {
     })
 
     it('should enable SSL for production databases', () => {
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       process.env.DATABASE_URL = 'postgresql://user:pass@prod-host:5432/proddb'
       
       const config = createDatabaseConfig()
@@ -118,7 +118,7 @@ describe('Production Database Configuration', () => {
     })
 
     it('should configure custom SSL certificates', () => {
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       process.env.DATABASE_URL = 'postgresql://user:pass@prod-host:5432/proddb'
       process.env.DATABASE_SSL_CA = '/path/to/ca-cert.pem'
       
@@ -131,7 +131,7 @@ describe('Production Database Configuration', () => {
     })
 
     it('should disable logging in production by default', () => {
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/proddb'
       
       const config = createDatabaseConfig()
@@ -140,7 +140,7 @@ describe('Production Database Configuration', () => {
     })
 
     it('should enable query logging when explicitly configured', () => {
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/proddb'
       process.env.DATABASE_LOG_QUERIES = 'true'
       
@@ -239,7 +239,7 @@ describe('Production Database Configuration', () => {
 
   describe('migrateDatabaseSchema', () => {
     it('should validate environment before migration', async () => {
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
       delete process.env.DATABASE_URL
       
       const result = await migrateDatabaseSchema()
@@ -252,7 +252,7 @@ describe('Production Database Configuration', () => {
     // In a real implementation, these would be integration tests
     it('should return proper interface structure', async () => {
       // Test that the function exists and returns the expected structure
-      process.env.NODE_ENV = 'development'
+      vi.stubEnv('NODE_ENV', 'development')
       process.env.DATABASE_URL = 'file:./test.db'
       
       const result = await migrateDatabaseSchema()

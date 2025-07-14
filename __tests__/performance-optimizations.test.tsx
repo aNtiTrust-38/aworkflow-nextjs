@@ -177,7 +177,7 @@ describe('Performance Optimizations', () => {
       // Mock event listener management
       const useEventListener = (event: string, handler: Function) => {
         addEventListener(event, handler);
-        return () => removeEventListener(event, handler);
+        return () => removeEventListener();
       };
 
       const cleanupFn = useEventListener('keydown', vi.fn());

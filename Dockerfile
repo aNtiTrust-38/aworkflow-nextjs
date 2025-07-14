@@ -11,7 +11,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev --frozen-lockfile && npm cache clean --force
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -59,6 +59,11 @@ EXPOSE 3000
 # Set hostname to allow connections from outside container
 ENV HOSTNAME="0.0.0.0"
 ENV PORT=3000
+
+# Install curl for health checks
+USER root
+RUN apk add --no-cache curl
+USER nextjs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

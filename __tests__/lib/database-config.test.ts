@@ -27,7 +27,15 @@ describe('Production Database Configuration', () => {
   beforeEach(() => {
     originalEnv = { ...process.env }
     vi.clearAllMocks()
-    mockPrisma = new PrismaClient()
+    mockPrisma = {
+      $connect: vi.fn(),
+      $disconnect: vi.fn(),
+      $executeRaw: vi.fn(),
+      $queryRaw: vi.fn(),
+      user: {
+        count: vi.fn()
+      }
+    }
   })
 
   afterEach(() => {
@@ -164,7 +172,9 @@ describe('Production Database Configuration', () => {
       expect(result.details).toEqual({
         connected: true,
         queryTest: true,
-        recordCount: 42
+        recordCount: 42,
+        schemaVersion: undefined,
+        migrationNeeded: false
       })
     })
 
@@ -189,7 +199,9 @@ describe('Production Database Configuration', () => {
       expect(result.details).toEqual({
         connected: true,
         queryTest: false,
-        recordCount: null
+        recordCount: null,
+        schemaVersion: undefined,
+        migrationNeeded: false
       })
     })
 

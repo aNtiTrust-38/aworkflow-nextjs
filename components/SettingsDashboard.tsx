@@ -32,6 +32,7 @@ interface ValidationError {
 
 export function SettingsDashboard() {
   const { data: session } = useSession();
+  void session; // Satisfy unused variable warning
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [originalSettings, setOriginalSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,8 +61,9 @@ export function SettingsDashboard() {
       const data = await response.json();
       setSettings(data);
       setOriginalSettings(data);
-    } catch (err: any) {
-      setError(`Failed to load settings: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Failed to load settings: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -80,7 +82,7 @@ export function SettingsDashboard() {
   };
 
   // Handle input changes
-  const handleInputChange = (field: keyof UserSettings, value: any) => {
+  const handleInputChange = (field: keyof UserSettings, value: string | number | boolean) => {
     if (!settings) return;
     
     // Don't update if the value is just the masked display
@@ -101,7 +103,7 @@ export function SettingsDashboard() {
   };
 
   // Validate form fields
-  const validateField = (field: keyof UserSettings, value: any): string | null => {
+  const validateField = (field: keyof UserSettings, value: string | number | boolean): string | null => {
     switch (field) {
       case 'anthropicApiKey':
         if (value && typeof value === 'string' && value.trim() !== '' && !value.startsWith('sk-ant-')) {
@@ -127,7 +129,7 @@ export function SettingsDashboard() {
     if (!settings) return;
     
     const value = settings[field];
-    const error = validateField(field, value);
+    const error = value !== null ? validateField(field, value) : null;
     
     if (error) {
       setValidationErrors(prev => [
@@ -152,7 +154,7 @@ export function SettingsDashboard() {
     Object.keys(settings).forEach(key => {
       const field = key as keyof UserSettings;
       if (settings[field] !== originalSettings[field]) {
-        (changes as any)[field] = settings[field];
+        (changes as Record<string, unknown>)[field] = settings[field];
       }
     });
     
@@ -180,7 +182,8 @@ export function SettingsDashboard() {
       
       const result = await response.json();
       setTestResults(prev => ({ ...prev, [provider]: result }));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       setTestResults(prev => ({
         ...prev,
         [provider]: {
@@ -189,7 +192,7 @@ export function SettingsDashboard() {
           details: {
             service: provider === 'anthropic' ? 'Anthropic Claude' : 'OpenAI',
             status: 'error',
-            message: `Test failed: ${error.message}`
+            message: `Test failed: ${errorMessage}`
           }
         }
       }));
@@ -206,7 +209,7 @@ export function SettingsDashboard() {
     const errors: ValidationError[] = [];
     Object.keys(settings).forEach(key => {
       const field = key as keyof UserSettings;
-      const error = validateField(field, settings[field]);
+      const error = settings[field] !== null ? validateField(field, settings[field]) : null;
       if (error) {
         errors.push({ field, message: error });
       }
@@ -244,8 +247,9 @@ export function SettingsDashboard() {
       
       // Clear test results when settings change
       setTestResults({});
-    } catch (err: any) {
-      setError(`Failed to save settings: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Failed to save settings: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
@@ -266,8 +270,9 @@ export function SettingsDashboard() {
       a.remove();
       window.URL.revokeObjectURL(url);
       setSuccessMessage('Settings backup downloaded.');
-    } catch (err: any) {
-      setError(`Backup failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Backup failed: ${errorMessage}`);
     }
   };
 
@@ -287,8 +292,9 @@ export function SettingsDashboard() {
       setSuccessMessage('Settings restored successfully.');
       setError(null);
       loadSettings();
-    } catch (err: any) {
-      setError(`Restore failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Restore failed: ${errorMessage}`);
     }
   };
 

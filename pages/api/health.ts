@@ -39,7 +39,7 @@ interface HealthCheckResponse {
 }
 
 // Simple in-memory metrics store for demonstration
-let metrics = {
+const metrics = {
   requests: 0,
   totalResponseTime: 0,
   errors: 0,
@@ -127,7 +127,7 @@ async function checkDatabaseHealth() {
   
   try {
     await prisma.$connect()
-    const count = await prisma.user.count()
+    await prisma.user.count()
     const responseTime = Date.now() - startTime
     
     return {
@@ -146,7 +146,7 @@ async function checkDatabaseHealth() {
 function checkMemoryHealth() {
   const usage = process.memoryUsage()
   const heapUsedGB = usage.heapUsed / 1024 / 1024 / 1024
-  const heapTotalGB = usage.heapTotal / 1024 / 1024 / 1024
+  // const heapTotalGB = usage.heapTotal / 1024 / 1024 / 1024
   const rssGB = usage.rss / 1024 / 1024 / 1024
   
   let status: 'healthy' | 'warning' | 'critical' = 'healthy'

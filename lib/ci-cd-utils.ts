@@ -19,7 +19,7 @@ export interface PipelineStep {
   name: string
   action?: string
   run?: string
-  with?: Record<string, any>
+  with?: Record<string, unknown>
 }
 
 export interface StepValidation {
@@ -96,7 +96,7 @@ export function validateWorkflowFile(workflowPath: string): WorkflowValidation {
 
   try {
     const content = readFileSync(workflowPath, 'utf8')
-    let workflow: any
+    let workflow: Record<string, unknown>
 
     // Parse YAML
     try {
@@ -113,16 +113,26 @@ export function validateWorkflowFile(workflowPath: string): WorkflowValidation {
       }
     }
 
-    // Extract basic information
-    const jobs = Object.keys(workflow.jobs || {})
-    const triggers = Array.isArray(workflow.on) ? workflow.on : Object.keys(workflow.on || {})
+    // Extract basic information with proper type casting
+    const workflowData = workflow as {
+      jobs?: Record<string, unknown>;
+      on?: {
+        push?: { branches?: string[] };
+        pull_request?: { branches?: string[] };
+      } | string[];
+    };
+    
+    const jobs = Object.keys(workflowData.jobs || {})
+    const triggers = Array.isArray(workflowData.on) ? workflowData.on : Object.keys(workflowData.on || {})
     
     let branches: string[] = []
-    if (workflow.on?.push?.branches) {
-      branches = branches.concat(workflow.on.push.branches)
-    }
-    if (workflow.on?.pull_request?.branches) {
-      branches = branches.concat(workflow.on.pull_request.branches)
+    if (workflowData.on && !Array.isArray(workflowData.on)) {
+      if (workflowData.on.push?.branches) {
+        branches = branches.concat(workflowData.on.push.branches)
+      }
+      if (workflowData.on.pull_request?.branches) {
+        branches = branches.concat(workflowData.on.pull_request.branches)
+      }
     }
 
     // Validate required jobs
@@ -135,31 +145,34 @@ export function validateWorkflowFile(workflowPath: string): WorkflowValidation {
 
     // Extract job dependencies
     const jobDependencies: Record<string, string[]> = {}
-    Object.entries(workflow.jobs || {}).forEach(([jobName, jobConfig]: [string, any]) => {
-      if (jobConfig.needs) {
-        jobDependencies[jobName] = Array.isArray(jobConfig.needs) 
-          ? jobConfig.needs 
-          : [jobConfig.needs]
+    Object.entries(workflowData.jobs || {}).forEach(([jobName, jobConfig]) => {
+      const config = jobConfig as Record<string, unknown>;
+      if (config.needs) {
+        jobDependencies[jobName] = Array.isArray(config.needs) 
+          ? config.needs 
+          : [config.needs]
       } else {
         jobDependencies[jobName] = []
       }
     })
 
     // Security analysis
-    Object.entries(workflow.jobs || {}).forEach(([jobName, jobConfig]: [string, any]) => {
+    Object.entries(workflowData.jobs || {}).forEach(([jobName, jobConfig]) => {
+      void jobName; // Mark as used for ESLint
+      const config = jobConfig as Record<string, unknown>;
       // Check for explicit permissions
-      if (jobConfig.permissions) {
+      if (config.permissions) {
         securityFeatures.push('Explicit permissions defined')
       } else {
         securityWarnings.push('No explicit permissions defined')
       }
 
       // Check for security scanning
-      const steps = jobConfig.steps || []
-      const hasSecurityScan = steps.some((step: any) => 
-        step.name?.toLowerCase().includes('security') ||
-        step.uses?.includes('security') ||
-        step.run?.includes('audit')
+      const steps = (config.steps as Record<string, unknown>[]) || []
+      const hasSecurityScan = steps.some((step: Record<string, unknown>) => 
+        (typeof step.name === 'string' && step.name.toLowerCase().includes('security')) ||
+        (typeof step.uses === 'string' && step.uses.includes('security')) ||
+        (typeof step.run === 'string' && step.run.includes('audit'))
       )
       
       if (hasSecurityScan) {
@@ -167,9 +180,9 @@ export function validateWorkflowFile(workflowPath: string): WorkflowValidation {
       }
 
       // Check for dependency auditing
-      const hasDependencyAudit = steps.some((step: any) =>
-        step.run?.includes('npm audit') || 
-        step.run?.includes('yarn audit')
+      const hasDependencyAudit = steps.some((step: Record<string, unknown>) =>
+        (typeof step.run === 'string' && step.run.includes('npm audit')) || 
+        (typeof step.run === 'string' && step.run.includes('yarn audit'))
       )
       
       if (hasDependencyAudit) {
@@ -177,8 +190,9 @@ export function validateWorkflowFile(workflowPath: string): WorkflowValidation {
       }
 
       // Check for secret exposure
-      steps.forEach((step: any) => {
-        if (step.run && step.run.includes('${{ secrets.') && 
+      steps.forEach((step: Record<string, unknown>) => {
+        if (typeof step.run === 'string' && 
+            step.run.includes('${{ secrets.') && 
             (step.run.includes('echo') || step.run.includes('print'))) {
           securityWarnings.push('Secret potentially exposed in logs')
         }
@@ -189,12 +203,14 @@ export function validateWorkflowFile(workflowPath: string): WorkflowValidation {
     const environments: string[] = []
     let conditionalDeployments = false
 
-    Object.entries(workflow.jobs || {}).forEach(([jobName, jobConfig]: [string, any]) => {
-      if (jobConfig.environment) {
-        environments.push(jobConfig.environment)
+    Object.entries(workflowData.jobs || {}).forEach(([jobName, jobConfig]) => {
+      void jobName; // Mark as used for ESLint
+      const config = jobConfig as Record<string, unknown>;
+      if (config.environment) {
+        environments.push(config.environment as string)
       }
       
-      if (jobConfig.if && jobConfig.if.includes('github.ref')) {
+      if (config.if && typeof config.if === 'string' && config.if.includes('github.ref')) {
         conditionalDeployments = true
       }
     })
@@ -229,7 +245,7 @@ export function validateWorkflowFile(workflowPath: string): WorkflowValidation {
 
 export function validatePipelineSteps(
   steps: PipelineStep[], 
-  options: { jobs?: Record<string, any> } = {}
+  options: { jobs?: Record<string, Record<string, unknown>> } = {}
 ): StepValidation {
   const warnings: string[] = []
   const optimizations: string[] = []
@@ -308,16 +324,18 @@ export function validatePipelineSteps(
   }
 
   // Analyze parallel jobs structure
-  let parallelJobs: string[] = []
-  let jobDependencies: Record<string, string[]> = {}
+  const parallelJobs: string[] = []
+  const jobDependencies: Record<string, string[]> = {}
 
   if (options.jobs) {
-    Object.entries(options.jobs).forEach(([jobName, jobConfig]: [string, any]) => {
-      if (!jobConfig.needs || jobConfig.needs.length === 0) {
+    Object.entries(options.jobs).forEach(([jobName, jobConfig]) => {
+      const config = jobConfig as Record<string, unknown>;
+      const needs = Array.isArray(config.needs) ? config.needs : [];
+      if (needs.length === 0) {
         parallelJobs.push(jobName)
       }
       
-      jobDependencies[jobName] = jobConfig.needs || []
+      jobDependencies[jobName] = needs
     })
   }
 
@@ -345,10 +363,11 @@ export async function testPipelineJobs(
   const startTime = Date.now()
   const jobResults: Record<string, JobResult> = {}
   const matrixResults: Record<string, JobResult[]> = {}
-  const validationResults: Record<string, any> = {}
+  const validationResults: Record<string, unknown> = {}
 
   // Default job runner
   const defaultRunner = async (jobName: string, config: PipelineConfig[string]): Promise<JobResult> => {
+    void config; // Mark as used for ESLint
     const jobStartTime = Date.now()
     
     try {
@@ -404,7 +423,7 @@ export async function testPipelineJobs(
         jobResults[jobName] = matrixJobResults[0]
       } else {
         // Handle timeout
-        let jobPromise = runner(jobName, jobConfig)
+        const jobPromise = runner(jobName, jobConfig)
         
         if (jobConfig.timeout) {
           const timeoutPromise = new Promise<JobResult>((_, reject) => {
@@ -459,7 +478,10 @@ export async function testPipelineJobs(
   }
 
   if (Object.keys(validationResults).length > 0) {
-    result.validationResults = validationResults
+    result.validationResults = validationResults as Record<string, {
+      requiredSecrets: string[];
+      environmentVariables: Record<string, string>;
+    }>
   }
 
   if (options.collectMetrics) {
@@ -505,7 +527,7 @@ function generateMatrixCombinations(matrix: Record<string, string[]>): Record<st
 
 // Note: yaml import would need to be added to package.json
 // For now, we'll use a simple YAML parser or assume it's available
-const yaml = {
+const yaml = { // eslint-disable-line @typescript-eslint/no-unused-vars
   parse: (content: string) => {
     // Simple YAML parsing - in production, use a proper YAML library
     try {

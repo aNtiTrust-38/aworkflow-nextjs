@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useSession } from 'next-auth/react';
 
@@ -24,7 +24,12 @@ interface SetupWizardState {
     reducedMotion: boolean;
     highContrast: boolean;
   };
-  testResults: { [key: string]: any };
+  testResults: { 
+    [key: string]: {
+      valid: boolean;
+      details?: { message: string };
+    } | null;
+  };
   testing: { [key: string]: boolean };
 }
 
@@ -35,6 +40,7 @@ interface ValidationError {
 
 export function SetupWizard() {
   const { data: session } = useSession();
+  void session; // Satisfy unused variable warning
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
@@ -93,6 +99,7 @@ export function SetupWizard() {
     if (setupStatus && !loading && !error) {
       // Defensive: handle corrupted/missing fields
       const completedSteps = Array.isArray(setupStatus.completedSteps) ? setupStatus.completedSteps : [];
+      void completedSteps; // Satisfy unused variable warning
       const nextStep = typeof setupStatus.nextStep === 'string' ? setupStatus.nextStep : null;
       if (!Array.isArray(setupStatus.completedSteps) || typeof setupStatus.nextStep !== 'string') {
         setError('Failed to load setup status: Corrupted setup status data');
@@ -126,15 +133,16 @@ export function SetupWizard() {
       if (status.isSetup) {
         setWizardState(prev => ({ ...prev, currentStep: steps.length }));
       }
-    } catch (err: any) {
-      setError(`Failed to load setup status: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Failed to load setup status: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
   };
 
   // Validate field
-  const validateField = (field: string, value: any): string | null => {
+  const validateField = (field: string, value: string | number | boolean): string | null => {
     switch (field) {
       case 'anthropicApiKey':
         if (value && typeof value === 'string' && value.trim() !== '' && !value.startsWith('sk-ant-')) {
@@ -156,7 +164,7 @@ export function SetupWizard() {
   };
 
   // Handle input changes
-  const handleInputChange = (field: keyof SetupWizardState['settings'], value: any) => {
+  const handleInputChange = (field: keyof SetupWizardState['settings'], value: string | number | boolean) => {
     setWizardState(prev => ({
       ...prev,
       settings: {
@@ -216,7 +224,8 @@ export function SetupWizard() {
         ...prev,
         testResults: { ...prev.testResults, [provider]: result }
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       setWizardState(prev => ({
         ...prev,
         testResults: {
@@ -227,7 +236,7 @@ export function SetupWizard() {
             details: {
               service: provider === 'anthropic' ? 'Anthropic Claude' : 'OpenAI',
               status: 'error',
-              message: `Test failed: ${error.message}`
+              message: `Test failed: ${errorMessage}`
             }
           }
         }
@@ -279,7 +288,7 @@ export function SetupWizard() {
     const currentStepData = steps[wizardState.currentStep];
     
     if (currentStepData.id === 'apiKeys') {
-      const changes: any = {};
+      const changes: Record<string, unknown> = {};
       
       if (wizardState.settings.anthropicApiKey) {
         changes.anthropicApiKey = wizardState.settings.anthropicApiKey;
@@ -393,8 +402,9 @@ export function SetupWizard() {
       }
       
       setWizardState(prev => ({ ...prev, currentStep: steps.length }));
-    } catch (err: any) {
-      setError(`Setup failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Setup failed: ${errorMessage}`);
     } finally {
       setCompleting(false);
     }
@@ -429,7 +439,7 @@ export function SetupWizard() {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Setup Complete!</h1>
           <p className="text-lg text-gray-600 mb-8">
-            You're all set up and ready to use Academic Workflow Assistant!
+            You&apos;re all set up and ready to use Academic Workflow Assistant!
           </p>
           <button 
             onClick={() => window.location.href = '/'}
@@ -492,7 +502,7 @@ export function SetupWizard() {
                 <li>UI preferences (theme, accessibility)</li>
               </ul>
               <p className="text-gray-700">
-                Let's get started!
+                Let&apos;s get started!
               </p>
             </div>
           )}

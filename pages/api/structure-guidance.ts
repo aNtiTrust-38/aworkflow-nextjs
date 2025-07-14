@@ -6,15 +6,26 @@ export const config = {
   },
 };
 
-function parseForm(req: NextApiRequest): Promise<{ prompt?: string, rubric?: any }> {
+interface RubricFile {
+  name?: string;
+  path?: string;
+  [key: string]: unknown;
+}
+
+interface FormFields {
+  prompt?: string | string[];
+  [key: string]: unknown;
+}
+
+function parseForm(req: NextApiRequest): Promise<{ prompt?: string, rubric?: RubricFile }> {
   return new Promise((resolve, reject) => {
     import('formidable').then(({ IncomingForm }) => {
       const form = new IncomingForm();
-      let rubric: any = undefined;
+      let rubric: RubricFile | undefined = undefined;
       form.on('file', (field, file) => {
-        if (field === 'rubric') rubric = file;
+        if (field === 'rubric') rubric = file as unknown as RubricFile;
       });
-      form.parse(req, (err: Error | null, fields: any) => {
+      form.parse(req, (err: Error | null, fields: FormFields) => {
         if (err) return reject(err);
         let promptValue: string | undefined = undefined;
         if (typeof fields.prompt === 'string') {
@@ -34,13 +45,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   let prompt = '';
-  let rubric: any = undefined;
+  let rubric: RubricFile | undefined = undefined;
   if (req.headers['content-type']?.includes('multipart/form-data')) {
     try {
       const result = await parseForm(req);
       prompt = result.prompt || '';
       rubric = result.rubric;
-    } catch (err: any) {
+      void rubric; // Acknowledge unused variable for future implementation
+    } catch (err: unknown) {
+      void err; // Acknowledge unused variable
       return res.status(400).json({ error: 'Failed to parse form data.' });
     }
   } else {
@@ -120,11 +133,12 @@ Format your response as JSON with these keys:
 
     return res.status(200).json(response);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Structure guidance error:', error);
     return res.status(500).json({ 
       error: 'Failed to generate structure guidance',
-      details: error.message 
+      details: errorMessage 
     });
   }
 } 

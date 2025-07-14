@@ -1,8 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createZoteroSync } from '../../../lib/zotero';
 
+interface Reference {
+  id?: string;
+  title: string;
+  authors: string[];
+  year: number;
+  source: string;
+  citation: string;
+  doi?: string;
+}
+
 interface ExportRequestBody {
-  references: any[];
+  references: Reference[];
   apiKey?: string;
   userId?: string;
   format?: 'json' | 'bibtex';
@@ -67,8 +77,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const zoteroSync = createZoteroSync(zoteroApiKey, zoteroUserId);
     const exported = await zoteroSync.exportToZotero(references);
 
-    const response: any = {
-      exported,
+    const response: {
+      exported: Reference[];
+      count: number;
+      bibtex?: string;
+    } = {
+      exported: exported as unknown as Reference[],
       count: exported.length
     };
 
@@ -81,18 +95,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json(response);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Zotero export error:', error);
     
     // Handle specific errors
-    if (error.message?.includes('API key')) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('API key')) {
       return res.status(401).json({ 
         error: 'Invalid Zotero credentials',
-        details: error.message 
+        details: errorMessage 
       });
     }
     
-    if (error.message?.includes('rate limit')) {
+    if (errorMessage.includes('rate limit')) {
       return res.status(429).json({ 
         error: 'Rate limit exceeded',
         details: 'Please wait before making another request'
@@ -101,7 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     return res.status(500).json({ 
       error: 'Export failed',
-      details: error.message 
+      details: errorMessage 
     });
   }
 }

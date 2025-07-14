@@ -18,7 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const router = getAIRouter();
     const { used, remaining, percentage } = router.getBudgetStatus();
     return res.status(200).json({ used, remaining, percentage, budget });
-  } catch (error: any) {
-    return res.status(500).json({ error: 'Failed to retrieve usage', details: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return res.status(500).json({ error: 'Failed to retrieve usage', details: errorMessage });
   }
 } 

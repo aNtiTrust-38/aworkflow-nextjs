@@ -83,6 +83,7 @@ export class ContextAwareAIRouter {
     }
 
     const startTime = Date.now();
+    void startTime; // Satisfy unused variable warning
     
     try {
       const response = await provider.callAPI(enhancedRequest);
@@ -132,6 +133,7 @@ export class ContextAwareAIRouter {
 
             return response;
           } catch (fallbackError) {
+            void fallbackError; // Satisfy unused variable warning
             continue;
           }
         }

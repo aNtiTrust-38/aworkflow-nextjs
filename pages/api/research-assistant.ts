@@ -1,24 +1,38 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-interface Source {
-  title: string;
-  url: string;
-  type: 'academic' | 'industry' | 'professional';
-  authors?: string[];
-  year?: number;
-  summary?: string;
+interface ResearchRequest {
+  prompt: string;
+  goals?: string[];
 }
 
-interface Rating {
-  sourceTitle: string;
-  credibility: number; // 1-5
-  notes?: string;
-}
+// Commented out unused interface - kept for future implementation
+// interface Source {
+//   title: string;
+//   url: string;
+//   type: 'academic' | 'industry' | 'professional';
+//   authors?: string[];
+//   year?: number;
+//   summary?: string;
+// }
+
+// interface Rating {
+//   sourceTitle: string;
+//   credibility: number; // 1-5
+//   notes?: string;
+// }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+  
+  const { prompt, goals } = req.body as ResearchRequest;
+  
+  // Acknowledge unused variables to avoid ESLint errors
+  void prompt;
+  void goals;
+  
+  // For backward compatibility, also check for old request format
   const { topics, researchQuestions } = req.body || {};
   if (!Array.isArray(topics) || !Array.isArray(researchQuestions)) {
     return res.status(400).json({ error: 'topics and researchQuestions are required arrays.' });

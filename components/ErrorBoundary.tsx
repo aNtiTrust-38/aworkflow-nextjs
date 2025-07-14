@@ -24,7 +24,6 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Log error if needed
     if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
-      // eslint-disable-next-line no-console
       console.error('ErrorBoundary caught:', error, errorInfo);
     }
   }

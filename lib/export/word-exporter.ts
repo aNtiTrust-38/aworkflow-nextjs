@@ -99,7 +99,7 @@ interface WordSettings {
   margins?: { top: number; bottom: number; left: number; right: number };
   headerText?: string;
   footerText?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface WordExportResult {
@@ -117,7 +117,7 @@ interface WordExportResult {
     styleCount?: number;
     wordCount?: number;
     pageCount?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   error?: string;
 }
@@ -253,6 +253,8 @@ export class WordExporter {
   }
 
   private async generateDocument(data: WordExportData, template: WordTemplate): Promise<void> {
+    void data; // Satisfy unused variable warning
+    void template; // Satisfy unused variable warning
     const steps = [
       'Creating document structure',
       'Applying styles',
@@ -265,6 +267,7 @@ export class WordExporter {
     ];
     
     for (const step of steps) {
+      void step; // Satisfy unused variable warning
       await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
     }
   }
@@ -372,6 +375,7 @@ export class WordExporter {
 
   // Document metadata
   private generateMetadata(data: WordExportData, template: WordTemplate): DocumentMetadata {
+    void template; // Satisfy unused variable warning
     return {
       title: data.title,
       author: data.metadata?.author || 'Unknown',

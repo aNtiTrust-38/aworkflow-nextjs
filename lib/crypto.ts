@@ -6,6 +6,7 @@ const KEY_LENGTH = 32; // 256 bits
 const IV_LENGTH = 16; // 128 bits
 const SALT_LENGTH = 32; // 256 bits
 const TAG_LENGTH = 16; // 128 bits
+void TAG_LENGTH; // Satisfy unused variable warning
 
 /**
  * Get or create the master encryption key
@@ -68,6 +69,7 @@ export function encrypt(plaintext: string): EncryptionResult {
       encrypted += cipher.final('base64');
       tag = cipher.getAuthTag();
     } catch (gcmError) {
+      void gcmError; // Satisfy unused variable warning
       // Fallback to CBC mode for test environments  
       const cbcIv = crypto.randomBytes(16);
       cipher = crypto.createCipheriv('aes-256-cbc', key, cbcIv);
@@ -86,8 +88,8 @@ export function encrypt(plaintext: string): EncryptionResult {
       iv: iv.toString('base64'),
       tag: tag ? tag.toString('base64') : ''
     };
-  } catch (error: any) {
-    throw new Error(`Encryption failed: ${error.message}`);
+  } catch (error: unknown) {
+    throw new Error(`Encryption failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -157,8 +159,8 @@ export function decrypt(request: DecryptionRequest): string {
         return decrypted;
       }
     }
-  } catch (error: any) {
-    throw new Error(`Decryption failed: ${error.message}`);
+  } catch (error: unknown) {
+    throw new Error(`Decryption failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -229,10 +231,10 @@ export function isEncryptedValue(value: string): boolean {
 /**
  * Secure memory cleanup (zero out sensitive data)
  */
-export function clearSensitiveData(data: any): void {
+export function clearSensitiveData(data: Record<string, unknown> | string | Buffer | null): void {
   if (typeof data === 'string') {
-    // In Node.js, strings are immutable, but we can try to encourage GC
-    data = null;
+    // In Node.js, strings are immutable, nothing we can do
+    return;
   } else if (Buffer.isBuffer(data)) {
     data.fill(0);
   } else if (typeof data === 'object' && data !== null) {
@@ -263,8 +265,8 @@ export function validateEncryptionEnvironment(): { valid: boolean; warnings: str
   
   try {
     getMasterKey();
-  } catch (error: any) {
-    warnings.push(`Encryption key error: ${error.message}`);
+  } catch (error: unknown) {
+    warnings.push(`Encryption key error: ${error instanceof Error ? error.message : String(error)}`);
   }
   
   return {

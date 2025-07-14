@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useReducer, useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import React, { useReducer, useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { jsPDF } from 'jspdf';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -24,10 +25,6 @@ const ContentAnalysis = dynamic(() => import('./ContentAnalysis').then(mod => ({
   ssr: false
 });
 
-const CitationManager = dynamic(() => import('./CitationManager').then(mod => ({ default: mod.CitationManager })), {
-  loading: () => <LoadingSpinner message="Loading Citation Manager..." />,
-  ssr: false
-});
 
 const CommandPalette = dynamic(() => import('../../components/CommandPalette'), {
   loading: () => null,
@@ -185,7 +182,7 @@ interface WorkflowState {
   loading: boolean;
   goals: string;
   outline: string;
-  researchResults: any;
+  researchResults: Reference[];
   generatedContent: string;
   contentAnalysis: string;
   exportData: string;
@@ -206,7 +203,7 @@ type Action =
   | { type: 'SET_LOADING'; value: boolean }
   | { type: 'SET_GOALS'; value: string }
   | { type: 'SET_OUTLINE'; value: string }
-  | { type: 'SET_RESEARCH_RESULTS'; value: any }
+  | { type: 'SET_RESEARCH_RESULTS'; value: Reference[] }
   | { type: 'SET_GENERATED_CONTENT'; value: string }
   | { type: 'SET_CONTENT_ANALYSIS'; value: string }
   | { type: 'SET_EXPORT_DATA'; value: string }
@@ -217,9 +214,9 @@ type Action =
   | { type: 'SET_ZOTERO_EXPORTING'; value: boolean }
   | { type: 'SET_ZOTERO_MESSAGE'; value: string | null }
   | { type: 'UPDATE_STEP_COMPLETION'; value: { step: number; completed: boolean; hasContent: boolean; contentPreview?: string } }
-  | { type: 'SAVE_WORKFLOW_STATE'; value?: any }
+  | { type: 'SAVE_WORKFLOW_STATE'; value?: Partial<WorkflowState> }
   | { type: 'LOAD_WORKFLOW_STATE'; value: Partial<WorkflowState> }
-  | { type: 'RESET_WORKFLOW'; value?: any };
+  | { type: 'RESET_WORKFLOW'; value?: Partial<WorkflowState> };
 
 function workflowReducer(state: WorkflowState, action: Action): WorkflowState {
   switch (action.type) {
@@ -315,14 +312,14 @@ const initialState: WorkflowState = {
 
 const WorkflowUI: React.FC = () => {
   const [state, dispatch] = useReducer(workflowReducer, initialState);
-  const [citations, setCitations] = useState<{ citation: string }[]>([]);
+  // Citations are passed as parameters to export functions, not stored in state
   const [editingCitationIdx, setEditingCitationIdx] = useState<number | null>(null);
   const [citationEditValue, setCitationEditValue] = useState('');
   const [showAddReference, setShowAddReference] = useState(false);
   const [newReference, setNewReference] = useState({ title: '', authors: '', year: '', citation: '' });
-  const [exportMessage, setExportMessage] = useState('');
+  // const [exportMessage, setExportMessage] = useState('');
   const [citationStyle, setCitationStyle] = useState('APA');
-  const [selectedSections, setSelectedSections] = useState<string[]>([]);
+  // const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -397,7 +394,7 @@ const WorkflowUI: React.FC = () => {
               dispatch({ type: 'SET_PROMPT', value: '' });
               dispatch({ type: 'SET_GOALS', value: '' });
               dispatch({ type: 'SET_OUTLINE', value: '' });
-              dispatch({ type: 'SET_RESEARCH_RESULTS', value: null });
+              dispatch({ type: 'SET_RESEARCH_RESULTS', value: [] });
               dispatch({ type: 'SET_GENERATED_CONTENT', value: '' });
               dispatch({ type: 'SET_CONTENT_ANALYSIS', value: '' });
               dispatch({ type: 'SET_EXPORT_DATA', value: '' });
@@ -430,7 +427,7 @@ const WorkflowUI: React.FC = () => {
               dispatch({ type: 'SET_PROMPT', value: '' });
               dispatch({ type: 'SET_GOALS', value: '' });
               dispatch({ type: 'SET_OUTLINE', value: '' });
-              dispatch({ type: 'SET_RESEARCH_RESULTS', value: null });
+              dispatch({ type: 'SET_RESEARCH_RESULTS', value: [] });
               dispatch({ type: 'SET_GENERATED_CONTENT', value: '' });
               dispatch({ type: 'SET_CONTENT_ANALYSIS', value: '' });
               dispatch({ type: 'SET_EXPORT_DATA', value: '' });
@@ -456,7 +453,20 @@ const WorkflowUI: React.FC = () => {
     if (!state.workflowStartTime) {
       dispatch({ type: 'RESET_WORKFLOW' });
     }
-  }, []);
+  }, [state.workflowStartTime]);
+
+  const getStepContentPreview = useCallback((stepNumber: number): string => {
+    switch (stepNumber) {
+      case 1: return state.prompt ? state.prompt.substring(0, 50) + '...' : '';
+      case 2: return state.goals ? state.goals.substring(0, 50) + '...' : '';
+      case 3: return Array.isArray(state.researchResults) && state.researchResults.length > 0 
+        ? `${state.researchResults.length} research results` : '';
+      case 4: return state.generatedContent ? state.generatedContent.substring(0, 50) + '...' : '';
+      case 5: return state.contentAnalysis ? state.contentAnalysis.substring(0, 50) + '...' : '';
+      case 6: return state.exportData ? 'Export data ready' : '';
+      default: return '';
+    }
+  }, [state.prompt, state.goals, state.researchResults, state.generatedContent, state.contentAnalysis, state.exportData]);
 
   const updateStepCompletion = useCallback((stepNumber: number) => {
     const hasContent = (() => {
@@ -480,7 +490,7 @@ const WorkflowUI: React.FC = () => {
         contentPreview: getStepContentPreview(stepNumber)
       }
     });
-  }, [state.prompt, state.goals, state.researchResults, state.generatedContent, state.contentAnalysis, state.exportData]);
+  }, [getStepContentPreview, state.prompt, state.goals, state.researchResults, state.generatedContent, state.contentAnalysis, state.exportData]);
 
   // Track step completion when content changes
   useEffect(() => {
@@ -585,25 +595,6 @@ const WorkflowUI: React.FC = () => {
     return state.stepCompletion[stepNumber]?.completed || false;
   };
 
-  const getStepContentPreview = (stepNumber: number): string => {
-    switch (stepNumber) {
-      case 1:
-        return state.prompt ? state.prompt.substring(0, 50) + '...' : '';
-      case 2:
-        return state.goals ? state.goals.substring(0, 50) + '...' : '';
-      case 3:
-        return Array.isArray(state.researchResults) && state.researchResults.length > 0 
-          ? `${state.researchResults.length} sources found` : '';
-      case 4:
-        return state.generatedContent ? state.generatedContent.substring(0, 50) + '...' : '';
-      case 5:
-        return state.contentAnalysis ? state.contentAnalysis.substring(0, 50) + '...' : '';
-      case 6:
-        return state.exportData ? 'Export ready' : '';
-      default:
-        return '';
-    }
-  };
 
   // Workflow state persistence
   const saveWorkflowState = useCallback(() => {
@@ -696,7 +687,7 @@ const WorkflowUI: React.FC = () => {
       // Show template modal for new users
       setShowTemplateModal(true);
     }
-  }, [loadWorkflowState]);
+  }, [loadWorkflowState, state.workflowStartTime]);
 
   const handleRetry = useCallback(() => {
     dispatch({ type: 'SET_ERROR_STATE', value: { 
@@ -712,7 +703,7 @@ const WorkflowUI: React.FC = () => {
     dispatch({ type: 'SET_PROMPT', value: '' });
     dispatch({ type: 'SET_GOALS', value: '' });
     dispatch({ type: 'SET_OUTLINE', value: '' });
-    dispatch({ type: 'SET_RESEARCH_RESULTS', value: null });
+    dispatch({ type: 'SET_RESEARCH_RESULTS', value: [] });
     dispatch({ type: 'SET_GENERATED_CONTENT', value: '' });
     dispatch({ type: 'SET_CONTENT_ANALYSIS', value: '' });
     dispatch({ type: 'SET_EXPORT_DATA', value: '' });
@@ -774,7 +765,7 @@ const WorkflowUI: React.FC = () => {
       // Update prompt with new keywords and retry research
       dispatch({ type: 'SET_PROMPT', value: state.prompt + ' ' + newKeywords.trim() });
       // Reset research results to trigger new search
-      dispatch({ type: 'SET_RESEARCH_RESULTS', value: null });
+      dispatch({ type: 'SET_RESEARCH_RESULTS', value: [] });
     }
   }, [state.prompt]);
 
@@ -1063,7 +1054,7 @@ const WorkflowUI: React.FC = () => {
           })
         );
 
-        citations.forEach((citation, index) => {
+        citations.forEach((citation) => {
           const citationText = citation.citation || `${citation.authors.join(', ')} (${citation.year}). ${citation.title}.`;
           children.push(
             new Paragraph({
@@ -1241,7 +1232,7 @@ const WorkflowUI: React.FC = () => {
 
   // Determine stepper test IDs for responsive tests
   // Responsive test IDs for stepper
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+  // const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
   useEffect(() => {
     if (state.step === 3 && Array.isArray(state.researchResults) && state.researchResults.length === 0) {
@@ -1665,12 +1656,13 @@ const WorkflowUI: React.FC = () => {
           </p>
 
           {/* Example responsive image for image/media test */}
-          <img 
+          <Image 
             src="/public/globe.svg" 
             alt="Globe" 
-            role="img" 
+            width={200}
+            height={200}
             className="w-full h-auto max-w-full" 
-            loading="lazy" 
+            priority={false}
           />
 
           {/* Enhanced Loading States */}
@@ -1895,7 +1887,7 @@ const WorkflowUI: React.FC = () => {
                         refs.push({
                           title: newReference.title,
                           authors: newReference.authors.split(',').map(a => a.trim()),
-                          year: newReference.year,
+                          year: parseInt(newReference.year) || new Date().getFullYear(),
                           citation: newReference.citation
                         });
                         dispatch({ type: 'SET_RESEARCH_RESULTS', value: refs });
@@ -2140,7 +2132,7 @@ const WorkflowUI: React.FC = () => {
               </div>
 
               <p className="text-gray-600 mb-6">
-                Select a template to get started with a structured workflow, or choose "Blank Workflow" to start from scratch.
+                Select a template to get started with a structured workflow, or choose &quot;Blank Workflow&quot; to start from scratch.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

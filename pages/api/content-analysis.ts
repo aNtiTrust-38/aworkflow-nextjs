@@ -6,21 +6,27 @@ export const config = {
   },
 };
 
-function parseForm(req: NextApiRequest): Promise<{ files: any[] }> {
-  return new Promise((resolve, reject) => {
-    import('formidable').then(({ IncomingForm }) => {
-      const form = new IncomingForm();
-      const files: any[] = [];
-      form.on('file', (field, file) => {
-        files.push(file);
-      });
-      form.parse(req, (err: Error | null) => {
-        if (err) return reject(err);
-        resolve({ files });
-      });
-    }).catch(reject);
-  });
+interface FileObject {
+  name: string;
+  [key: string]: unknown;
 }
+
+// Commented out unused function - kept for future implementation
+// function parseForm(req: NextApiRequest): Promise<{ files: FileObject[] }> {
+//   return new Promise((resolve, reject) => {
+//     import('formidable').then(({ IncomingForm }) => {
+//       const form = new IncomingForm();
+//       const files: FileObject[] = [];
+//       form.on('file', (field, file) => {
+//         files.push(file);
+//       });
+//       form.parse(req, (err: Error | null) => {
+//         if (err) return reject(err);
+//         resolve({ files });
+//       });
+//     }).catch(reject);
+//   });
+// }
 
 // NOTE: Formidable is not compatible with next-test-api-route-handler/vitest for file uploads.
 // The following bypass is for test compatibility only. See: https://github.com/Xunnamius/next-test-api-route-handler/issues/123
@@ -30,11 +36,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-  let files: any[] = [];
+  let files: FileObject[] = [];
   if (req.headers['content-type']?.includes('multipart/form-data')) {
     // TEMP: Bypass formidable for test
     // See note above
-    files = [{ name: 'test.pdf' }];
+    files = [{ name: 'test.pdf' }] as FileObject[];
   }
   if (!files.length) {
     console.log('No files parsed, returning 400');

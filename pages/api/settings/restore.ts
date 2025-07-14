@@ -19,7 +19,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     await storage.storeCompleteSettings(userId, settings);
     return res.status(200).json({ success: true });
-  } catch (error: any) {
-    return res.status(500).json({ error: 'Failed to restore settings', details: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return res.status(500).json({ error: 'Failed to restore settings', details: errorMessage });
   }
 } 

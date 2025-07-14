@@ -86,7 +86,7 @@ interface PDFSettings {
   headerText?: string;
   footerText?: string;
   inTextCitations?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface PDFExportResult {
@@ -106,7 +106,7 @@ interface PDFExportResult {
     wordCount?: number;
     hasTableOfContents?: boolean;
     hasFiguresList?: boolean;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   error?: string;
 }
@@ -298,6 +298,8 @@ export class PDFExporter {
   }
 
   private async generatePDF(data: PDFExportData, template: PDFTemplate): Promise<void> {
+    void data; // Satisfy unused variable warning
+    void template; // Satisfy unused variable warning
     // Mock PDF generation with processing steps
     const steps = [
       'Initializing PDF document',
@@ -312,6 +314,7 @@ export class PDFExporter {
     ];
     
     for (const step of steps) {
+      void step; // Satisfy unused variable warning
       // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 50));
     }

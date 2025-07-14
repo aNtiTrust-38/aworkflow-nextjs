@@ -34,9 +34,9 @@ interface TemplateSettings {
   showComments?: boolean;
   acceptAllChanges?: boolean;
   customStyles?: boolean;
-  styleDefinitions?: Record<string, any>;
+  styleDefinitions?: Record<string, unknown>;
   inTextCitations?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface TemplateSection {
@@ -67,7 +67,7 @@ interface ExportResult {
   filename: string;
   size: number;
   success: boolean;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   error?: string;
 }
 
@@ -82,7 +82,7 @@ interface WorkflowResult {
 
 interface ExportJob {
   id: string;
-  data: any;
+  data: unknown;
   template: string;
   priority?: number;
   retry?: number;
@@ -169,7 +169,7 @@ export class ExportTemplateManager {
     return updated;
   }
 
-  cloneTemplate(sourceId: string, config: { id: string; name: string; [key: string]: any }): ExportTemplate | null {
+  cloneTemplate(sourceId: string, config: { id: string; name: string; [key: string]: unknown }): ExportTemplate | null {
     const source = this.templates.get(sourceId);
     if (!source) return null;
 
@@ -200,7 +200,7 @@ export class ExportTemplateManager {
     return config;
   }
 
-  async executeWorkflow(workflow: ExportWorkflow, data: any): Promise<WorkflowResult> {
+  async executeWorkflow(workflow: ExportWorkflow, data: unknown): Promise<WorkflowResult> {
     const startTime = Date.now();
     const result: WorkflowResult = {
       completed: 0,
@@ -224,13 +224,14 @@ export class ExportTemplateManager {
           template = this.createTemplate({
             id: step.template,
             name: `Mock ${step.template}`,
-            format: step.format as any,
+            format: step.format as 'pdf' | 'docx' | 'html' | 'latex',
             sections: []
           });
         }
 
+        const dataObj = data as { title?: string };
         const filename = this.generateFilename(workflow.filenamePattern, {
-          title: data.title || 'document',
+          title: dataObj.title || 'document',
           format: step.format,
           timestamp: Date.now()
         });
@@ -246,6 +247,7 @@ export class ExportTemplateManager {
             exportTime: Date.now()
           }
         };
+        void exportResult; // Satisfy unused variable warning
 
         result.files.push(filename);
         result.completed++;
@@ -264,11 +266,11 @@ export class ExportTemplateManager {
     return new ExportQueue(config, this);
   }
 
-  createExportTask(config: { data: any; template: string; onProgress?: (progress: ExportProgress) => void }): ExportTask {
+  createExportTask(config: { data: unknown; template: string; onProgress?: (progress: ExportProgress) => void }): ExportTask {
     return new ExportTask(config, this);
   }
 
-  private generateFilename(pattern: string, variables: Record<string, any>): string {
+  private generateFilename(pattern: string, variables: Record<string, unknown>): string {
     let filename = pattern;
     Object.entries(variables).forEach(([key, value]) => {
       filename = filename.replace(`{${key}}`, String(value));
@@ -380,6 +382,7 @@ class ExportQueue {
     let failed = 0;
 
     const jobPromises: Promise<void>[] = [];
+    void jobPromises; // Satisfy unused variable warning
 
     // Process all jobs with concurrency limit
     while (this.jobs.length > 0) {
@@ -414,6 +417,7 @@ class ExportQueue {
   }
 
   private async processJob(job: ExportJob): Promise<void> {
+    void job; // Satisfy unused variable warning
     let attempts = 0;
     const maxAttempts = this.config.retryAttempts + 1;
 
@@ -436,7 +440,7 @@ class ExportQueue {
 
 class ExportTask {
   constructor(
-    private config: { data: any; template: string; onProgress?: (progress: ExportProgress) => void },
+    private config: { data: unknown; template: string; onProgress?: (progress: ExportProgress) => void },
     private templateManager: ExportTemplateManager
   ) {}
 

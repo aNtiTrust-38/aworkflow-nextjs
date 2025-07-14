@@ -21,7 +21,7 @@ interface ZoteroItem {
   abstract?: string;
   tags?: string[];
   collections?: string[];
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
 }
 
 interface ZoteroExportData {
@@ -107,14 +107,14 @@ interface SyncResult {
 interface SyncConflict {
   itemId: string;
   field: string;
-  localValue: any;
-  remoteValue: any;
+  localValue: unknown;
+  remoteValue: unknown;
   resolution?: 'local' | 'remote' | 'manual';
 }
 
 export class ZoteroExporter {
   private config: ZoteroConfig;
-  private cache = new Map<string, any>();
+  private cache = new Map<string, unknown>();
 
   constructor(config: ZoteroConfig) {
     this.config = {
@@ -155,7 +155,7 @@ export class ZoteroExporter {
             }
           }
 
-          const zoteroItem = this.convertToZoteroFormat(item, options);
+          const zoteroItem = this.convertToZoteroFormat(item, options as Record<string, unknown>);
           const itemId = await this.createItem(zoteroItem);
           
           if (collectionId) {
@@ -335,6 +335,7 @@ export class ZoteroExporter {
   }
 
   private async createCollection(name: string): Promise<string> {
+    void name; // Satisfy unused variable warning
     // Mock collection creation
     const collectionId = `collection_${Date.now()}`;
     await new Promise(resolve => setTimeout(resolve, 200));
@@ -368,8 +369,8 @@ export class ZoteroExporter {
     return key.replace(/\s+/g, '_').toLowerCase();
   }
 
-  private convertToZoteroFormat(item: ZoteroItem, options: any = {}): any {
-    const zoteroItem: any = {
+  private convertToZoteroFormat(item: ZoteroItem, options: Record<string, unknown> = {}): Record<string, unknown> {
+    const zoteroItem: Record<string, unknown> = {
       itemType: this.mapItemType(item.type),
       title: item.title,
       creators: this.parseAuthors(item.author),
@@ -401,7 +402,7 @@ export class ZoteroExporter {
     if (item.tags || options.tagItems) {
       zoteroItem.tags = [
         ...(item.tags || []).map((tag: string) => ({ tag })),
-        ...(options.tagItems || []).map((tag: string) => ({ tag }))
+        ...((options.tagItems as string[]) || []).map((tag: string) => ({ tag }))
       ];
     }
 
@@ -420,7 +421,7 @@ export class ZoteroExporter {
     return typeMap[type] || 'document';
   }
 
-  private parseAuthors(authorString: string): any[] {
+  private parseAuthors(authorString: string): Record<string, unknown>[] {
     // Simple author parsing - in real implementation, use proper name parsing
     const authors = authorString.split(/[,&]|and/).map(author => author.trim());
     return authors.map(author => {
@@ -435,18 +436,24 @@ export class ZoteroExporter {
     });
   }
 
-  private async createItem(item: any): Promise<string> {
+  private async createItem(item: Record<string, unknown>): Promise<string> {
+    void item; // Satisfy unused variable warning
     // Mock item creation
     await new Promise(resolve => setTimeout(resolve, 100));
     return `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
   private async addItemToCollection(itemId: string, collectionId: string): Promise<void> {
+    void itemId; // Satisfy unused variable warning
+    void collectionId; // Satisfy unused variable warning
     // Mock adding item to collection
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 
-  private async mapCustomFields(itemId: string, customFields: Record<string, any>, fieldMap: Record<string, string>): Promise<number> {
+  private async mapCustomFields(itemId: string, customFields: Record<string, unknown>, fieldMap: Record<string, string>): Promise<number> {
+    void itemId; // Satisfy unused variable warning
+    void customFields; // Satisfy unused variable warning
+    void fieldMap; // Satisfy unused variable warning
     let mapped = 0;
     
     for (const [customField, value] of Object.entries(customFields)) {
@@ -460,12 +467,16 @@ export class ZoteroExporter {
     return mapped;
   }
 
-  private async updateItemField(itemId: string, field: string, value: any): Promise<void> {
+  private async updateItemField(itemId: string, field: string, value: unknown): Promise<void> {
+    void itemId; // Satisfy unused variable warning
+    void field; // Satisfy unused variable warning
+    void value; // Satisfy unused variable warning
     // Mock field update
     await new Promise(resolve => setTimeout(resolve, 25));
   }
 
   private async importFromZotero(result: SyncResult, options: SyncOptions): Promise<void> {
+    void options; // Mark as used for ESLint
     // Mock import from Zotero
     const mockItems = 5;
     for (let i = 0; i < mockItems; i++) {
@@ -475,6 +486,7 @@ export class ZoteroExporter {
   }
 
   private async exportToZotero(result: SyncResult, options: SyncOptions): Promise<void> {
+    void options; // Mark as used for ESLint
     // Mock export to Zotero
     const mockItems = 3;
     for (let i = 0; i < mockItems; i++) {

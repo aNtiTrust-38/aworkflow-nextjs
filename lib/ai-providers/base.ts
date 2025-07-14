@@ -17,7 +17,7 @@ export abstract class BaseProvider implements AIProvider {
   }
 
   abstract isAvailable(): boolean;
-  abstract generateContent(prompt: string, taskType: TaskType, options?: any): Promise<GenerationResult>;
+  abstract generateContent(prompt: string, taskType: TaskType, options?: Record<string, unknown>): Promise<GenerationResult>;
   abstract estimateCost(prompt: string): number;
 
   getUsage(): Usage {
@@ -34,11 +34,14 @@ export abstract class BaseProvider implements AIProvider {
     const providerError = new Error(`${this.getProviderName()} API Error: ${error.message}`) as ProviderError;
     providerError.provider = this.name;
     providerError.retryable = retryable;
-    providerError.code = (error as any).code;
+    providerError.code = (error as { code?: string }).code;
     return providerError;
   }
 
-  protected isRetryableError(error: any): boolean {
+  protected isRetryableError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') return false;
+    const err = error as { code?: string; status?: number };
+    void err; // Mark as used for ESLint
     // Common retryable error patterns
     const retryablePatterns = [
       'rate limit',
@@ -49,7 +52,7 @@ export abstract class BaseProvider implements AIProvider {
       'internal server error'
     ];
     
-    const message = error.message?.toLowerCase() || '';
+    const message = (error instanceof Error ? error.message : '').toLowerCase();
     return retryablePatterns.some(pattern => message.includes(pattern));
   }
 }

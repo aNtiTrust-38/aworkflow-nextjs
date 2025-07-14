@@ -8,6 +8,11 @@ interface ContentAnalysisProps {
 }
 
 export const ContentAnalysis: React.FC<ContentAnalysisProps> = ({ generatedContent, onAnalysisComplete, onLoading, onError }) => {
+  // Mark unused parameters as intentionally unused
+  void generatedContent;
+  void onAnalysisComplete;
+  void onLoading;
+  void onError;
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState('');
   const handleAnalyze = () => {

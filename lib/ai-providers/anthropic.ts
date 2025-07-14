@@ -3,8 +3,15 @@ import { BaseProvider } from './base';
 import { GenerationResult, TaskType, PRICING } from './types';
 
 // Type guard for text content blocks
-function isTextBlock(block: any): block is { type: 'text'; text: string } {
-  return block && block.type === 'text' && typeof block.text === 'string';
+function isTextBlock(block: unknown): block is { type: 'text'; text: string } {
+  return (
+    block !== null &&
+    typeof block === 'object' &&
+    'type' in block &&
+    'text' in block &&
+    (block as { type: unknown; text: unknown }).type === 'text' &&
+    typeof (block as { type: unknown; text: unknown }).text === 'string'
+  );
 }
 
 export class AnthropicProvider extends BaseProvider {
@@ -26,10 +33,10 @@ export class AnthropicProvider extends BaseProvider {
     return !!this.apiKey;
   }
 
-  async generateContent(prompt: string, taskType: TaskType, options?: any): Promise<GenerationResult> {
+  async generateContent(prompt: string, taskType: TaskType, options?: Record<string, unknown>): Promise<GenerationResult> {
     try {
       const systemPrompt = this.getSystemPrompt(taskType);
-      const maxTokens = options?.maxTokens || 4000;
+      const maxTokens = (typeof options?.maxTokens === 'number' ? options.maxTokens : 4000);
 
       const response = await this.client.messages.create({
         model: this.model,
@@ -45,7 +52,7 @@ export class AnthropicProvider extends BaseProvider {
 
       let content = '';
       if (Array.isArray(response.content)) {
-        const textBlock = (response.content as any[]).find(isTextBlock);
+        const textBlock = (response.content as unknown[]).find(isTextBlock);
         if (textBlock) {
           content = textBlock.text;
         }
@@ -67,9 +74,10 @@ export class AnthropicProvider extends BaseProvider {
         cost,
         provider: this.name
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const isRetryable = this.isRetryableError(error);
-      throw this.createProviderError(error, isRetryable);
+      const errorInstance = error instanceof Error ? error : new Error(String(error));
+      throw this.createProviderError(errorInstance, isRetryable);
     }
   }
 

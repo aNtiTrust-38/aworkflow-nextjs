@@ -10,7 +10,7 @@ export interface LogEntry {
   level: 'debug' | 'info' | 'warn' | 'error'
   logger: string
   message: string
-  context?: Record<string, any>
+  context?: Record<string, unknown>
   error?: {
     message: string
     name: string
@@ -21,23 +21,23 @@ export interface LogEntry {
 export interface LoggerConfig {
   name: string
   level?: LogLevel
-  context?: Record<string, any>
-  serializers?: Record<string, (obj: any) => any>
+  context?: Record<string, unknown>
+  serializers?: Record<string, (obj: unknown) => unknown>
   enableMetrics?: boolean
 }
 
 export interface Timer {
-  done: (metadata?: Record<string, any>) => void
+  done: (metadata?: Record<string, unknown>) => void
 }
 
 // Async context storage for request-scoped logging
-let asyncContext: Record<string, any> = {}
+let asyncContext: Record<string, unknown> = {}
 
 export class Logger {
   private name: string
   private level: LogLevel
-  private context: Record<string, any>
-  private serializers: Record<string, (obj: any) => any>
+  private context: Record<string, unknown>
+  private serializers: Record<string, (obj: unknown) => unknown>
   private enableMetrics: boolean
 
   constructor(config: LoggerConfig) {
@@ -58,19 +58,19 @@ export class Logger {
     })
   }
 
-  debug(message: string, metadata?: Record<string, any>): void {
+  debug(message: string, metadata?: Record<string, unknown>): void {
     this.log(LogLevel.DEBUG, 'debug', message, metadata)
   }
 
-  info(message: string, metadata?: Record<string, any>): void {
+  info(message: string, metadata?: Record<string, unknown>): void {
     this.log(LogLevel.INFO, 'info', message, metadata)
   }
 
-  warn(message: string, metadata?: Record<string, any>): void {
+  warn(message: string, metadata?: Record<string, unknown>): void {
     this.log(LogLevel.WARN, 'warn', message, metadata)
   }
 
-  error(message: string, metadata?: Record<string, any>): void {
+  error(message: string, metadata?: Record<string, unknown>): void {
     this.log(LogLevel.ERROR, 'error', message, metadata)
   }
 
@@ -78,9 +78,9 @@ export class Logger {
     const startTime = Date.now()
     
     return {
-      done: (metadata?: Record<string, any>) => {
+      done: (metadata?: Record<string, unknown>) => {
         const duration = Date.now() - startTime
-        this.info(metadata?.message || 'Timer completed', {
+        this.info((metadata?.message as string) || 'Timer completed', {
           ...metadata,
           duration
         })
@@ -88,7 +88,7 @@ export class Logger {
     }
   }
 
-  async withContext<T>(context: Record<string, any>, fn: () => Promise<T>): Promise<T> {
+  async withContext<T>(context: Record<string, unknown>, fn: () => Promise<T>): Promise<T> {
     const previousContext = { ...asyncContext }
     asyncContext = { ...asyncContext, ...context }
     
@@ -99,7 +99,7 @@ export class Logger {
     }
   }
 
-  private log(level: LogLevel, levelName: string, message: string, metadata?: Record<string, any>): void {
+  private log(level: LogLevel, levelName: string, message: string, metadata?: Record<string, unknown>): void {
     if (level < this.level) {
       return
     }
@@ -129,16 +129,16 @@ export class Logger {
         name: metadata.error.name,
         stack: metadata.error.stack
       }
-      delete (entry as any).error // Remove from metadata to avoid duplication
+      delete (entry as unknown as Record<string, unknown>).error // Remove from metadata to avoid duplication
     }
 
     this.output(levelName, entry)
   }
 
-  private processMetadata(metadata?: Record<string, any>): Record<string, any> {
+  private processMetadata(metadata?: Record<string, unknown>): Record<string, unknown> {
     if (!metadata) return {}
 
-    const processed: Record<string, any> = {}
+    const processed: Record<string, unknown> = {}
 
     for (const [key, value] of Object.entries(metadata)) {
       if (this.serializers[key]) {
@@ -149,6 +149,7 @@ export class Logger {
           JSON.stringify(value)
           processed[key] = value
         } catch (error) {
+          void error; // Satisfy unused variable warning
           processed[key] = '[Circular Reference]'
         }
       }
@@ -215,30 +216,42 @@ export function createLogger(config?: Partial<LoggerConfig>): Logger {
     context: config?.context,
     serializers: {
       // Default serializers for common objects
-      req: (req: any) => ({
-        method: req.method,
-        url: req.url,
-        headers: {
-          'user-agent': req.headers?.['user-agent'],
-          'content-type': req.headers?.['content-type']
-        }
-      }),
-      res: (res: any) => ({
-        statusCode: res.statusCode,
-        headers: {
-          'content-type': res.headers?.['content-type']
-        }
-      }),
-      user: (user: any) => ({
-        id: user.id,
-        email: user.email
-        // Exclude sensitive fields like password
-      }),
-      error: (error: Error) => ({
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      }),
+      req: (req: unknown) => {
+        const request = req as { method?: string; url?: string; headers?: Record<string, string> };
+        return {
+          method: request.method,
+          url: request.url,
+          headers: {
+            'user-agent': request.headers?.['user-agent'],
+            'content-type': request.headers?.['content-type']
+          }
+        };
+      },
+      res: (res: unknown) => {
+        const response = res as { statusCode?: number; headers?: Record<string, string> };
+        return {
+          statusCode: response.statusCode,
+          headers: {
+            'content-type': response.headers?.['content-type']
+          }
+        };
+      },
+      user: (user: unknown) => {
+        const userData = user as { id?: string; email?: string };
+        return {
+          id: userData.id,
+          email: userData.email
+          // Exclude sensitive fields like password
+        };
+      },
+      error: (error: unknown) => {
+        const err = error as Error;
+        return {
+          name: err.name,
+          message: err.message,
+          stack: err.stack
+        };
+      },
       ...config?.serializers
     },
     enableMetrics: config?.enableMetrics

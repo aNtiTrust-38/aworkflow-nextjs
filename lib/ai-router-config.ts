@@ -36,23 +36,30 @@ export async function getAIRouter(config?: Partial<AIRouterConfig>): Promise<AIR
   return router;
 }
 
-export async function createAIRouterFromSettings(userSettings: any): Promise<AIRouter> {
+export async function createAIRouterFromSettings(userSettings: unknown): Promise<AIRouter> {
+  const settings = userSettings as {
+    aiProvider?: string;
+    monthlyBudget?: number;
+    anthropicApiKey?: string;
+    openaiApiKey?: string;
+  };
+  
   const config: Partial<AIRouterConfig> = {
-    defaultProvider: userSettings.aiProvider || 'anthropic',
-    budget: userSettings.monthlyBudget ? {
-      monthly: userSettings.monthlyBudget,
+    defaultProvider: settings.aiProvider || 'anthropic',
+    budget: settings.monthlyBudget ? {
+      monthly: settings.monthlyBudget,
       current: 0, // TODO: Track current usage
     } : undefined,
   };
   
   const providers: Record<string, AIProvider> = {};
   
-  if (userSettings.anthropicApiKey) {
-    providers.anthropic = new AnthropicProvider(userSettings.anthropicApiKey);
+  if (settings.anthropicApiKey) {
+    providers.anthropic = new AnthropicProvider(settings.anthropicApiKey);
   }
   
-  if (userSettings.openaiApiKey) {
-    providers.openai = new OpenAIProvider(userSettings.openaiApiKey);
+  if (settings.openaiApiKey) {
+    providers.openai = new OpenAIProvider(settings.openaiApiKey);
   }
   
   config.providers = providers;

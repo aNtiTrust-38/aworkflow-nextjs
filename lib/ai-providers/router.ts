@@ -1,4 +1,4 @@
-import { AIProvider, GenerationResult, TaskType, RouterConfig, UsageStats, ProviderError } from './types';
+import { AIProvider, GenerationResult, TaskType, RouterConfig, UsageStats } from './types';
 
 export class AIRouter {
   private providers: AIProvider[];
@@ -85,7 +85,7 @@ export class AIRouter {
     return sortedProviders[0];
   }
 
-  async generateWithFailover(prompt: string, taskType: TaskType, options?: any): Promise<GenerationResult> {
+  async generateWithFailover(prompt: string, taskType: TaskType, options?: Record<string, unknown>): Promise<GenerationResult> {
     this.checkBudget();
 
     const primaryProvider = this.selectProvider(taskType);
@@ -94,7 +94,7 @@ export class AIRouter {
       const result = await primaryProvider.generateContent(prompt, taskType, options);
       this.updateUsageStats(result);
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (!this.config.fallbackEnabled || !this.isRetryableError(error)) {
         throw error;
       }
@@ -109,7 +109,8 @@ export class AIRouter {
           const result = await fallbackProvider.generateContent(prompt, taskType, options);
           this.updateUsageStats(result);
           return result;
-        } catch (fallbackError: any) {
+        } catch (fallbackError: unknown) {
+          void fallbackError; // Satisfy unused variable warning
           // Continue to next fallback
           continue;
         }
@@ -120,9 +121,9 @@ export class AIRouter {
     }
   }
 
-  private isRetryableError(error: any): boolean {
-    if (error.retryable !== undefined) {
-      return error.retryable;
+  private isRetryableError(error: unknown): boolean {
+    if (error && typeof error === 'object' && 'retryable' in error) {
+      return Boolean((error as { retryable: unknown }).retryable);
     }
 
     const retryablePatterns = [
@@ -134,7 +135,7 @@ export class AIRouter {
       'internal server error'
     ];
     
-    const message = error.message?.toLowerCase() || '';
+    const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
     return retryablePatterns.some(pattern => message.includes(pattern));
   }
 

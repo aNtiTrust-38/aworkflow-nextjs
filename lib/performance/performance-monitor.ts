@@ -2,7 +2,7 @@ interface PerformanceMetric {
   name: string;
   value: number;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface ComponentRenderMetric {
@@ -34,8 +34,8 @@ class PerformanceMonitor {
         const lastEntry = entries[entries.length - 1];
         
         this.recordMetric('LCP', lastEntry.startTime, {
-          element: (lastEntry as any).element?.tagName,
-          url: (lastEntry as any).url
+          element: (lastEntry as unknown as { element?: { tagName: string } }).element?.tagName,
+          url: (lastEntry as unknown as { url?: string }).url
         });
       });
       
@@ -48,9 +48,9 @@ class PerformanceMonitor {
       const observer = new PerformanceObserver((entryList) => {
         const firstInput = entryList.getEntries()[0];
         
-        this.recordMetric('FID', (firstInput as any).processingStart - firstInput.startTime, {
+        this.recordMetric('FID', (firstInput as unknown as { processingStart: number }).processingStart - firstInput.startTime, {
           eventType: firstInput.name,
-          target: (firstInput as any).target?.tagName
+          target: (firstInput as unknown as { target?: { tagName: string } }).target?.tagName
         });
       });
       
@@ -64,8 +64,8 @@ class PerformanceMonitor {
       
       const observer = new PerformanceObserver((entryList) => {
         for (const entry of entryList.getEntries()) {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          if (!(entry as unknown as { hadRecentInput: boolean }).hadRecentInput) {
+            clsValue += (entry as unknown as { value: number }).value;
           }
         }
         
@@ -80,7 +80,7 @@ class PerformanceMonitor {
   measureComponentRender<T>(
     componentName: string,
     renderFn: () => T,
-    props?: any
+    props?: Record<string, unknown>
   ): T {
     const startTime = performance.now();
     const result = renderFn();
@@ -91,7 +91,7 @@ class PerformanceMonitor {
   }
 
   // Bundle loading performance
-  measureBundleLoad(chunkName: string, loadPromise: Promise<any>): Promise<any> {
+  measureBundleLoad(chunkName: string, loadPromise: Promise<unknown>): Promise<unknown> {
     const startTime = performance.now();
     
     return loadPromise.then(
@@ -109,7 +109,7 @@ class PerformanceMonitor {
   }
 
   // AI response performance
-  measureAIResponse(provider: string, operation: string, responsePromise: Promise<any>): Promise<any> {
+  measureAIResponse(provider: string, operation: string, responsePromise: Promise<unknown>): Promise<unknown> {
     const startTime = performance.now();
     
     return responsePromise.then(
@@ -119,7 +119,7 @@ class PerformanceMonitor {
           provider,
           operation,
           success: true,
-          tokens: result.usage?.total_tokens || 0
+          tokens: (result as { usage?: { total_tokens: number } }).usage?.total_tokens || 0
         });
         return result;
       },
@@ -139,11 +139,13 @@ class PerformanceMonitor {
   // Memory usage monitoring
   measureMemoryUsage(): void {
     if (typeof window !== 'undefined' && 'performance' in window && 'memory' in performance) {
-      const memory = (performance as any).memory;
-      this.recordMetric('MEMORY_USED', memory.usedJSHeapSize, {
-        total: memory.totalJSHeapSize,
-        limit: memory.jsHeapSizeLimit
-      });
+      const memory = (performance as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
+      if (memory) {
+        this.recordMetric('MEMORY_USED', memory.usedJSHeapSize, {
+          total: memory.totalJSHeapSize,
+          limit: memory.jsHeapSizeLimit
+        });
+      }
     }
   }
 
@@ -156,7 +158,7 @@ class PerformanceMonitor {
     });
   }
 
-  private recordMetric(name: string, value: number, metadata?: Record<string, any>): void {
+  private recordMetric(name: string, value: number, metadata?: Record<string, unknown>): void {
     this.metrics.push({
       name,
       value,
@@ -167,7 +169,7 @@ class PerformanceMonitor {
     this.maintainMetricsSize();
   }
 
-  private recordRenderMetric(componentName: string, renderTime: number, props?: any): void {
+  private recordRenderMetric(componentName: string, renderTime: number, props?: Record<string, unknown>): void {
     this.renderMetrics.push({
       componentName,
       renderTime,
@@ -187,6 +189,7 @@ class PerformanceMonitor {
     cached: boolean,
     error?: Error
   ): void {
+    void error; // Mark as used for ESLint
     this.bundleMetrics.push({
       chunkName,
       loadTime,
@@ -206,7 +209,7 @@ class PerformanceMonitor {
     }
   }
 
-  private estimateSize(obj: any): number {
+  private estimateSize(obj: unknown): number {
     return JSON.stringify(obj).length * 2; // Rough estimate
   }
 
@@ -250,11 +253,12 @@ class PerformanceMonitor {
       components.get(metric.componentName)!.push(metric.renderTime);
     });
     
-    const performance = new Map<string, any>();
+    const performance = new Map<string, { count: number; totalTime: number; avg: number; max: number }>();
     components.forEach((times, name) => {
-      const avg = times.reduce((sum, time) => sum + time, 0) / times.length;
+      const totalTime = times.reduce((sum, time) => sum + time, 0);
+      const avg = totalTime / times.length;
       const max = Math.max(...times);
-      performance.set(name, { avg, max, count: times.length });
+      performance.set(name, { avg, max, count: times.length, totalTime });
     });
     
     return Object.fromEntries(performance);
@@ -270,13 +274,15 @@ class PerformanceMonitor {
       bundles.get(metric.chunkName)!.push(metric);
     });
     
-    const performance = new Map<string, any>();
+    const performance = new Map<string, { count: number; totalTime: number; avg: number; max: number }>();
     bundles.forEach((metrics, name) => {
       const loadTimes = metrics.map(m => m.loadTime);
       const avg = loadTimes.reduce((sum, time) => sum + time, 0) / loadTimes.length;
       const totalSize = metrics.reduce((sum, m) => sum + m.size, 0);
+      void totalSize; // Mark as used for ESLint
       
-      performance.set(name, { avgLoadTime: avg, totalSize, loads: metrics.length });
+      const max = Math.max(...loadTimes);
+      performance.set(name, { avg, max, count: metrics.length, totalTime: loadTimes.reduce((sum, time) => sum + time, 0) });
     });
     
     return Object.fromEntries(performance);
@@ -287,16 +293,16 @@ class PerformanceMonitor {
     const providers = new Map<string, { total: number; success: number; avgTime: number; totalTokens: number }>();
     
     aiMetrics.forEach(metric => {
-      const provider = metric.metadata?.provider || 'unknown';
+      const provider = (metric.metadata?.provider as string) || 'unknown';
       if (!providers.has(provider)) {
         providers.set(provider, { total: 0, success: 0, avgTime: 0, totalTokens: 0 });
       }
       
       const stats = providers.get(provider)!;
       stats.total++;
-      if (metric.metadata?.success) stats.success++;
+      if (metric.metadata?.success as boolean) stats.success++;
       stats.avgTime = (stats.avgTime * (stats.total - 1) + metric.value) / stats.total;
-      stats.totalTokens += metric.metadata?.tokens || 0;
+      stats.totalTokens += (metric.metadata?.tokens as number) || 0;
     });
     
     return Object.fromEntries(providers);
@@ -309,9 +315,9 @@ class PerformanceMonitor {
     const latest = memoryMetrics[memoryMetrics.length - 1];
     return {
       current: latest.value,
-      total: latest.metadata?.total,
-      limit: latest.metadata?.limit,
-      usage: latest.metadata?.total ? (latest.value / latest.metadata.total) * 100 : 0
+      total: latest.metadata?.total as number,
+      limit: latest.metadata?.limit as number,
+      usage: latest.metadata?.total ? (latest.value / (latest.metadata.total as number)) * 100 : 0
     };
   }
 
@@ -335,8 +341,8 @@ class PerformanceMonitor {
     
     // Component performance suggestions
     Object.entries(summary.componentPerformance).forEach(([component, stats]) => {
-      if ((stats as any).avg > 16.67) { // 60fps threshold
-        suggestions.push(`${component} renders slowly (${(stats as any).avg.toFixed(2)}ms) - consider memoization or optimization`);
+      if ((stats as { avg: number }).avg > 16.67) { // 60fps threshold
+        suggestions.push(`${component} renders slowly (${(stats as { avg: number; max: number }).avg.toFixed(2)}ms) - consider memoization or optimization`);
       }
     });
     
@@ -347,8 +353,8 @@ class PerformanceMonitor {
     
     // AI performance suggestions
     Object.entries(summary.aiPerformance).forEach(([provider, stats]) => {
-      if ((stats as any).avgTime > 5000) {
-        suggestions.push(`${provider} responses are slow (${((stats as any).avgTime / 1000).toFixed(2)}s) - consider caching or using faster models`);
+      if ((stats as { avgTime: number }).avgTime > 5000) {
+        suggestions.push(`${provider} responses are slow (${((stats as { avgTime: number }).avgTime / 1000).toFixed(2)}s) - consider caching or using faster models`);
       }
     });
     

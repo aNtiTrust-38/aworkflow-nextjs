@@ -25,6 +25,7 @@ interface ValidationError {
 
 export function ApiKeyTester() {
   const { data: session } = useSession();
+  void session; // Satisfy unused variable warning
   const [provider, setProvider] = useState<Provider>('anthropic');
   const [apiKey, setApiKey] = useState('');
   const [userId, setUserId] = useState(''); // For Zotero
@@ -119,7 +120,11 @@ export function ApiKeyTester() {
       setTesting(true);
       setTestResult(null);
 
-      const requestBody: any = {
+      const requestBody: {
+        provider: Provider;
+        apiKey: string;
+        userId?: string;
+      } = {
         provider,
         apiKey
       };
@@ -136,7 +141,7 @@ export function ApiKeyTester() {
 
       const result = await response.json();
       setTestResult(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setTestResult({
         valid: false,
         provider,
@@ -144,7 +149,7 @@ export function ApiKeyTester() {
           service: provider === 'anthropic' ? 'Anthropic Claude' : 
                    provider === 'openai' ? 'OpenAI' : 'Zotero',
           status: 'error',
-          message: `Network error: ${error.message}`
+          message: `Network error: ${error instanceof Error ? error.message : String(error)}`
         }
       });
     } finally {

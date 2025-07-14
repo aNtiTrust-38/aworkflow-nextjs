@@ -76,18 +76,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       hasMore
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Zotero import error:', error);
     
     // Handle specific errors
-    if (error.message?.includes('API key')) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('API key')) {
       return res.status(401).json({ 
         error: 'Invalid Zotero credentials',
-        details: error.message 
+        details: errorMessage 
       });
     }
     
-    if (error.message?.includes('rate limit')) {
+    if (errorMessage.includes('rate limit')) {
       return res.status(429).json({ 
         error: 'Rate limit exceeded',
         details: 'Please wait before making another request'
@@ -96,7 +97,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     return res.status(500).json({ 
       error: 'Import failed',
-      details: error.message 
+      details: errorMessage 
     });
   }
 }

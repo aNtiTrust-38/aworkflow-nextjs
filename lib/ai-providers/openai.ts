@@ -21,10 +21,10 @@ export class OpenAIProvider extends BaseProvider {
     return !!this.apiKey;
   }
 
-  async generateContent(prompt: string, taskType: TaskType, options?: any): Promise<GenerationResult> {
+  async generateContent(prompt: string, taskType: TaskType, options?: Record<string, unknown>): Promise<GenerationResult> {
     try {
       const systemPrompt = this.getSystemPrompt(taskType);
-      const maxTokens = options?.maxTokens || 4000;
+      const maxTokens = (typeof options?.maxTokens === 'number' ? options.maxTokens : 4000);
 
       const response = await this.client.chat.completions.create({
         model: this.model,
@@ -59,9 +59,10 @@ export class OpenAIProvider extends BaseProvider {
         cost,
         provider: this.name
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const isRetryable = this.isRetryableError(error);
-      throw this.createProviderError(error, isRetryable);
+      const errorInstance = error instanceof Error ? error : new Error(String(error));
+      throw this.createProviderError(errorInstance, isRetryable);
     }
   }
 

@@ -1,8 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createZoteroSync } from '../../../lib/zotero';
 
+interface Reference {
+  id?: string;
+  title: string;
+  authors: string[];
+  year: number;
+  source: string;
+  citation: string;
+  doi?: string;
+}
+
 interface SyncRequestBody {
-  references?: any[];
+  references?: Reference[];
   apiKey?: string;
   userId?: string;
 }
@@ -79,25 +89,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       summary
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Zotero sync error:', error);
     
     // Handle specific Zotero errors
-    if (error.message?.includes('API key')) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('API key')) {
       return res.status(401).json({ 
         error: 'Invalid Zotero credentials',
-        details: error.message 
+        details: errorMessage 
       });
     }
     
-    if (error.message?.includes('rate limit')) {
+    if (errorMessage.includes('rate limit')) {
       return res.status(429).json({ 
         error: 'Rate limit exceeded',
         details: 'Please wait before making another request'
       });
     }
     
-    if (error.message?.includes('network') || error.message?.includes('timeout')) {
+    if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
       return res.status(503).json({ 
         error: 'Zotero service unavailable',
         details: 'Please try again later'
@@ -106,7 +117,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(500).json({ 
       error: 'Sync failed',
-      details: error.message 
+      details: errorMessage 
     });
   }
 }

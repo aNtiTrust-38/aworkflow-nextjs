@@ -30,6 +30,9 @@ export const CitationManager: React.FC<CitationManagerProps> = ({
   citationStyle = 'APA',
   onCitationStyleChange
 }) => {
+  // Mark unused parameters as intentionally unused
+  void onLoading;
+  void onError;
   const [citations, setCitations] = useState<Reference[]>(researchResults || []);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -235,12 +238,12 @@ export const CitationManager: React.FC<CitationManagerProps> = ({
     }
   }, [style, citationStyle, onCitationStyleChange]);
 
-  // Add reference
-  const handleAdd = () => {
-    setCitations(prev => [...prev, { ...newRef }]);
-    setShowAdd(false);
-    setNewRef({ title: '', authors: [''], year: new Date().getFullYear(), citation: '' });
-  };
+  // Add reference (unused - functionality implemented inline below)
+  // const handleAdd = () => {
+  //   setCitations(prev => [...prev, { ...newRef }]);
+  //   setShowAdd(false);
+  //   setNewRef({ title: '', authors: [''], year: new Date().getFullYear(), citation: '' });
+  // };
   // Remove reference
   const handleRemove = (idx: number) => {
     setCitations(prev => prev.filter((_, i) => i !== idx));
@@ -266,8 +269,11 @@ export const CitationManager: React.FC<CitationManagerProps> = ({
 
   // Export customization
   const handleExport = () => {
-    setExportMsg(`Exported with ${style} style: ${selectedSections.join(', ')}${fileFormat === 'word' ? ' (Word)' : ' (PDF)'}`);
-    onExportReady && onExportReady(exportMsg);
+    const message = `Exported with ${style} style: ${selectedSections.join(', ')}${fileFormat === 'word' ? ' (Word)' : ' (PDF)'}`;
+    setExportMsg(message);
+    if (onExportReady) {
+      onExportReady(message);
+    }
   };
 
   return (

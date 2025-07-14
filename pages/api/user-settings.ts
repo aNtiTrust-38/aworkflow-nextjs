@@ -31,11 +31,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
           const settings = await storage.getCompleteSettings(userId);
           return res.status(200).json(settings);
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           console.error('Failed to get user settings:', error);
           return res.status(500).json({ 
             error: 'Failed to retrieve user settings',
-            details: error.message 
+            details: errorMessage 
           });
         }
 
@@ -128,11 +129,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const updatedSettings = await storage.getCompleteSettings(userId);
           return res.status(200).json(updatedSettings);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           console.error('Failed to update user settings:', error);
           return res.status(500).json({ 
             error: 'Failed to update user settings',
-            details: error.message
+            details: errorMessage
           });
         }
 
@@ -145,11 +147,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             message: 'User settings deleted successfully'
           });
 
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
           console.error('Failed to delete user settings:', error);
           return res.status(500).json({ 
             error: 'Failed to delete user settings',
-            details: error.message
+            details: errorMessage
           });
         }
 
@@ -159,11 +162,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           error: `Method ${req.method} not allowed`
         });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('User settings API error:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
-      details: error.message
+      details: errorMessage
     });
   }
 }

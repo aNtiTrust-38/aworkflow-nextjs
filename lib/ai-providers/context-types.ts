@@ -14,7 +14,7 @@ export interface AIRequest {
   metadata?: {
     workflowStep?: string;
     enhanceWithContext?: boolean;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

@@ -1,14 +1,27 @@
 import React, { useState } from 'react';
 
+interface Reference {
+  title: string;
+  authors: string[];
+  year: number;
+  citation: string;
+}
+
 interface ResearchAssistantProps {
   prompt: string;
   goals: string;
-  onResearchComplete: (results: any) => void;
+  onResearchComplete: (results: Reference[]) => void;
   onLoading: (loading: boolean) => void;
   onError: (error: string) => void;
 }
 
 export const ResearchAssistant: React.FC<ResearchAssistantProps> = ({ prompt, goals, onResearchComplete, onLoading, onError }) => {
+  // Mark unused parameters as intentionally unused
+  void prompt;
+  void goals;
+  void onResearchComplete;
+  void onLoading;
+  void onError;
   const [researchQuery, setResearchQuery] = useState('');
   const [result, setResult] = useState('');
   const handleResearch = () => {

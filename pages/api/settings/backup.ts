@@ -15,7 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename="settings-backup.json"');
     return res.status(200).send(data);
-  } catch (error: any) {
-    return res.status(500).json({ error: 'Failed to backup settings', details: error.message });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return res.status(500).json({ error: 'Failed to backup settings', details: errorMessage });
   }
 } 

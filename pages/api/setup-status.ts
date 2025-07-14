@@ -48,11 +48,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       error: `Method ${req.method} not allowed`
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Setup status API error:', error);
     return res.status(500).json({
       error: 'Internal server error',
-      details: error.message
+      details: errorMessage
     });
   }
 }

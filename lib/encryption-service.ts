@@ -25,8 +25,8 @@ export class EncryptionService {
 
     try {
       return encrypt(apiKey);
-    } catch (error: any) {
-      throw new Error(`API key encryption failed: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`API key encryption failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -40,8 +40,8 @@ export class EncryptionService {
 
     try {
       return decrypt(request);
-    } catch (error: any) {
-      throw new Error(`API key decryption failed: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`API key decryption failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -55,8 +55,8 @@ export class EncryptionService {
 
     try {
       return encrypt(value);
-    } catch (error: any) {
-      throw new Error(`Setting encryption failed: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Setting encryption failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -70,8 +70,8 @@ export class EncryptionService {
 
     try {
       return decrypt(request);
-    } catch (error: any) {
-      throw new Error(`Setting decryption failed: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Setting decryption failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -81,8 +81,8 @@ export class EncryptionService {
   async generateMasterKey(): Promise<string> {
     try {
       return generateCryptoMasterKey();
-    } catch (error: any) {
-      throw new Error(`Master key generation failed: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Master key generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -92,10 +92,10 @@ export class EncryptionService {
   async validateEnvironment(): Promise<{ valid: boolean; warnings: string[] }> {
     try {
       return validateEncryptionEnvironment();
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         valid: false,
-        warnings: [`Environment validation failed: ${error.message}`]
+        warnings: [`Environment validation failed: ${error instanceof Error ? error.message : String(error)}`]
       };
     }
   }

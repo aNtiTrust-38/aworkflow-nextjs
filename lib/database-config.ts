@@ -162,7 +162,7 @@ export async function validateDatabaseConnection(
       const migrations = await Promise.race([
         prisma.$queryRaw`SELECT * FROM _prisma_migrations ORDER BY finished_at DESC LIMIT 1`,
         timeoutPromise
-      ]) as any[]
+      ]) as Array<{ migration_name: string; finished_at: Date }>
       
       if (migrations.length > 0) {
         details.schemaVersion = migrations[0].migration_name

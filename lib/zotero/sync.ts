@@ -48,20 +48,22 @@ export class ZoteroAPISync {
               abstract: appRef.abstract,
               itemType: 'journalArticle'
             });
-          } catch (error: any) {
-            console.warn(`Failed to export reference "${appRef.title}":`, error.message);
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.warn(`Failed to export reference "${appRef.title}":`, errorMessage);
           }
         }
       }
 
-    } catch (error: any) {
-      result.error = `${error.message} - operating in offline mode`;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      result.error = `${errorMessage} - operating in offline mode`;
     }
 
     return result;
   }
 
-  validateReferences(references: any[]): AppReference[] {
+  validateReferences(references: AppReference[]): AppReference[] {
     return references.filter(ref => {
       return ref.title && 
              ref.title.trim() !== '' &&
@@ -232,8 +234,9 @@ export class ZoteroAPISync {
           abstract: ref.abstract,
           itemType: 'journalArticle'
         });
-      } catch (error: any) {
-        console.warn(`Failed to export reference "${ref.title}":`, error.message);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.warn(`Failed to export reference "${ref.title}":`, errorMessage);
       }
     }
     
@@ -244,8 +247,9 @@ export class ZoteroAPISync {
     try {
       const zoteroItems = await this.client.getItems();
       return zoteroItems.map(item => this.client.convertToAppFormat(item));
-    } catch (error: any) {
-      console.error('Failed to import from Zotero:', error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Failed to import from Zotero:', errorMessage);
       return [];
     }
   }

@@ -20,14 +20,14 @@ interface GenerateRequestBody {
   references?: Reference[];
 }
 
-interface GenerateResponseBody {
-  content: string;
-  usage: {
-    tokens: number;
-    cost: number;
-  };
-  references: Reference[];
-}
+// interface GenerateResponseBody {
+//   content: string;
+//   usage: {
+//     tokens: number;
+//     cost: number;
+//   };
+//   references: Reference[];
+// }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -86,10 +86,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let router;
     try {
       router = getAIRouter();
-    } catch (err: any) {
+    } catch (err: unknown) {
       return res.status(500).json({
         error: 'No AI provider available or API key misconfigured',
-        details: err.message
+        details: err instanceof Error ? err.message : 'Unknown error'
       });
     }
     // No need to check available providers here; router will throw if none are available
@@ -144,9 +144,9 @@ Write detailed paragraphs for each section. Include in-text citations in the for
       references,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // If error is due to missing provider/API key, return clear error
-    if (error.message && /api key|provider/i.test(error.message)) {
+    if (error instanceof Error && error.message && /api key|provider/i.test(error.message)) {
       return res.status(500).json({
         error: 'No AI provider available or API key misconfigured',
         details: error.message
@@ -155,7 +155,7 @@ Write detailed paragraphs for each section. Include in-text citations in the for
     console.error('Content generation error:', error);
     return res.status(500).json({ 
       error: 'Failed to generate content',
-      details: error.message 
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 } 

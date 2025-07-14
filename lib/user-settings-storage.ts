@@ -58,7 +58,7 @@ export class UserSettingsStorage {
 
     try {
       // Prepare encrypted data
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       
       if (apiKeys.anthropicApiKey !== undefined) {
         if (apiKeys.anthropicApiKey === null) {
@@ -87,8 +87,8 @@ export class UserSettingsStorage {
           ...updateData
         }
       });
-    } catch (error: any) {
-      throw new Error(`Failed to store API keys: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to store API keys: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -117,8 +117,8 @@ export class UserSettingsStorage {
       // Decrypt anthropic key
       if (settings.anthropicApiKey) {
         try {
-          const encryptedData = JSON.parse(settings.anthropicApiKey) as any; // Removed EncryptionResult import
-          result.anthropicApiKey = await this.encryptionService.decryptApiKey(encryptedData);
+          const encryptedData = JSON.parse(settings.anthropicApiKey) as Record<string, unknown>; // Removed EncryptionResult import
+          result.anthropicApiKey = await this.encryptionService.decryptApiKey(encryptedData as { encrypted: string; iv: string; salt: string; tag: string });
         } catch (error) {
           console.warn('Failed to decrypt anthropic API key:', error);
           result.anthropicApiKey = null;
@@ -128,8 +128,8 @@ export class UserSettingsStorage {
       // Decrypt OpenAI key
       if (settings.openaiApiKey) {
         try {
-          const encryptedData = JSON.parse(settings.openaiApiKey) as any; // Removed EncryptionResult import
-          result.openaiApiKey = await this.encryptionService.decryptApiKey(encryptedData);
+          const encryptedData = JSON.parse(settings.openaiApiKey) as Record<string, unknown>; // Removed EncryptionResult import
+          result.openaiApiKey = await this.encryptionService.decryptApiKey(encryptedData as { encrypted: string; iv: string; salt: string; tag: string });
         } catch (error) {
           console.warn('Failed to decrypt OpenAI API key:', error);
           result.openaiApiKey = null;
@@ -137,8 +137,8 @@ export class UserSettingsStorage {
       }
 
       return result;
-    } catch (error: any) {
-      throw new Error(`Failed to retrieve API keys: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to retrieve API keys: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -151,7 +151,7 @@ export class UserSettingsStorage {
     }
 
     try {
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       
       if (preferences.citationStyle !== undefined) updateData.citationStyle = preferences.citationStyle;
       if (preferences.defaultLanguage !== undefined) updateData.defaultLanguage = preferences.defaultLanguage;
@@ -168,8 +168,8 @@ export class UserSettingsStorage {
           ...updateData
         }
       });
-    } catch (error: any) {
-      throw new Error(`Failed to store preferences: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to store preferences: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -191,8 +191,8 @@ export class UserSettingsStorage {
         reducedMotion: typeof settings?.reducedMotion === 'boolean' ? settings.reducedMotion : false,
         highContrast: typeof settings?.highContrast === 'boolean' ? settings.highContrast : false
       };
-    } catch (error: any) {
-      throw new Error(`Failed to retrieve preferences: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to retrieve preferences: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -205,7 +205,7 @@ export class UserSettingsStorage {
     }
 
     try {
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       
       if (aiSettings.monthlyBudget !== undefined) updateData.monthlyBudget = aiSettings.monthlyBudget;
       if (aiSettings.preferredProvider !== undefined) updateData.preferredProvider = aiSettings.preferredProvider;
@@ -218,8 +218,8 @@ export class UserSettingsStorage {
           ...updateData
         }
       });
-    } catch (error: any) {
-      throw new Error(`Failed to store AI settings: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to store AI settings: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -233,18 +233,18 @@ export class UserSettingsStorage {
       });
 
       // Sanitize and return defaults for corrupted values
-      let monthlyBudget = typeof settings?.monthlyBudget === 'number' && settings.monthlyBudget > 0 ? settings.monthlyBudget : 100;
-      let preferredProvider: 'auto' | 'anthropic' | 'openai' =
+      const monthlyBudget = typeof settings?.monthlyBudget === 'number' && settings.monthlyBudget > 0 ? settings.monthlyBudget : 100;
+      const preferredProvider: 'auto' | 'anthropic' | 'openai' =
         typeof settings?.preferredProvider === 'string' && ['auto', 'anthropic', 'openai'].includes(settings.preferredProvider)
-          ? settings.preferredProvider as any
+          ? settings.preferredProvider as 'auto' | 'anthropic' | 'openai'
           : 'auto';
 
       return {
         monthlyBudget,
         preferredProvider
       };
-    } catch (error: any) {
-      throw new Error(`Failed to retrieve AI settings: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to retrieve AI settings: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -284,8 +284,8 @@ export class UserSettingsStorage {
       }
       
       await Promise.all(promises);
-    } catch (error: any) {
-      throw new Error(`Failed to store complete settings: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to store complete settings: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -309,8 +309,8 @@ export class UserSettingsStorage {
         ...preferences,
         ...aiSettings
       };
-    } catch (error: any) {
-      throw new Error(`Failed to retrieve complete settings: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to retrieve complete settings: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -326,10 +326,11 @@ export class UserSettingsStorage {
       await this.prisma.userSettings.deleteMany({
         where: { userId }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Don't throw error if settings don't exist
-      if (!error.message.includes('Record to delete does not exist')) {
-        throw new Error(`Failed to delete user settings: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes('Record to delete does not exist')) {
+        throw new Error(`Failed to delete user settings: ${errorMessage}`);
       }
     }
   }

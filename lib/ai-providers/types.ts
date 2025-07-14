@@ -49,7 +49,7 @@ export interface UsageStats {
 export interface AIProvider {
   name: string;
   isAvailable(): boolean;
-  generateContent(prompt: string, taskType: TaskType, options?: any): Promise<GenerationResult>;
+  generateContent(prompt: string, taskType: TaskType, options?: Record<string, unknown>): Promise<GenerationResult>;
   estimateCost(prompt: string): number;
   getUsage(): Usage;
 }

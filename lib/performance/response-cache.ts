@@ -22,7 +22,7 @@ class ResponseCache<T> {
     };
   }
 
-  private generateKey(prompt: string, type: string, metadata?: any): string {
+  private generateKey(prompt: string, type: string, metadata?: Record<string, unknown>): string {
     const baseKey = `${type}-${prompt.substring(0, 100)}`;
     if (metadata?.workflowStep) {
       return `${baseKey}-${metadata.workflowStep}`;
@@ -52,7 +52,7 @@ class ResponseCache<T> {
     }
   }
 
-  set(prompt: string, type: string, data: T, metadata?: any): void {
+  set(prompt: string, type: string, data: T, metadata?: Record<string, unknown>): void {
     const key = this.generateKey(prompt, type, metadata);
     
     this.cache.set(key, {
@@ -64,7 +64,7 @@ class ResponseCache<T> {
     this.evictOldest();
   }
 
-  get(prompt: string, type: string, metadata?: any): T | null {
+  get(prompt: string, type: string, metadata?: Record<string, unknown>): T | null {
     const key = this.generateKey(prompt, type, metadata);
     const entry = this.cache.get(key);
 
@@ -79,13 +79,13 @@ class ResponseCache<T> {
     return this.config.enableCompression ? this.decompress(entry.data) : entry.data;
   }
 
-  has(prompt: string, type: string, metadata?: any): boolean {
+  has(prompt: string, type: string, metadata?: Record<string, unknown>): boolean {
     const key = this.generateKey(prompt, type, metadata);
     const entry = this.cache.get(key);
     return entry ? this.isValid(entry) : false;
   }
 
-  delete(prompt: string, type: string, metadata?: any): boolean {
+  delete(prompt: string, type: string, metadata?: Record<string, unknown>): boolean {
     const key = this.generateKey(prompt, type, metadata);
     return this.cache.delete(key);
   }
@@ -151,7 +151,7 @@ class ResponseCache<T> {
   }
 
   // Prefetch similar responses based on patterns
-  prefetch(patterns: Array<{ prompt: string; type: string; metadata?: any }>): void {
+  prefetch(patterns: Array<{ prompt: string; type: string; metadata?: Record<string, unknown> }>): void {
     // This would integrate with the AI router to prefetch likely next requests
     patterns.forEach(pattern => {
       const key = this.generateKey(pattern.prompt, pattern.type, pattern.metadata);
@@ -164,19 +164,19 @@ class ResponseCache<T> {
 }
 
 // Create instances for different types of responses
-export const aiResponseCache = new ResponseCache<any>({
+export const aiResponseCache = new ResponseCache<Record<string, unknown>>({
   maxAge: 10 * 60 * 1000, // 10 minutes for AI responses
   maxSize: 50,
   enableCompression: false
 });
 
-export const userDataCache = new ResponseCache<any>({
+export const userDataCache = new ResponseCache<Record<string, unknown>>({
   maxAge: 30 * 60 * 1000, // 30 minutes for user data
   maxSize: 20,
   enableCompression: true
 });
 
-export const staticDataCache = new ResponseCache<any>({
+export const staticDataCache = new ResponseCache<Record<string, unknown>>({
   maxAge: 60 * 60 * 1000, // 1 hour for static data
   maxSize: 100,
   enableCompression: true

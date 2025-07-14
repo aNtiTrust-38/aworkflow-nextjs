@@ -10,7 +10,7 @@ interface Command {
   shortcut?: string;
   category: 'navigation' | 'action' | 'setting' | 'help';
   action: () => void;
-  condition?: (state: any) => boolean;
+  condition?: (state: { step: number; prompt?: string; goals?: string; generatedContent?: string; loading?: boolean }) => boolean;
   priority: number;
 }
 
@@ -222,7 +222,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
       description: 'Clear the current prompt input',
       category: 'action',
       action: () => onAction('clear-prompt'),
-      condition: (state) => state.step === 1 && state.prompt && state.prompt.length > 0,
+      condition: (state) => !!(state.step === 1 && state.prompt && state.prompt.length > 0),
       priority: 2,
     },
     {
@@ -298,20 +298,20 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   ];
 
   // Configure Fuse.js for fuzzy search
-  const fuse = useMemo(() => {
-    const fuseOptions = {
-      keys: [
-        { name: 'label', weight: 0.6 },
-        { name: 'description', weight: 0.3 },
-        { name: 'category', weight: 0.1 }
-      ],
-      threshold: 0.4, // Lower = more strict matching
-      distance: 100,
-      includeScore: true,
-      includeMatches: true,
-    };
-    return new Fuse(allCommands, fuseOptions);
-  }, [allCommands]);
+  // const fuse = useMemo(() => {
+  //   const fuseOptions = {
+  //     keys: [
+  //       { name: 'label', weight: 0.6 },
+  //       { name: 'description', weight: 0.3 },
+  //       { name: 'category', weight: 0.1 }
+  //     ],
+  //     threshold: 0.4, // Lower = more strict matching
+  //     distance: 100,
+  //     includeScore: true,
+  //     includeMatches: true,
+  //   };
+  //   return new Fuse(allCommands, fuseOptions);
+  // }, [allCommands]);
 
   // Filter commands using fuzzy search with context awareness
   const filteredCommands = useMemo(() => {
@@ -510,22 +510,22 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   // Patch onAction to handle citation test stubs
   const handleCommandPaletteAction = useCallback((action: string) => {
     if (action === 'insert-citation') {
-      if (typeof window !== 'undefined') (window as any).__CITATION_INSERTED__ = true;
+      if (typeof window !== 'undefined') (window as { __CITATION_INSERTED__?: boolean }).__CITATION_INSERTED__ = true;
     }
     if (action === 'validate-citation') {
-      if (typeof window !== 'undefined') (window as any).__CITATION_VALID__ = true;
+      if (typeof window !== 'undefined') (window as { __CITATION_VALID__?: boolean }).__CITATION_VALID__ = true;
     }
     if (action === 'export-pdf') {
-      if (typeof window !== 'undefined') (window as any).__EXPORT_PDF__ = true;
+      if (typeof window !== 'undefined') (window as { __EXPORT_PDF__?: boolean }).__EXPORT_PDF__ = true;
     }
     if (action === 'export-word') {
-      if (typeof window !== 'undefined') (window as any).__EXPORT_WORD__ = true;
+      if (typeof window !== 'undefined') (window as { __EXPORT_WORD__?: boolean }).__EXPORT_WORD__ = true;
     }
     if (action === 'export-zotero') {
-      if (typeof window !== 'undefined') (window as any).__EXPORT_ZOTERO__ = true;
+      if (typeof window !== 'undefined') (window as { __EXPORT_ZOTERO__?: boolean }).__EXPORT_ZOTERO__ = true;
     }
     if (action === 'export-progress') {
-      if (typeof window !== 'undefined') (window as any).__EXPORT_PROGRESS__ = 50;
+      if (typeof window !== 'undefined') (window as { __EXPORT_PROGRESS__?: number }).__EXPORT_PROGRESS__ = 50;
     }
     onAction(action);
   }, [onAction]);
@@ -539,15 +539,15 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   // Minimal stubs for performance monitoring (GREEN phase)
   if (typeof window !== 'undefined') {
     if (!('__COMMAND_PALETTE_CACHE__' in window)) {
-      (window as any).__COMMAND_PALETTE_CACHE__ = { commands: [] };
+      (window as { __COMMAND_PALETTE_CACHE__?: { commands: unknown[] } }).__COMMAND_PALETTE_CACHE__ = { commands: [] };
     }
     if (!('__COMMAND_PALETTE_METRICS__' in window)) {
-      (window as any).__COMMAND_PALETTE_METRICS__ = { lastSearchTimeMs: 0 };
+      (window as { __COMMAND_PALETTE_METRICS__?: { lastSearchTimeMs: number } }).__COMMAND_PALETTE_METRICS__ = { lastSearchTimeMs: 0 };
     }
-    (window as any).__COMMAND_PALETTE_LAZY_LOADED__ = false;
-    (window as any).__COMMAND_PALETTE_LAZY_LOADED__ = true;
+    (window as { __COMMAND_PALETTE_LAZY_LOADED__?: boolean }).__COMMAND_PALETTE_LAZY_LOADED__ = false;
+    (window as { __COMMAND_PALETTE_LAZY_LOADED__?: boolean }).__COMMAND_PALETTE_LAZY_LOADED__ = true;
     // Fuzzy search config stub
-    (window as any).__COMMAND_PALETTE_FUSE_CONFIG__ = { threshold: 0.3 };
+    (window as { __COMMAND_PALETTE_FUSE_CONFIG__?: { threshold: number } }).__COMMAND_PALETTE_FUSE_CONFIG__ = { threshold: 0.3 };
   }
 
   // Debounce ref for search
@@ -556,7 +556,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
   // Track search performance metrics and lazy-load flag
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as any).__COMMAND_PALETTE_LAZY_LOADED__ = true;
+      (window as { __COMMAND_PALETTE_LAZY_LOADED__?: boolean }).__COMMAND_PALETTE_LAZY_LOADED__ = true;
     }
   }, []);
 
@@ -571,11 +571,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
     debounceRef.current = setTimeout(() => {
       setSearchTerm(newValue);
       if (typeof window !== 'undefined') {
-        (window as any).__COMMAND_PALETTE_DEBOUNCED__ = true;
+        (window as { __COMMAND_PALETTE_DEBOUNCED__?: boolean }).__COMMAND_PALETTE_DEBOUNCED__ = true;
       }
       const end = performance.now();
       if (typeof window !== 'undefined') {
-        (window as any).__COMMAND_PALETTE_METRICS__.lastSearchTimeMs = end - start;
+        (window as { __COMMAND_PALETTE_METRICS__?: { lastSearchTimeMs: number } }).__COMMAND_PALETTE_METRICS__!.lastSearchTimeMs = end - start;
       }
     }, 50);
   };
@@ -647,7 +647,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
                 value={citationStyle}
                 onChange={e => {
                   setCitationStyle(e.target.value);
-                  if (typeof window !== 'undefined') (window as any).__CITATION_STYLE__ = e.target.value;
+                  if (typeof window !== 'undefined') (window as { __CITATION_STYLE__?: string }).__CITATION_STYLE__ = e.target.value;
                 }}
                 data-testid="citation-style-select"
                 className="ml-2 border rounded px-2 py-1"
@@ -668,7 +668,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({
         >
           {filteredCommands.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
-              No commands found for "{inputValue || searchTerm}"
+              No commands found for &quot;{inputValue || searchTerm}&quot;
             </div>
           ) : (
             <div className="py-2">

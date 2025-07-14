@@ -86,14 +86,15 @@ async function testAnthropicKey(apiKey: string): Promise<TestApiKeyResponse> {
       }
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return {
       valid: false,
       provider: 'anthropic',
       details: {
         service: 'Anthropic Claude',
         status: 'error',
-        message: `Network error: ${error.message}`
+        message: `Network error: ${errorMessage}`
       }
     };
   }
@@ -157,14 +158,15 @@ async function testOpenAiKey(apiKey: string): Promise<TestApiKeyResponse> {
       }
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return {
       valid: false,
       provider: 'openai',
       details: {
         service: 'OpenAI',
         status: 'error',
-        message: `Network error: ${error.message}`
+        message: `Network error: ${errorMessage}`
       }
     };
   }
@@ -226,14 +228,15 @@ async function testZoteroKey(apiKey: string, userId: string): Promise<TestApiKey
       }
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return {
       valid: false,
       provider: 'zotero',
       details: {
         service: 'Zotero',
         status: 'error',
-        message: `Network error: ${error.message}`
+        message: `Network error: ${errorMessage}`
       }
     };
   }
@@ -302,11 +305,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json(result);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('API key test error:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
-      details: error.message
+      details: errorMessage
     });
   }
 }

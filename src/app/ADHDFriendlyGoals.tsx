@@ -8,6 +8,11 @@ interface ADHDFriendlyGoalsProps {
 }
 
 export const ADHDFriendlyGoals: React.FC<ADHDFriendlyGoalsProps> = ({ prompt, onGoalsGenerated, onLoading, onError }) => {
+  // Mark unused parameters as intentionally unused
+  void prompt;
+  void onGoalsGenerated;
+  void onLoading;
+  void onError;
   const goals = [
     'Break assignment into small steps',
     'Set a timer for focused work',

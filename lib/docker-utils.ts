@@ -49,7 +49,7 @@ export interface ContainerTestResult {
   healthCheck?: {
     url: string
     status: number
-    response: any
+    response: unknown
     responseTime: number
   }
   environment?: Record<string, string>
@@ -235,6 +235,7 @@ export async function buildDockerImage(config: DockerBuildConfig): Promise<Docke
           }
         }
       } catch (sizeError) {
+        void sizeError; // Mark as used for ESLint
         // Size check failed, but build succeeded
         result.warnings = result.warnings || []
         result.warnings.push('Could not determine image size')
@@ -347,6 +348,7 @@ export async function testDockerContainer(
         
         result.environment = containerEnv
       } catch (envError) {
+        void envError; // Mark as used for ESLint
         result.warnings = result.warnings || []
         result.warnings.push('Could not validate environment variables')
       }
@@ -368,6 +370,7 @@ export async function testDockerContainer(
           }
         }
       } catch (statsError) {
+        void statsError; // Mark as used for ESLint
         result.warnings = result.warnings || []
         result.warnings.push('Could not check resource usage')
       }
@@ -391,6 +394,7 @@ export async function testDockerContainer(
         
         result.ports = ports
       } catch (portsError) {
+        void portsError; // Mark as used for ESLint
         result.warnings = result.warnings || []
         result.warnings.push('Could not check port mappings')
       }

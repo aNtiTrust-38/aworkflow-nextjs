@@ -110,7 +110,7 @@ export class ZoteroClient {
     };
   }
 
-  convertFromAppFormat(appReference: Partial<AppReference>): any {
+  convertFromAppFormat(appReference: Partial<AppReference>): Record<string, unknown> {
     const creators = (appReference.authors || []).map(author => {
       const parts = author.trim().split(' ');
       const lastName = parts.pop() || '';
@@ -160,8 +160,8 @@ export class ZoteroClient {
       }
 
       return response;
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if ((error as { name?: string }).name === 'AbortError') {
         throw new Error('Zotero API request timed out');
       }
       if (attempt <= this.retryAttempts && this.isRetryableError(error)) {
@@ -284,12 +284,18 @@ export class ZoteroClient {
     return `(${lastName} et al., ${year})`;
   }
 
-  private isRetryableError(error: any): boolean {
-    return error.code === 'ECONNRESET' || 
-           error.code === 'ECONNREFUSED' || 
-           error.code === 'ETIMEDOUT' ||
-           error.message?.includes('network') ||
-           error.message?.includes('timeout');
+  private isRetryableError(error: unknown): boolean {
+    if (error && typeof error === 'object' && 'code' in error) {
+      const errorCode = (error as { code: string }).code;
+      return errorCode === 'ECONNRESET' || 
+             errorCode === 'ECONNREFUSED' || 
+             errorCode === 'ETIMEDOUT';
+    }
+    if (error instanceof Error) {
+      return error.message.includes('network') ||
+             error.message.includes('timeout');
+    }
+    return false;
   }
 
   private sleep(ms: number): Promise<void> {

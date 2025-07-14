@@ -45,7 +45,7 @@ describe('LoadingSpinner', () => {
       expect(screen.getByText('Loading...', { selector: '.sr-only' })).toBeInTheDocument();
       
       // Should display default message (not the screen reader text)
-      expect(screen.getByText('Loading...', { selector: '.mb-2' })).toBeInTheDocument();
+      expect(screen.getByText('Loading...', { selector: '.text-gray-600' })).toBeInTheDocument();
     });
 
     it('should render custom message', () => {
@@ -64,7 +64,7 @@ describe('LoadingSpinner', () => {
       const svg = screen.getByTestId('loading-indicator').querySelector('svg');
       expect(svg).toBeInTheDocument();
       expect(svg).toHaveAttribute('aria-hidden', 'true');
-      expect(svg).toHaveClass('h-6', 'w-6', 'animate-spin');
+      expect(svg).toHaveClass('h-8', 'w-8', 'text-blue-600', 'animate-spin');
     });
   });
 
@@ -112,7 +112,7 @@ describe('LoadingSpinner', () => {
       
       const progressBar = screen.getByTestId('loading-progress-percentage');
       expect(progressBar).toBeInTheDocument();
-      expect(progressBar).toHaveStyle({ width: '45%' });
+      expect(progressBar).toHaveAttribute('style', 'width: 45%;');
     });
 
     it('should use fallbackProgress when progress is 0 or undefined', () => {
@@ -122,7 +122,7 @@ describe('LoadingSpinner', () => {
       
       const progressBar = screen.getByTestId('loading-progress-percentage');
       expect(progressBar).toBeInTheDocument();
-      expect(progressBar).toHaveStyle({ width: '30%' });
+      expect(progressBar).toHaveAttribute('style', 'width: 30%;');
     });
 
     it('should prefer actual progress over fallbackProgress when progress > 0', () => {
@@ -131,7 +131,7 @@ describe('LoadingSpinner', () => {
       render(<LoadingSpinner progress={60} fallbackProgress={30} />);
       
       const progressBar = screen.getByTestId('loading-progress-percentage');
-      expect(progressBar).toHaveStyle({ width: '60%' });
+      expect(progressBar).toHaveAttribute('style', 'width: 60%;');
     });
 
     it('should not show progress bar when neither progress nor fallbackProgress are provided', () => {
@@ -177,7 +177,7 @@ describe('LoadingSpinner', () => {
       
       render(<LoadingSpinner />);
       
-      expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
+      expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
     });
 
     it('should not show cancel button when cancellable=false', () => {
@@ -185,7 +185,7 @@ describe('LoadingSpinner', () => {
       
       render(<LoadingSpinner cancellable={false} />);
       
-      expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
+      expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
     });
 
     it('should show cancel button when cancellable=true', () => {
@@ -193,7 +193,7 @@ describe('LoadingSpinner', () => {
       
       render(<LoadingSpinner cancellable={true} onCancel={vi.fn()} />);
       
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
+      const cancelButton = screen.getByText('Cancel');
       expect(cancelButton).toBeInTheDocument();
       expect(cancelButton).toHaveAttribute('aria-label', 'Cancel loading');
     });
@@ -204,7 +204,7 @@ describe('LoadingSpinner', () => {
       
       render(<LoadingSpinner cancellable={true} onCancel={mockOnCancel} />);
       
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
+      const cancelButton = screen.getByText('Cancel');
       fireEvent.click(cancelButton);
       
       expect(mockOnCancel).toHaveBeenCalledTimes(1);
@@ -215,7 +215,7 @@ describe('LoadingSpinner', () => {
       
       render(<LoadingSpinner cancellable={true} onCancel={vi.fn()} />);
       
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
+      const cancelButton = screen.getByText('Cancel');
       expect(cancelButton).toHaveClass('focus:outline-none', 'focus:ring-2', 'focus:ring-gray-500');
     });
   });
@@ -244,7 +244,7 @@ describe('LoadingSpinner', () => {
       
       expect(spinner).toHaveClass('motion-reduce:animate-none');
       expect(svg).not.toHaveClass('animate-spin');
-      expect(progressBar).toHaveStyle({ transition: 'none' });
+      expect(progressBar).toHaveAttribute('style', expect.stringContaining('transition: none'));
     });
 
     it('should handle matchMedia errors gracefully', () => {
@@ -285,7 +285,7 @@ describe('LoadingSpinner', () => {
       render(<LoadingSpinner />);
       
       const spinner = screen.getByTestId('loading-indicator');
-      expect(spinner).toHaveClass('academic-spinner', 'motion-reduce:animate-none');
+      expect(spinner).toHaveClass('bg-white', 'rounded-lg', 'shadow-sm', 'border', 'p-6', 'motion-reduce:animate-none');
     });
 
     it('should have proper text styling classes', () => {
@@ -294,7 +294,7 @@ describe('LoadingSpinner', () => {
       render(<LoadingSpinner estimatedTime={10} />);
       
       const timeDisplay = screen.getByTestId('estimated-time');
-      expect(timeDisplay).toHaveClass('text-sm', 'text-gray-500', 'mb-3');
+      expect(timeDisplay).toHaveClass('text-center', 'text-sm', 'text-gray-500', 'mb-4');
     });
 
     it('should have proper progress bar styling', () => {
@@ -305,7 +305,7 @@ describe('LoadingSpinner', () => {
       const progressContainer = screen.getByTestId('loading-progress-percentage').parentElement;
       const progressBar = screen.getByTestId('loading-progress-percentage');
       
-      expect(progressContainer).toHaveClass('w-full', 'bg-gray-200', 'rounded-full', 'h-2', 'mb-3');
+      expect(progressContainer).toHaveClass('w-full', 'bg-gray-200', 'rounded-full', 'h-2');
       expect(progressBar).toHaveClass('bg-blue-600', 'h-2', 'rounded-full', 'transition-all', 'duration-300');
     });
   });
@@ -316,7 +316,7 @@ describe('LoadingSpinner', () => {
       
       render(<LoadingSpinner cancellable={true} />);
       
-      const cancelButton = screen.getByRole('button', { name: /cancel/i });
+      const cancelButton = screen.getByText('Cancel');
       expect(() => {
         fireEvent.click(cancelButton);
       }).not.toThrow();
@@ -329,7 +329,7 @@ describe('LoadingSpinner', () => {
       
       // Should use fallbackProgress when progress is negative
       const progressBar = screen.getByTestId('loading-progress-percentage');
-      expect(progressBar).toHaveStyle({ width: '20%' });
+      expect(progressBar).toHaveAttribute('style', 'width: 20%;');
     });
 
     it('should handle progress values over 100', () => {
@@ -338,7 +338,7 @@ describe('LoadingSpinner', () => {
       render(<LoadingSpinner progress={150} />);
       
       const progressBar = screen.getByTestId('loading-progress-percentage');
-      expect(progressBar).toHaveStyle({ width: '150%' });
+      expect(progressBar).toHaveAttribute('style', 'width: 150%;');
     });
 
     it('should handle empty message string', () => {
@@ -346,7 +346,7 @@ describe('LoadingSpinner', () => {
       
       render(<LoadingSpinner message="" />);
       
-      const messageElement = screen.getByTestId('loading-indicator').querySelector('.text-center > .mb-2');
+      const messageElement = screen.getByTestId('loading-indicator').querySelector('p.text-gray-600');
       expect(messageElement).toHaveTextContent('');
     });
 

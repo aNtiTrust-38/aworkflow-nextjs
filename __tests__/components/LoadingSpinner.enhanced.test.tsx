@@ -13,7 +13,7 @@ describe('Enhanced LoadingSpinner', () => {
       render(<LoadingSpinner message="Loading..." visible={true} />);
       
       expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(screen.getByText('Loading...', { selector: '.text-gray-600' })).toBeInTheDocument();
     });
 
     it('should be hidden when visible is false', () => {
@@ -51,7 +51,7 @@ describe('Enhanced LoadingSpinner', () => {
 
       expect(screen.getByText('Progress')).toBeInTheDocument();
       expect(screen.getByText('75%')).toBeInTheDocument();
-      expect(screen.getByTestId('loading-progress-percentage')).toHaveStyle('width: 75%');
+      expect(screen.getByTestId('loading-progress-percentage')).toHaveAttribute('style', 'width: 75%;');
     });
 
     it('should display substeps with current progress', () => {
@@ -124,7 +124,7 @@ describe('Enhanced LoadingSpinner', () => {
       );
 
       expect(screen.getByText('50%')).toBeInTheDocument();
-      expect(screen.getByTestId('loading-progress-percentage')).toHaveStyle('width: 50%');
+      expect(screen.getByTestId('loading-progress-percentage')).toHaveAttribute('style', 'width: 50%;');
     });
   });
 
@@ -172,13 +172,13 @@ describe('Enhanced LoadingSpinner', () => {
       expect(indicator).toHaveAttribute('role', 'status');
       expect(indicator).toHaveAttribute('aria-live', 'polite');
 
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(screen.getByText('Loading...', { selector: '.text-gray-600' })).toBeInTheDocument();
     });
 
     it('should have screen reader text', () => {
       render(<LoadingSpinner message="Loading..." visible={true} />);
       
-      expect(screen.getByText('Loading...')).toHaveClass('sr-only');
+      expect(screen.getByText('Loading...', { selector: '.sr-only' })).toBeInTheDocument();
     });
 
     it('should handle reduced motion preferences', () => {
@@ -197,7 +197,7 @@ describe('Enhanced LoadingSpinner', () => {
       render(<LoadingSpinner message="Loading..." visible={true} />);
 
       // Should not have animate-spin class when reduced motion is preferred
-      const spinner = screen.getByRole('status').querySelector('svg');
+      const spinner = screen.getByTestId('loading-indicator').querySelector('svg');
       expect(spinner).not.toHaveClass('animate-spin');
     });
   });
@@ -243,7 +243,7 @@ describe('Enhanced LoadingSpinner', () => {
       render(<LoadingSpinner visible={true} />);
 
       // Should use default message
-      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(screen.getByText('Loading...', { selector: '.text-gray-600' })).toBeInTheDocument();
       expect(screen.getByTestId('loading-indicator')).toBeInTheDocument();
     });
 

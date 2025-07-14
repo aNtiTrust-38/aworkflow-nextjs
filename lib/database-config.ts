@@ -153,12 +153,13 @@ export async function validateDatabaseConnection(
         if (migrations.length > 0) {
           schemaVersion = migrations[0].migration_name
         }
-      } catch (error) {
+      } catch {
         // Migration table might not exist yet
       }
-    } catch (error: any) {
-      if (error.message?.includes('relation "User" does not exist') || 
-          error.message?.includes('does not exist')) {
+    } catch (error: unknown) {
+      if (error instanceof Error && 
+          (error.message?.includes('relation "User" does not exist') || 
+           error.message?.includes('does not exist'))) {
         migrationNeeded = true
       }
     }
@@ -176,13 +177,13 @@ export async function validateDatabaseConnection(
         migrationNeeded
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     const responseTime = Date.now() - startTime
     
     return {
       status: 'unhealthy',
       responseTime,
-      error: error.message || 'Unknown connection error',
+      error: error instanceof Error ? error.message : 'Unknown connection error',
       details: {
         connected: false,
         queryTest: false,
@@ -223,16 +224,16 @@ export async function migrateDatabaseSchema(): Promise<MigrationResult> {
       success: true,
       output: 'Migration completed successfully'
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
-      error: error.message || 'Migration failed'
+      error: error instanceof Error ? error.message : 'Migration failed'
     }
   }
 }
 
 // Legacy support - keeping existing functions
-export function getDatabaseConfig(): any {
+export function getDatabaseConfig(): DatabaseConfig {
   return createDatabaseConfig();
 }
 
@@ -292,7 +293,7 @@ export async function runMigrations(): Promise<{
     const { promisify } = await import('util');
     const execAsync = promisify(exec);
     
-    const { stdout, stderr } = await execAsync('npx prisma migrate deploy');
+    const { stderr } = await execAsync('npx prisma migrate deploy');
     
     if (stderr && !stderr.includes('warnings')) {
       throw new Error(stderr);
@@ -389,7 +390,11 @@ export async function getDatabaseStatistics(prisma?: PrismaClient): Promise<{
     };
     
     const config = getDatabaseConfig();
-    const result: any = { tables };
+    const result: {
+      tables: Record<string, number>;
+      size?: string;
+      connections?: number;
+    } = { tables };
     
     // Get additional stats for PostgreSQL
     if (config.provider === 'postgresql') {
@@ -464,7 +469,7 @@ export function validateDatabaseEnvironment(): {
   const errors: string[] = [];
   
   // Check for required environment variables
-  if (!process.env.DATABASE_URL && getCurrentEnvironment() !== 'development') {
+  if (!process.env.DATABASE_URL && process.env.NODE_ENV !== 'development') {
     errors.push('DATABASE_URL environment variable is required');
   }
   
@@ -478,7 +483,7 @@ export function validateDatabaseEnvironment(): {
   }
   
   // Check for SSL requirements in production
-  if (getCurrentEnvironment() === 'production' && process.env.DATABASE_URL) {
+  if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
     if (!process.env.DATABASE_URL.includes('sslmode=require') && 
         !process.env.DATABASE_URL.includes('ssl=true')) {
       errors.push('SSL should be enabled for production database connections');
@@ -491,7 +496,7 @@ export function validateDatabaseEnvironment(): {
   };
 }
 
-export default {
+const databaseConfig = {
   getDatabaseConfig,
   createPrismaClient,
   checkDatabaseHealth,
@@ -503,3 +508,5 @@ export default {
   setupGracefulShutdown,
   validateDatabaseEnvironment,
 };
+
+export default databaseConfig;

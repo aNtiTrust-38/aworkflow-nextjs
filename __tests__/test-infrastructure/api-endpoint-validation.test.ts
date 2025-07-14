@@ -56,12 +56,12 @@ vi.mock('next-auth/next', () => ({
 }));
 
 describe('API Endpoint Infrastructure Validation', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     
     // Default mock implementations
-    const { getServerSession } = require('next-auth/next');
-    getServerSession.mockResolvedValue(mockSession);
+    const { getServerSession } = await import('next-auth/next');
+    vi.mocked(getServerSession).mockResolvedValue(mockSession);
   });
 
   describe('/api/folders Endpoint', () => {
@@ -74,7 +74,7 @@ describe('API Endpoint Infrastructure Validation', () => {
       mockPrisma.folder.findMany.mockResolvedValue(mockFolders);
 
       // Import the actual handler
-      const { handler } = await import('@/pages/api/folders');
+      const handler = (await import('@/pages/api/folders')).default;
       
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
         method: 'GET',
@@ -96,10 +96,10 @@ describe('API Endpoint Infrastructure Validation', () => {
 
     it('should handle unauthenticated requests with 401', async () => {
       // Mock unauthenticated session
-      const { getServerSession } = require('next-auth/next');
-      getServerSession.mockResolvedValue(null);
+      const { getServerSession } = await import('next-auth/next');
+      vi.mocked(getServerSession).mockResolvedValue(null);
 
-      const { handler } = await import('@/pages/api/folders');
+      const handler = (await import('@/pages/api/folders')).default;
       
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
         method: 'GET',
@@ -117,7 +117,7 @@ describe('API Endpoint Infrastructure Validation', () => {
       // Mock database error
       mockPrisma.folder.findMany.mockRejectedValue(new Error('Database connection failed'));
 
-      const { handler } = await import('@/pages/api/folders');
+      const handler = (await import('@/pages/api/folders')).default;
       
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
         method: 'GET',
@@ -140,7 +140,7 @@ describe('API Endpoint Infrastructure Validation', () => {
       };
       mockPrisma.folder.create.mockResolvedValue(newFolder);
 
-      const { handler } = await import('@/pages/api/folders');
+      const handler = (await import('@/pages/api/folders')).default;
       
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
         method: 'POST',
@@ -184,7 +184,7 @@ describe('API Endpoint Infrastructure Validation', () => {
       };
       mockPrisma.paper.create.mockResolvedValue(mockPaper);
 
-      const { handler } = await import('@/pages/api/files/upload');
+      const handler = (await import('@/pages/api/files/upload')).default;
       
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
         method: 'POST',
@@ -334,8 +334,8 @@ describe('API Endpoint Infrastructure Validation', () => {
 
     it('should handle expired sessions', async () => {
       // Mock expired session
-      const { getServerSession } = require('next-auth/next');
-      getServerSession.mockResolvedValue(null);
+      const { getServerSession } = await import('next-auth/next');
+      vi.mocked(getServerSession).mockResolvedValue(null);
 
       const session = await getServerSession();
       expect(session).toBeNull();

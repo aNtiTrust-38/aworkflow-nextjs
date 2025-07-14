@@ -1,5 +1,68 @@
 import { vi, beforeEach, afterEach } from 'vitest';
 
+// Mock Prisma Client before other imports
+vi.mock('@/lib/prisma', () => {
+  const mockPrisma = {
+    user: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    folder: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    paper: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    userSettings: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      upsert: vi.fn(),
+    },
+    $disconnect: vi.fn(),
+  };
+  return { default: mockPrisma };
+});
+
+// Mock next-auth
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
+}));
+
+// Mock file system operations
+vi.mock('fs', () => ({
+  promises: {
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    unlink: vi.fn(),
+    mkdir: vi.fn(),
+  },
+}));
+
+// Mock path module for consistent results
+vi.mock('path', async () => {
+  const actual = await vi.importActual('path');
+  return {
+    ...actual,
+    join: vi.fn((...args) => args.join('/')),
+    extname: vi.fn((path) => {
+      const match = path.match(/\.([^.]+)$/);
+      return match ? match[0] : '';
+    }),
+  };
+});
+
 // CRITICAL: Override getComputedStyle BEFORE importing testing library
 // This prevents dom-accessibility-api from using jsdom's broken implementation
 
@@ -101,11 +164,9 @@ const mockIntersectionObserver = vi.fn().mockImplementation((callback, options) 
     root: null,
     rootMargin: '0px',
     thresholds: [0],
+    callback,  // Store the callback for potential use
+    options,   // Store the options for potential use
   };
-  
-  // Store the callback for potential use
-  mockObserver.callback = callback;
-  mockObserver.options = options;
   
   return mockObserver;
 });

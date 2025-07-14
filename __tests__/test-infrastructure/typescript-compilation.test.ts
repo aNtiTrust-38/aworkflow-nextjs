@@ -40,8 +40,8 @@ describe('TypeScript Compilation Validation', () => {
         httpVersionMajor: 1,
         httpVersionMinor: 1,
         socket: {} as any,
-        statusCode: null,
-        statusMessage: null,
+        statusCode: undefined,
+        statusMessage: undefined,
         rawHeaders: [],
         rawTrailers: [],
         trailers: {},
@@ -70,7 +70,7 @@ describe('TypeScript Compilation Validation', () => {
         prependListener: vi.fn(),
         prependOnceListener: vi.fn(),
         eventNames: vi.fn(),
-        connection: null,
+        connection: {} as any,
         files: undefined,
       };
 
@@ -119,7 +119,7 @@ describe('TypeScript Compilation Validation', () => {
   describe('Form Data Parsing Type Safety', () => {
     it('should properly type IncomingForm mock', () => {
       // This test ensures IncomingForm is properly mocked with correct types
-      const mockForm: Partial<IncomingForm> = {
+      const mockForm: Partial<typeof IncomingForm.prototype> = {
         parse: vi.fn(),
         once: vi.fn(),
         on: vi.fn(),

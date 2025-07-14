@@ -42,7 +42,7 @@ const mockPrisma = {
     upsert: vi.fn(),
   },
   $disconnect: vi.fn(),
-} as unknown as PrismaClient;
+};
 
 // Mock the prisma import
 vi.mock('@/lib/prisma', () => ({
@@ -66,7 +66,7 @@ describe('Prisma Client Mocking Infrastructure', () => {
     });
 
     it('should allow mock functions to be called without errors', async () => {
-      mockPrisma.user.findMany.mockResolvedValue([]);
+      (mockPrisma.user.findMany as any).mockResolvedValue([]);
       const result = await mockPrisma.user.findMany();
       expect(result).toEqual([]);
       expect(mockPrisma.user.findMany).toHaveBeenCalledOnce();
@@ -74,7 +74,7 @@ describe('Prisma Client Mocking Infrastructure', () => {
 
     it('should properly mock database operations with return values', async () => {
       const mockUser = { id: 'test-id', email: 'test@example.com', name: 'Test User' };
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      (mockPrisma.user.findUnique as any).mockResolvedValue(mockUser);
       
       const result = await mockPrisma.user.findUnique({
         where: { id: 'test-id' }
@@ -95,10 +95,10 @@ describe('Prisma Client Mocking Infrastructure', () => {
         { id: '2', name: 'Folder 2', userId: 'user-1', parentId: '1' },
       ];
       
-      mockPrisma.folder.findMany.mockResolvedValue(mockFolders);
+      (mockPrisma.folder.findMany as any).mockResolvedValue(mockFolders);
       
       // Import and test the actual API handler
-      const { handler } = await import('@/pages/api/folders');
+      const handler = (await import('@/pages/api/folders')).default;
       const { req, res } = createMocks({
         method: 'GET',
         query: {},
@@ -126,7 +126,7 @@ describe('Prisma Client Mocking Infrastructure', () => {
         storageQuota: 50000000 
       };
       
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      (mockPrisma.user.findUnique as any).mockResolvedValue(mockUser);
       
       // This should not throw "Cannot read properties of undefined (reading 'findUnique')"
       expect(async () => {
@@ -137,15 +137,15 @@ describe('Prisma Client Mocking Infrastructure', () => {
 
   describe('Prisma Client Lifecycle', () => {
     it('should handle $disconnect properly', async () => {
-      mockPrisma.$disconnect.mockResolvedValue(undefined);
+      (mockPrisma.$disconnect as any).mockResolvedValue(undefined);
       await expect(mockPrisma.$disconnect()).resolves.not.toThrow();
       expect(mockPrisma.$disconnect).toHaveBeenCalled();
     });
 
     it('should handle transaction-like operations', async () => {
       // Test that multiple operations can be chained without issues
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1' });
-      mockPrisma.folder.create.mockResolvedValue({ 
+      (mockPrisma.user.findUnique as any).mockResolvedValue({ id: 'user-1' });
+      (mockPrisma.folder.create as any).mockResolvedValue({ 
         id: 'folder-1', 
         name: 'New Folder',
         userId: 'user-1' 
@@ -155,7 +155,11 @@ describe('Prisma Client Mocking Infrastructure', () => {
       expect(user).toBeDefined();
       
       const folder = await mockPrisma.folder.create({
-        data: { name: 'New Folder', userId: user!.id }
+        data: { 
+          name: 'New Folder', 
+          userId: user!.id,
+          path: '/new-folder'
+        }
       });
       expect(folder).toBeDefined();
       expect(folder.userId).toBe('user-1');
@@ -165,13 +169,13 @@ describe('Prisma Client Mocking Infrastructure', () => {
   describe('Error Handling in Mocked Context', () => {
     it('should handle Prisma errors gracefully', async () => {
       const prismaError = new Error('Database connection failed');
-      mockPrisma.user.findMany.mockRejectedValue(prismaError);
+      (mockPrisma.user.findMany as any).mockRejectedValue(prismaError);
       
       await expect(mockPrisma.user.findMany()).rejects.toThrow('Database connection failed');
     });
 
     it('should handle null returns without breaking', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      (mockPrisma.user.findUnique as any).mockResolvedValue(null);
       const result = await mockPrisma.user.findUnique({ where: { id: 'nonexistent' } });
       expect(result).toBeNull();
     });

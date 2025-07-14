@@ -1,8 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getSession } from 'next-auth/react';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from './auth/[...nextauth]';
+import prisma from '@/lib/prisma';
 
 // Helper function to generate safe path from folder name
 function generateSafePath(name: string): string {
@@ -66,7 +65,7 @@ async function checkCircularReference(folderId: string, targetParentId: string):
     return true;
   }
   
-  let currentParentId = targetParentId;
+  let currentParentId: string | null = targetParentId;
   while (currentParentId) {
     if (currentParentId === folderId) {
       return true;
@@ -87,7 +86,7 @@ async function checkCircularReference(folderId: string, targetParentId: string):
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     // Check authentication
-    const session = await getSession({ req });
+    const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

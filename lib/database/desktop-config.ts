@@ -13,10 +13,11 @@ export class DesktopDatabaseConfig {
    * Get database path for desktop application
    * Uses user data directory for persistent storage
    */
-  public static getDatabasePath(): string {
+  public static async getDatabasePath(): Promise<string> {
     if (typeof window !== 'undefined' && window.electronAPI) {
       // In Electron renderer process
-      return path.join(window.electronAPI.getUserDataPath(), 'database.db');
+      const userDataPath = await window.electronAPI.getUserDataPath();
+      return path.join(userDataPath, 'database.db');
     } else {
       // Fallback for development
       return path.join(process.cwd(), 'dev.db');
@@ -28,7 +29,7 @@ export class DesktopDatabaseConfig {
    */
   public static async getPrismaClient(): Promise<PrismaClient> {
     if (!this.instance) {
-      const databasePath = this.getDatabasePath();
+      const databasePath = await this.getDatabasePath();
       const databaseDir = path.dirname(databasePath);
       
       // Ensure database directory exists

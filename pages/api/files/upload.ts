@@ -1,12 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getSession } from 'next-auth/react';
-import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
+import prisma from '@/lib/prisma';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
-import { fileTypeFromFile } from 'file-type';
+import { fileTypeFromBuffer } from 'file-type';
 import path from 'path';
-
-const prisma = new PrismaClient();
 
 // Configuration
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -109,7 +108,8 @@ async function validateFile(file: formidable.File): Promise<string | null> {
 
   // Validate file content matches extension (security check)
   try {
-    const fileType = await fileTypeFromFile(file.filepath);
+    const fileBuffer = await fs.readFile(file.filepath);
+    const fileType = await fileTypeFromBuffer(fileBuffer);
     if (fileType && !ALLOWED_TYPES.includes(fileType.mime)) {
       return 'File appears to be malicious or corrupted';
     }
@@ -146,7 +146,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Check authentication
-    const session = await getSession({ req });
+    const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

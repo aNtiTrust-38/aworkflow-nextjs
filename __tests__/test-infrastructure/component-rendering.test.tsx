@@ -268,7 +268,7 @@ describe('Component Rendering Infrastructure', () => {
     it('should handle components with async data loading', async () => {
       // Mock component that loads data asynchronously
       const AsyncComponent = () => {
-        const [data, setData] = React.useState(null);
+        const [data, setData] = React.useState<string | null>(null);
         
         React.useEffect(() => {
           setTimeout(() => setData('loaded'), 100);

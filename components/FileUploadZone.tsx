@@ -309,16 +309,16 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({
           </div>
 
           {/* Text content */}
-          <div id={descriptionId}>
+          <div>
             {uploadState.uploading ? (
-              <p className="text-lg text-gray-600">Uploading files...</p>
+              <p id={descriptionId} className="text-lg text-gray-600">Uploading files...</p>
             ) : isDragActive ? (
-              <p className="text-lg text-blue-600" aria-live="polite">
+              <p id={descriptionId} className="text-lg text-blue-600" aria-live="polite">
                 Drop files here
               </p>
             ) : (
               <>
-                <p className="text-lg text-gray-600">
+                <p id={descriptionId} className="text-lg text-gray-600">
                   Drag and drop files here, or click to browse
                 </p>
                 <p className="text-sm text-gray-500 mt-2">

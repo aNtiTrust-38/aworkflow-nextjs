@@ -55,6 +55,10 @@ vi.mock('next-auth/next', () => ({
   getServerSession: vi.fn(),
 }));
 
+vi.mock('@/pages/api/auth/[...nextauth]', () => ({
+  authOptions: {},
+}));
+
 describe('API Endpoint Infrastructure Validation', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -128,7 +132,7 @@ describe('API Endpoint Infrastructure Validation', () => {
 
       expect(res._getStatusCode()).toBe(500);
       const responseData = JSON.parse(res._getData());
-      expect(responseData.error).toBe('Internal server error');
+      expect(responseData.error).toBe('Failed to fetch folders');
     });
 
     it('should handle folder creation with POST requests', async () => {

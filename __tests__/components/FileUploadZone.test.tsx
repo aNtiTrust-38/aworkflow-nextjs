@@ -356,9 +356,23 @@ describe('FileUploadZone', () => {
       
       const dropZone = screen.getByRole('button', { name: /upload files/i });
       
-      fireEvent.dragOver(dropZone);
+      // Use more comprehensive drag events to trigger react-dropzone state
+      fireEvent.dragEnter(dropZone, {
+        dataTransfer: {
+          files: [new File(['test'], 'test.pdf', { type: 'application/pdf' })],
+          types: ['Files']
+        }
+      });
+      fireEvent.dragOver(dropZone, {
+        dataTransfer: {
+          files: [new File(['test'], 'test.pdf', { type: 'application/pdf' })],
+          types: ['Files']
+        }
+      });
       
-      expect(screen.getByText(/drop files here/i)).toHaveAttribute('aria-live', 'polite');
+      await waitFor(() => {
+        expect(screen.getByText(/drop files here/i)).toHaveAttribute('aria-live', 'polite');
+      });
     });
 
     it('should have proper color contrast for accessibility', async () => {
@@ -369,10 +383,24 @@ describe('FileUploadZone', () => {
       // Should have proper contrast colors
       expect(dropZone).toHaveClass('border-gray-300', 'text-gray-700');
       
-      fireEvent.dragOver(dropZone);
+      // Use more comprehensive drag events to trigger react-dropzone state
+      fireEvent.dragEnter(dropZone, {
+        dataTransfer: {
+          files: [new File(['test'], 'test.pdf', { type: 'application/pdf' })],
+          types: ['Files']
+        }
+      });
+      fireEvent.dragOver(dropZone, {
+        dataTransfer: {
+          files: [new File(['test'], 'test.pdf', { type: 'application/pdf' })],
+          types: ['Files']
+        }
+      });
       
       // Should have proper contrast in hover state
-      expect(dropZone).toHaveClass('border-blue-400', 'text-blue-700');
+      await waitFor(() => {
+        expect(dropZone).toHaveClass('border-blue-400', 'text-blue-700');
+      });
     });
   });
 });

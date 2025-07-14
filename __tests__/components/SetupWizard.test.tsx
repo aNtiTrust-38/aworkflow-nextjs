@@ -710,6 +710,12 @@ describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
       expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
     });
 
+    // Mock successful settings save for step navigation
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ success: true })
+    } as Response);
+
     // Click continue button and wait for step 2
     const continueButton = screen.getByTestId('setupwizard-continue-btn');
     fireEvent.click(continueButton);
@@ -728,6 +734,12 @@ describe('SetupWizard Edge Cases (TDD RED Phase)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('setupwizard-continue-btn')).not.toBeDisabled();
     });
+
+    // Mock successful settings save for step 2 to 3 navigation
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ success: true })
+    } as Response);
 
     // Click continue again to navigate to step 3
     const continueButton2 = screen.getByTestId('setupwizard-continue-btn');

@@ -1,275 +1,365 @@
-import { PrismaClient } from '@prisma/client'
-import { exec } from 'child_process'
-import { promisify } from 'util'
+/**
+ * Database Configuration Utility
+ * Handles database connection configuration for different environments
+ */
 
-const execAsync = promisify(exec)
+import { PrismaClient } from '@prisma/client';
 
+// Database configuration types
 export interface DatabaseConfig {
-  url: string
-  provider: 'postgresql' | 'mysql' | 'sqlite'
-  connectionPooling: {
-    maxConnections: number
-    connectionTimeout: number
-    idleTimeout: number
-  }
-  ssl: boolean | {
-    rejectUnauthorized: boolean
-    ca?: string
-  }
-  logging: string[]
-  errorFormat: string
-  warnings?: string[]
+  url: string;
+  provider: 'sqlite' | 'postgresql';
+  ssl?: boolean;
+  poolSize?: number;
+  connectionTimeout?: number;
+  queryTimeout?: number;
 }
 
-export interface ConnectionStatus {
-  status: 'healthy' | 'unhealthy' | 'degraded'
-  responseTime: number
-  details: {
-    connected: boolean
-    queryTest: boolean
-    recordCount: number | null
-    schemaVersion?: string
-    migrationNeeded?: boolean
-  }
-  error?: string
-}
-
-export interface MigrationResult {
-  success: boolean
-  output?: string
-  error?: string
-  backupCreated?: boolean
-  clientGenerated?: boolean
-  rolledBack?: boolean
-}
-
-export function createDatabaseConfig(): DatabaseConfig {
-  const databaseUrl = process.env.DATABASE_URL || 'file:./dev.db'
-  const isProduction = process.env.NODE_ENV === 'production'
-  
-  // Determine database provider
-  let provider: DatabaseConfig['provider'] = 'sqlite'
-  if (databaseUrl.startsWith('postgresql:') || databaseUrl.startsWith('postgres:')) {
-    provider = 'postgresql'
-  } else if (databaseUrl.startsWith('mysql:')) {
-    provider = 'mysql'
-  }
-
-  // Connection pooling configuration
-  const maxConnections = parseInt(process.env.DATABASE_MAX_CONNECTIONS || '20', 10)
-  const connectionTimeout = parseInt(process.env.DATABASE_CONNECTION_TIMEOUT || '30000', 10)
-  const idleTimeout = parseInt(process.env.DATABASE_IDLE_TIMEOUT || '300000', 10)
-
-  // Adjust pooling for SQLite
-  const connectionPooling = provider === 'sqlite' ? {
-    maxConnections: 1,
+// Environment-specific database configurations
+export const DATABASE_CONFIGS = {
+  development: {
+    provider: 'sqlite' as const,
+    url: 'file:./prisma/dev.db',
+    poolSize: 5,
     connectionTimeout: 5000,
-    idleTimeout: 60000
-  } : {
-    maxConnections,
-    connectionTimeout,
-    idleTimeout
-  }
+    queryTimeout: 10000,
+  },
+  test: {
+    provider: 'sqlite' as const,
+    url: 'file:./prisma/test.db',
+    poolSize: 1,
+    connectionTimeout: 2000,
+    queryTimeout: 5000,
+  },
+  staging: {
+    provider: 'postgresql' as const,
+    url: process.env.DATABASE_URL || 'postgresql://workflow_user:password@localhost:5432/academic_workflow_staging',
+    ssl: true,
+    poolSize: 10,
+    connectionTimeout: 10000,
+    queryTimeout: 30000,
+  },
+  production: {
+    provider: 'postgresql' as const,
+    url: process.env.DATABASE_URL || 'postgresql://workflow_user:password@localhost:5432/academic_workflow',
+    ssl: true,
+    poolSize: 20,
+    connectionTimeout: 15000,
+    queryTimeout: 60000,
+  },
+} as const;
 
-  // SSL configuration  
-  let ssl: DatabaseConfig['ssl'] = false
-  if (provider !== 'sqlite') {
-    ssl = {
-      rejectUnauthorized: true,
-      ...(process.env.DATABASE_SSL_CA && { ca: process.env.DATABASE_SSL_CA })
-    }
-  }
-
-  // Logging configuration
-  let logging: string[] = ['error', 'warn']
-  if (isProduction && process.env.DATABASE_LOG_QUERIES === 'true') {
-    logging = ['error', 'warn', 'info', 'query']
-  } else if (isProduction) {
-    logging = ['error']
-  }
-
-  // Warnings for suboptimal configurations
-  const warnings: string[] = []
-  if (provider === 'sqlite' && isProduction) {
-    warnings.push(
-      'SQLite is not recommended for production environments',
-      'Consider migrating to PostgreSQL or MySQL for better performance and scalability'
-    )
-  }
-
-  return {
-    url: databaseUrl,
-    provider,
-    connectionPooling,
-    ssl,
-    logging,
-    errorFormat: 'pretty',
-    ...(warnings.length > 0 && { warnings })
-  }
+// Get current environment
+export function getCurrentEnvironment(): keyof typeof DATABASE_CONFIGS {
+  const env = process.env.NODE_ENV as keyof typeof DATABASE_CONFIGS;
+  return env && env in DATABASE_CONFIGS ? env : 'development';
 }
 
-export async function validateDatabaseConnection(
-  prisma: PrismaClient,
-  options: { timeout?: number } = {}
-): Promise<ConnectionStatus> {
-  const startTime = Date.now()
-  const timeout = options.timeout || 30000
+// Get database configuration for current environment
+export function getDatabaseConfig(): DatabaseConfig {
+  const env = getCurrentEnvironment();
+  const config = DATABASE_CONFIGS[env];
   
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('Database connection timeout')), timeout)
-  })
+  // Override with environment variable if provided
+  if (process.env.DATABASE_URL) {
+    return {
+      ...config,
+      url: process.env.DATABASE_URL,
+    };
+  }
+  
+  return config;
+}
 
+// Create Prisma client with appropriate configuration
+export function createPrismaClient(): PrismaClient {
+  const config = getDatabaseConfig();
+  
+  const prismaConfig: any = {
+    datasources: {
+      db: {
+        url: config.url,
+      },
+    },
+  };
+  
+  // Add connection pooling for PostgreSQL
+  if (config.provider === 'postgresql') {
+    prismaConfig.datasources.db.url = `${config.url}?connection_limit=${config.poolSize}&pool_timeout=${config.connectionTimeout}`;
+  }
+  
+  // Add logging in development
+  if (process.env.NODE_ENV === 'development') {
+    prismaConfig.log = ['query', 'info', 'warn', 'error'];
+  } else if (process.env.LOG_LEVEL === 'debug') {
+    prismaConfig.log = ['query', 'info', 'warn', 'error'];
+  } else {
+    prismaConfig.log = ['error'];
+  }
+  
+  return new PrismaClient(prismaConfig);
+}
+
+// Database health check
+export async function checkDatabaseHealth(prisma?: PrismaClient): Promise<{
+  status: 'healthy' | 'unhealthy';
+  provider: string;
+  latency: number;
+  details?: string;
+}> {
+  const client = prisma || createPrismaClient();
+  const startTime = Date.now();
+  
   try {
-    await Promise.race([prisma.$connect(), timeoutPromise])
+    // Test basic connectivity
+    await client.$queryRaw`SELECT 1`;
     
-    const details: ConnectionStatus['details'] = {
-      connected: true,
-      queryTest: false,
-      recordCount: null
-    }
-
-    // Test basic query
-    try {
-      const count = await Promise.race([
-        prisma.user.count(),
-        timeoutPromise
-      ])
-      details.queryTest = true
-      details.recordCount = count
-    } catch (queryError) {
-      const errorMsg = (queryError as Error).message
-      
-      // Check if this is a schema/migration issue
-      if (errorMsg.includes('does not exist') || errorMsg.includes('no such table')) {
-        details.migrationNeeded = true
-        return {
-          status: 'degraded',
-          responseTime: Date.now() - startTime,
-          details
-        }
-      }
-      
-      // Query failed but connection succeeded
-      return {
-        status: 'degraded',
-        responseTime: Date.now() - startTime,
-        details
-      }
-    }
-
-    // Try to get schema version
-    try {
-      const migrations = await Promise.race([
-        prisma.$queryRaw`SELECT * FROM _prisma_migrations ORDER BY finished_at DESC LIMIT 1`,
-        timeoutPromise
-      ]) as Array<{ migration_name: string; finished_at: Date }>
-      
-      if (migrations.length > 0) {
-        details.schemaVersion = migrations[0].migration_name
-      }
-    } catch {
-      // Migration table might not exist, that's okay
-    }
-
+    // Get database info
+    const config = getDatabaseConfig();
+    const latency = Date.now() - startTime;
+    
     return {
       status: 'healthy',
-      responseTime: Date.now() - startTime,
-      details
-    }
-
+      provider: config.provider,
+      latency,
+    };
   } catch (error) {
+    const latency = Date.now() - startTime;
+    const config = getDatabaseConfig();
+    
     return {
       status: 'unhealthy',
-      responseTime: Date.now() - startTime,
-      details: {
-        connected: false,
-        queryTest: false,
-        recordCount: null
-      },
-      error: (error as Error).message
+      provider: config.provider,
+      latency,
+      details: error instanceof Error ? error.message : 'Unknown error',
+    };
+  } finally {
+    if (!prisma) {
+      await client.$disconnect();
     }
   }
 }
 
-export async function migrateDatabaseSchema(options: {
-  generateClient?: boolean
-  createBackup?: boolean
-  rollbackOnFailure?: boolean
-} = {}): Promise<MigrationResult> {
-  const isProduction = process.env.NODE_ENV === 'production'
-  const databaseUrl = process.env.DATABASE_URL
-
-  // Validate environment
-  if (isProduction && !databaseUrl) {
-    return {
-      success: false,
-      error: 'DATABASE_URL is required for production migrations'
-    }
-  }
-
-  const result: MigrationResult = {
-    success: false
-  }
-
+// Database migration utility
+export async function runMigrations(): Promise<{
+  success: boolean;
+  message: string;
+}> {
   try {
-    // Create backup in production
-    if (options.createBackup && isProduction && databaseUrl?.startsWith('postgresql')) {
-      try {
-        const backupName = `backup_${Date.now()}.sql`
-        await execAsync(`pg_dump ${databaseUrl} > ${backupName}`)
-        result.backupCreated = true
-      } catch (backupError) {
-        return {
-          success: false,
-          error: `Backup failed: ${(backupError as Error).message}`
-        }
-      }
-    }
-
-    // Run migrations
-    const { stdout: migrationOutput } = await execAsync('npx prisma migrate deploy', {
-      env: { ...process.env, DATABASE_URL: databaseUrl }
-    })
+    // This would typically be handled by Prisma CLI
+    // but we can provide a programmatic interface
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
     
-    result.output = migrationOutput
-
-    // Generate Prisma client if requested
-    if (options.generateClient) {
-      try {
-        const { stdout: generateOutput } = await execAsync('npx prisma generate')
-        result.output += '\n' + generateOutput
-        result.clientGenerated = true
-      } catch (generateError) {
-        // Migration succeeded but client generation failed
-        result.success = true
-        result.error = `Client generation failed: ${(generateError as Error).message}`
-        return result
-      }
-    }
-
-    result.success = true
-    return result
-
-  } catch (migrationError) {
-    const errorMessage = (migrationError as Error).message
+    const { stdout, stderr } = await execAsync('npx prisma migrate deploy');
     
-    // Attempt rollback if requested and backup was created
-    if (options.rollbackOnFailure && result.backupCreated && isProduction) {
-      try {
-        const backupName = `backup_${Date.now()}.sql`
-        await execAsync(`psql ${databaseUrl} < ${backupName}`)
-        result.rolledBack = true
-      } catch (rollbackError) {
-        result.error = `Migration failed: ${errorMessage}. Rollback also failed: ${(rollbackError as Error).message}`
-        return result
-      }
+    if (stderr && !stderr.includes('warnings')) {
+      throw new Error(stderr);
     }
-
+    
+    return {
+      success: true,
+      message: 'Migrations completed successfully',
+    };
+  } catch (error) {
     return {
       success: false,
-      error: errorMessage,
-      backupCreated: result.backupCreated,
-      rolledBack: result.rolledBack
+      message: error instanceof Error ? error.message : 'Migration failed',
+    };
+  }
+}
+
+// Database backup utility (PostgreSQL only)
+export async function createDatabaseBackup(outputPath?: string): Promise<{
+  success: boolean;
+  path?: string;
+  message: string;
+}> {
+  const config = getDatabaseConfig();
+  
+  if (config.provider !== 'postgresql') {
+    return {
+      success: false,
+      message: 'Backup is only supported for PostgreSQL databases',
+    };
+  }
+  
+  try {
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = outputPath || `backup_${timestamp}.sql`;
+    
+    // Extract connection details from URL
+    const url = new URL(config.url);
+    const command = `pg_dump -h ${url.hostname} -p ${url.port || 5432} -U ${url.username} -d ${url.pathname.slice(1)} -f ${backupPath}`;
+    
+    await execAsync(command, {
+      env: {
+        ...process.env,
+        PGPASSWORD: url.password,
+      },
+    });
+    
+    return {
+      success: true,
+      path: backupPath,
+      message: 'Backup created successfully',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Backup failed',
+    };
+  }
+}
+
+// Database statistics
+export async function getDatabaseStatistics(prisma?: PrismaClient): Promise<{
+  tables: Record<string, number>;
+  size?: string;
+  connections?: number;
+}> {
+  const client = prisma || createPrismaClient();
+  
+  try {
+    const [
+      userCount,
+      paperCount,
+      referenceCount,
+      fileCount,
+      settingCount,
+    ] = await Promise.all([
+      client.user.count(),
+      client.paper.count(),
+      client.reference.count(),
+      client.file.count(),
+      client.appSetting.count(),
+    ]);
+    
+    const tables = {
+      users: userCount,
+      papers: paperCount,
+      references: referenceCount,
+      files: fileCount,
+      settings: settingCount,
+    };
+    
+    const config = getDatabaseConfig();
+    const result: any = { tables };
+    
+    // Get additional stats for PostgreSQL
+    if (config.provider === 'postgresql') {
+      try {
+        const [sizeResult] = await client.$queryRaw<[{ size: string }]>`
+          SELECT pg_size_pretty(pg_database_size(current_database())) as size
+        `;
+        result.size = sizeResult.size;
+        
+        const [connectionResult] = await client.$queryRaw<[{ count: number }]>`
+          SELECT count(*) as count FROM pg_stat_activity WHERE datname = current_database()
+        `;
+        result.connections = connectionResult.count;
+      } catch {
+        // Ignore errors for additional stats
+      }
+    }
+    
+    return result;
+  } finally {
+    if (!prisma) {
+      await client.$disconnect();
     }
   }
 }
+
+// Connection pool management
+export class DatabaseConnectionPool {
+  private static instance: PrismaClient | null = null;
+  
+  static getInstance(): PrismaClient {
+    if (!this.instance) {
+      this.instance = createPrismaClient();
+    }
+    return this.instance;
+  }
+  
+  static async closeInstance(): Promise<void> {
+    if (this.instance) {
+      await this.instance.$disconnect();
+      this.instance = null;
+    }
+  }
+  
+  static async resetInstance(): Promise<void> {
+    await this.closeInstance();
+    this.instance = createPrismaClient();
+  }
+}
+
+// Global Prisma client for application use
+export const prisma = DatabaseConnectionPool.getInstance();
+
+// Graceful shutdown handler
+export function setupGracefulShutdown(): void {
+  const cleanup = async () => {
+    console.log('Closing database connections...');
+    await DatabaseConnectionPool.closeInstance();
+    process.exit(0);
+  };
+  
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
+  process.on('beforeExit', cleanup);
+}
+
+// Database environment validator
+export function validateDatabaseEnvironment(): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  // Check for required environment variables
+  if (!process.env.DATABASE_URL && getCurrentEnvironment() !== 'development') {
+    errors.push('DATABASE_URL environment variable is required');
+  }
+  
+  // Validate URL format
+  if (process.env.DATABASE_URL) {
+    try {
+      new URL(process.env.DATABASE_URL);
+    } catch {
+      errors.push('DATABASE_URL is not a valid URL');
+    }
+  }
+  
+  // Check for SSL requirements in production
+  if (getCurrentEnvironment() === 'production' && process.env.DATABASE_URL) {
+    if (!process.env.DATABASE_URL.includes('sslmode=require') && 
+        !process.env.DATABASE_URL.includes('ssl=true')) {
+      errors.push('SSL should be enabled for production database connections');
+    }
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+export default {
+  getDatabaseConfig,
+  createPrismaClient,
+  checkDatabaseHealth,
+  runMigrations,
+  createDatabaseBackup,
+  getDatabaseStatistics,
+  DatabaseConnectionPool,
+  prisma,
+  setupGracefulShutdown,
+  validateDatabaseEnvironment,
+};

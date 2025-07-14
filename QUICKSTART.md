@@ -9,6 +9,8 @@ Before you begin, make sure you have:
 - A web browser (Chrome, Firefox, Safari, or Edge)
 - An email address for creating AI service accounts
 
+**Need to install the app first?** See the [Installation Guide](INSTALLATION.md) for complete step-by-step instructions for Windows, macOS, and Docker.
+
 ## 🏃‍♀️ 3-Step Quick Start
 
 ### 1️⃣ Get Your AI Keys (2 minutes)

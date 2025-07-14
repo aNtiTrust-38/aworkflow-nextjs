@@ -17,6 +17,16 @@ The Academic Workflow Assistant helps you:
 
 ## 🚀 Getting Started (5 Minutes)
 
+### Step 0: Installation
+
+**First time using the app?** You'll need to install it first:
+
+- **📋 Complete Installation Guide**: See [INSTALLATION.md](INSTALLATION.md) for detailed step-by-step instructions
+- **⚡ Quick Install**: See [QUICKSTART.md](QUICKSTART.md) for a 5-minute setup
+- **🐳 Docker Users**: Docker instructions available in the installation guide
+
+**Already installed?** Continue to Step 1 below.
+
 ### Step 1: First-Time Setup
 
 When you first visit the application, you'll see a **Setup Wizard** that guides you through configuration:

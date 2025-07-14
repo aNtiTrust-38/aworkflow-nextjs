@@ -91,18 +91,26 @@ A comprehensive, ADHD-friendly academic paper writing automation application des
 
 ## 📚 Documentation
 
+- **[Installation Guide](INSTALLATION.md)** - Complete setup instructions for Windows, macOS, and Docker
 - **[User Guide](USER_GUIDE.md)** - Comprehensive guide for non-technical users
 - **[Quick Start](QUICKSTART.md)** - Get up and running in 5 minutes
 - **[Changelog](CHANGELOG.md)** - Track project updates and releases
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### For Non-Technical Users
+**New to programming?** We've got you covered:
+- **📋 [Complete Installation Guide](INSTALLATION.md)** - Step-by-step instructions for Windows, macOS, and Docker
+- **⚡ [Quick Start Guide](QUICKSTART.md)** - Get running in 5 minutes
+
+### For Developers
+
+#### Prerequisites
 - Node.js 18+ 
 - npm, yarn, pnpm, or bun package manager
 - Git for version control
 
-### Installation
+#### Installation
 
 1. **Clone the repository**
    ```bash

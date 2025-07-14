@@ -1,0 +1,23 @@
+# ZAP Security Testing Rules
+# Format: RULE_ID	RULE_NAME	THRESHOLD	IGNORE	CONFIDENCE
+
+# High priority rules
+10021	X-Content-Type-Options Header Missing	HIGH	false	HIGH
+10016	Web Browser XSS Protection Not Enabled	HIGH	false	HIGH
+10017	Cross-Domain Misconfiguration	HIGH	false	HIGH
+10020	X-Frame-Options Header Missing	HIGH	false	HIGH
+
+# Medium priority rules
+10015	Incomplete or No Cache-control Header Set	MEDIUM	false	MEDIUM
+10019	Content-Type Header Missing	MEDIUM	false	MEDIUM
+10023	Information Disclosure - Debug Error Messages	MEDIUM	false	MEDIUM
+10024	Information Disclosure - Sensitive Information in URL	MEDIUM	false	MEDIUM
+
+# Low priority rules - ignore for now
+10025	Information Disclosure - Sensitive Information in HTTP Referrer Header	LOW	true	LOW
+10026	HTTP Parameter Override	LOW	true	LOW
+
+# API specific rules
+90001	Insecure HTTP Method	HIGH	false	HIGH
+90019	Code Injection	HIGH	false	HIGH
+90020	Command Injection	HIGH	false	HIGH

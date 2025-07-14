@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { testApiHandler } from 'next-test-api-route-handler'
-import handler from '@/pages/api/health'
-import { PrismaClient } from '@prisma/client'
 
 // Mock the PrismaClient and create a reusable mock instance
 const mockPrismaInstance = {
@@ -16,6 +14,9 @@ vi.mock('@prisma/client', () => ({
   PrismaClient: vi.fn().mockImplementation(() => mockPrismaInstance)
 }))
 
+// Import handler and testing utilities after mocking
+import handler, { setPrismaClientForTesting, resetPrismaClient } from '@/pages/api/health'
+
 describe('/api/health', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -25,10 +26,13 @@ describe('/api/health', () => {
     // Reset mock implementations to healthy defaults
     mockPrismaInstance.$connect.mockResolvedValue(undefined)
     mockPrismaInstance.user.count.mockResolvedValue(0)
+    // Set the mock prisma instance for the health endpoint
+    setPrismaClientForTesting(mockPrismaInstance as any)
   })
 
   afterEach(() => {
     vi.clearAllMocks()
+    resetPrismaClient()
   })
 
   it('should return 200 OK when all systems are healthy', async () => {

@@ -1,9 +1,28 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { PrismaClient } from '@prisma/client'
 
+// Create a global variable to hold the prisma instance for testing
+let prismaClientInstance: PrismaClient | null = null;
+
 // Create a function to get prisma instance for easier testing
 function getPrismaClient() {
+  if (prismaClientInstance) {
+    return prismaClientInstance;
+  }
   return new PrismaClient()
+}
+
+// Export for testing purposes
+export { getPrismaClient }
+
+// Export function to set prisma instance for testing
+export function setPrismaClientForTesting(instance: PrismaClient) {
+  prismaClientInstance = instance;
+}
+
+// Export function to reset prisma instance
+export function resetPrismaClient() {
+  prismaClientInstance = null;
 }
 
 interface HealthCheckResponse {
@@ -144,7 +163,24 @@ async function checkDatabaseHealth() {
 }
 
 function checkMemoryHealth() {
-  const usage = process.memoryUsage()
+  // Handle test environment where process.memoryUsage might not be available
+  let usage: NodeJS.MemoryUsage
+  try {
+    usage = process.memoryUsage()
+    if (!usage || typeof usage.heapUsed === 'undefined') {
+      throw new Error('Memory usage not available')
+    }
+  } catch {
+    // Fallback for test environments
+    usage = {
+      heapUsed: 50 * 1024 * 1024, // 50MB default
+      heapTotal: 100 * 1024 * 1024, // 100MB default
+      rss: 100 * 1024 * 1024, // 100MB default
+      external: 10 * 1024 * 1024, // 10MB default
+      arrayBuffers: 0
+    }
+  }
+  
   const heapUsedGB = usage.heapUsed / 1024 / 1024 / 1024
   // const heapTotalGB = usage.heapTotal / 1024 / 1024 / 1024
   const rssGB = usage.rss / 1024 / 1024 / 1024

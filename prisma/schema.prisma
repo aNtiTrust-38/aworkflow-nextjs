@@ -16,6 +16,7 @@ model User {
   password  String
   papers    Paper[]
   files     File[]
+  folders   Folder[]
   settings  UserSettings?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
@@ -72,16 +73,39 @@ model Reference {
   addedAt   DateTime @default(now())
 }
 
-model File {
+model Folder {
   id        String   @id @default(uuid())
-  paper     Paper?   @relation(fields: [paperId], references: [id])
-  paperId   String?
+  name      String
+  path      String
   user      User     @relation(fields: [userId], references: [id])
   userId    String
-  filename  String
-  type      String
-  path      String
-  uploadedAt DateTime @default(now())
+  parent    Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  parentId  String?
+  children  Folder[] @relation("FolderHierarchy")
+  files     File[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, userId, parentId])
+}
+
+model File {
+  id           String   @id @default(uuid())
+  name         String
+  originalName String
+  path         String
+  size         Int
+  type         String
+  paper        Paper?   @relation(fields: [paperId], references: [id])
+  paperId      String?
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  folder       Folder?  @relation(fields: [folderId], references: [id])
+  folderId     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([name, userId, folderId])
 }
 
 model AppSetting {

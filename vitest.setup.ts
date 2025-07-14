@@ -93,11 +93,38 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock IntersectionObserver for components that might use it
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
+const mockIntersectionObserver = vi.fn().mockImplementation((callback, options) => {
+  const mockObserver = {
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+    root: null,
+    rootMargin: '0px',
+    thresholds: [0],
+  };
+  
+  // Store the callback for potential use
+  mockObserver.callback = callback;
+  mockObserver.options = options;
+  
+  return mockObserver;
+});
+
+// Set up IntersectionObserver globally
+Object.defineProperty(window, 'IntersectionObserver', {
+  writable: true,
+  configurable: true,
+  value: mockIntersectionObserver,
+});
+
+Object.defineProperty(global, 'IntersectionObserver', {
+  writable: true,
+  configurable: true,
+  value: mockIntersectionObserver,
+});
+
+// Also stub globally for vitest
+vi.stubGlobal('IntersectionObserver', mockIntersectionObserver);
 
 // Mock ResizeObserver for layout-related tests
 global.ResizeObserver = vi.fn().mockImplementation(() => ({

@@ -14,6 +14,13 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/settings'
 }));
 
+// Mock next/link
+vi.mock('next/link', () => ({
+  default: ({ children, href, ...props }: any) => (
+    <a href={href} {...props}>{children}</a>
+  )
+}));
+
 describe('Navigation Usage Indicator', () => {
   beforeEach(async () => {
     cleanup();

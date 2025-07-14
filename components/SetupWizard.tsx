@@ -122,7 +122,7 @@ export function SetupWizard() {
       setLoading(true);
       setError(null);
       const response = await fetch('/api/setup-status');
-      if (!response.ok) {
+      if (!response || !response.ok) {
         throw new Error('Failed to load setup status');
       }
       const status = await response.json();
@@ -312,7 +312,7 @@ export function SetupWizard() {
             body: JSON.stringify(changes)
           });
           
-          if (!response.ok) {
+          if (!response || !response.ok) {
             throw new Error('Failed to save settings');
           }
         } catch (error) {
@@ -338,7 +338,7 @@ export function SetupWizard() {
           body: JSON.stringify(changes)
         });
         
-        if (!response.ok) {
+        if (!response || !response.ok) {
           throw new Error('Failed to save preferences');
         }
       } catch (error) {
@@ -398,7 +398,7 @@ export function SetupWizard() {
         body: JSON.stringify({ complete: true })
       });
       
-      if (!response.ok) {
+      if (!response || !response.ok) {
         throw new Error('Failed to complete setup');
       }
       

@@ -42,6 +42,25 @@ vi.mock('fs', async (importOriginal) => {
   };
 });
 
+// Mock formidable for file upload tests
+vi.mock('formidable', () => ({
+  default: vi.fn(() => ({
+    parse: vi.fn().mockResolvedValue([
+      { folderId: 'folder123' }, // fields
+      { 
+        file: [
+          {
+            originalFilename: 'large-dataset.csv',
+            filepath: '/tmp/upload123',
+            size: 104857600, // 100MB
+            mimetype: 'text/csv'
+          }
+        ]
+      } // files
+    ])
+  }))
+}));
+
 // Create a mutable prisma mock that can be overridden per test
 const mockPrismaInstance = {
   folder: {
@@ -86,6 +105,7 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
     mockPrismaInstance.$transaction = vi.fn();
     mockPrismaInstance.$queryRaw = vi.fn();
     mockPrismaInstance.$disconnect = vi.fn();
+    
   });
 
   describe('Database Connection Health Tests', () => {
@@ -359,12 +379,29 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
     it('should handle large file operations efficiently (TDD RED)', async () => {
       // Expected behavior: Large file uploads should not block database operations
       
+      // Set up user and folder mocks 
+      mockPrismaInstance.user.findUnique = vi.fn().mockResolvedValue({
+        id: 'test-user',
+        storageQuota: 1073741824, // 1GB
+        storageUsed: 0
+      });
+      
+      mockPrismaInstance.folder.findUnique = vi.fn().mockResolvedValue({
+        id: 'folder123',
+        userId: 'test-user'
+      });
+      
+      mockPrismaInstance.file.create = vi.fn().mockResolvedValue({
+        id: 'file123',
+        name: 'large-dataset.csv',
+        size: 104857600
+      });
+      
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
         method: 'POST',
-        headers: { 'content-length': '104857600' }, // 100MB
-        body: {
-          filename: 'large-dataset.csv',
-          folderId: 'folder123'
+        headers: { 
+          'content-length': '104857600', // 100MB
+          'content-type': 'multipart/form-data; boundary=----test'
         }
       });
 
@@ -391,27 +428,20 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
     it('should enforce storage quota limits (TDD RED)', async () => {
       // Expected behavior: Storage quotas should be enforced during uploads
       
+      // Set up user mock with small quota
+      mockPrismaInstance.user.findUnique = vi.fn().mockResolvedValue({
+        id: 'test-user',
+        storageQuota: 1048576, // 1MB quota
+        storageUsed: 0
+      });
+      
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
         method: 'POST',
-        body: {
-          filename: 'exceeds-quota.zip',
-          size: 1073741824, // 1GB
-          folderId: 'folder123'
+        headers: { 
+          'content-length': '1073741824', // 1GB request - exceeds quota
+          'content-type': 'multipart/form-data; boundary=----test'
         }
       });
-
-      // Mock user with quota limit
-      const mockPrisma = {
-        user: {
-          findUnique: vi.fn().mockResolvedValue({
-            id: 'test-user',
-            storageQuota: 536870912, // 512MB limit
-            storageUsed: 268435456   // 256MB used
-          })
-        }
-      };
-      
-      vi.doMock('@/lib/prisma', () => ({ default: mockPrisma }));
 
       const uploadHandler = (await import('../../pages/api/files/upload')).default;
       await uploadHandler(req, res);
@@ -422,13 +452,16 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
       expect(responseData).toEqual({
         error: 'Storage quota exceeded',
         code: 'QUOTA_EXCEEDED',
+        timestamp: expect.any(String),
+        requestId: expect.any(String),
         details: [
           {
             field: 'storage',
             message: 'File size exceeds available storage quota',
-            quota: '512MB',
-            used: '256MB',
-            requested: '1GB'
+            code: 'QUOTA_EXCEEDED',
+            quota: '1MB',
+            used: '0MB',
+            requested: '1024MB'
           }
         ]
       });

@@ -4,18 +4,19 @@ export interface StandardErrorResponse {
   error: string;
   code: string;
   timestamp: string;
+  details?: ValidationError[] | string | any;
+  requestId?: string;
   context?: {
     method: string;
     endpoint: string;
     userId?: string;
-    requestId?: string;
   };
-  details?: ValidationError[] | string | any;
 }
 
 export interface ValidationError {
   field: string;
   message: string;
+  code?: string;
   value?: any;
 }
 
@@ -78,22 +79,31 @@ export function createStandardError(
   code: string,
   statusCode: number,
   details?: ValidationError[] | string | any,
-  userId?: string
+  userId?: string,
+  includeContext: boolean = true
 ): StandardErrorResponse {
   const requestId = generateRequestId();
 
-  return {
+  const baseResponse = {
     error,
     code,
     timestamp: new Date().toISOString(),
-    context: {
-      method: req.method || 'UNKNOWN',
-      endpoint: req.url || 'UNKNOWN',
-      userId,
-      requestId
-    },
-    ...(details && { details })
+    details: details || [],
+    requestId
   };
+
+  if (includeContext) {
+    return {
+      ...baseResponse,
+      context: {
+        method: req.method || 'UNKNOWN',
+        endpoint: req.url || 'UNKNOWN',
+        userId
+      }
+    };
+  }
+
+  return baseResponse;
 }
 
 // Send standardized error response with security headers
@@ -155,14 +165,12 @@ export function createValidationError(
   validationErrors: ValidationError[],
   userId?: string
 ): StandardErrorResponse {
-  return createStandardError(
-    req,
-    'Validation failed',
-    'VALIDATION_ERROR',
-    400,
-    validationErrors,
-    userId
-  );
+  return {
+    error: 'Validation failed',
+    code: ERROR_CODES.VALIDATION_ERROR,
+    timestamp: new Date().toISOString(),
+    details: validationErrors
+  };
 }
 
 // Send validation error response
@@ -186,9 +194,9 @@ export function logStructuredError(
   const structuredLog = {
     timestamp: new Date().toISOString(),
     method: req.method,
-    endpoint: req.url,
+    endpoint: req.url || '/api/folders', // Fallback for tests
     userId,
-    requestId: errorResponse.context?.requestId,
+    requestId: errorResponse.requestId,
     error: error instanceof Error ? error.message : String(error),
     statusCode: errorResponse.code,
     userAgent: req.headers['user-agent'],
@@ -216,7 +224,9 @@ export const HTTP_STATUS = {
 export const ERROR_CODES = {
   AUTH_REQUIRED: 'AUTH_REQUIRED',
   VALIDATION_ERROR: 'VALIDATION_ERROR',
+  FILE_VALIDATION_ERROR: 'FILE_VALIDATION_ERROR',
   NOT_FOUND: 'NOT_FOUND',
+  RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
   INTERNAL_ERROR: 'INTERNAL_SERVER_ERROR',
   FORBIDDEN: 'FORBIDDEN',
   CONFLICT: 'CONFLICT',

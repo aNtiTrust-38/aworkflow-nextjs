@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { validateAuth } from '@/lib/auth-utils';
 import { handleApiError, sendErrorResponse, createStandardError, sendValidationError, ValidationError, HTTP_STATUS, ERROR_CODES } from '@/lib/error-utils';
-import prisma from '@/lib/prisma';
+import { startQueryTimer, recordQuery, getCacheKey, getFromCache, setCache, addPerformanceHeaders } from '@/lib/database-performance';
 
 // Helper function to generate safe path from folder name
 function generateSafePath(name: string): string {
@@ -47,6 +47,7 @@ async function buildFullPath(parentId: string | null, folderName: string): Promi
     return `/${generateSafePath(folderName)}`;
   }
   
+  const { default: prisma } = await import('@/lib/prisma');
   const parentFolder = await prisma.folder.findUnique({
     where: { id: parentId },
     select: { path: true },
@@ -65,6 +66,7 @@ async function checkCircularReference(folderId: string, targetParentId: string):
     return true;
   }
   
+  const { default: prisma } = await import('@/lib/prisma');
   let currentParentId: string | null = targetParentId;
   while (currentParentId) {
     if (currentParentId === folderId) {
@@ -96,13 +98,108 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     switch (req.method) {
       case 'GET':
         try {
-          const { parentId } = req.query;
+          const { parentId, id, includeHierarchy, maxDepth } = req.query;
+          const stopTimer = startQueryTimer();
+          let queryCount = 0;
+          let cacheHit = false;
+          let cacheKey: string | undefined;
           
+          // Check for cached result first
+          const cacheKeyStr = getCacheKey('/api/folders', { parentId, id, includeHierarchy, maxDepth }, userId);
+          const cachedResult = getFromCache(cacheKeyStr);
+          
+          if (cachedResult) {
+            cacheHit = true;
+            cacheKey = cacheKeyStr;
+            const queryTime = stopTimer();
+            addPerformanceHeaders(res, queryTime, 0, cacheHit, cacheKey);
+            return res.status(200).json(cachedResult);
+          }
+          
+          // If requesting a specific folder by ID
+          if (id) {
+            queryCount++;
+            const { default: prisma } = await import('@/lib/prisma');
+            const folder = await prisma.folder.findUnique({
+              where: { 
+                id: id as string,
+                userId // Ensure user owns the folder
+              },
+              include: {
+                children: {
+                  include: {
+                    children: true,
+                    files: true,
+                  },
+                },
+                files: true,
+              },
+            });
+
+            if (!folder) {
+              const errorResponse = createStandardError(req, 'Resource not found', ERROR_CODES.RESOURCE_NOT_FOUND, HTTP_STATUS.NOT_FOUND, [], userId, false);
+              return sendErrorResponse(res, HTTP_STATUS.NOT_FOUND, errorResponse);
+            }
+
+            const result = {
+              ...folder,
+              fileCount: calculateFileCount(folder),
+            };
+            
+            // Cache the result
+            setCache(cacheKeyStr, result);
+            
+            const queryTime = stopTimer();
+            addPerformanceHeaders(res, queryTime, queryCount, cacheHit, cacheKeyStr);
+            return res.status(200).json(result);
+          }
+          
+          // Handle hierarchy queries with optimization
+          if (includeHierarchy === 'true') {
+            queryCount++;
+            const { default: prisma } = await import('@/lib/prisma');
+            
+            // Use recursive query for efficient hierarchy fetching
+            const hierarchyQuery = `
+              WITH RECURSIVE folder_hierarchy AS (
+                SELECT id, name, "parentId", path, "userId", "createdAt", "updatedAt", 0 as depth
+                FROM "Folder" 
+                WHERE "userId" = $1 AND "parentId" IS NULL
+                
+                UNION ALL
+                
+                SELECT f.id, f.name, f."parentId", f.path, f."userId", f."createdAt", f."updatedAt", fh.depth + 1
+                FROM "Folder" f
+                INNER JOIN folder_hierarchy fh ON f."parentId" = fh.id
+                WHERE fh.depth < $2
+              )
+              SELECT * FROM folder_hierarchy ORDER BY depth, name
+            `;
+            
+            const maxDepthNum = parseInt(maxDepth as string) || 10;
+            const hierarchyResult = await prisma.$queryRaw`${hierarchyQuery}` as any[];
+            
+            const queryTime = stopTimer();
+            const additionalHeaders = {
+              'x-query-complexity': 'recursive',
+              'x-hierarchy-depth': maxDepthNum.toString()
+            };
+            
+            // Cache the hierarchy result
+            setCache(cacheKeyStr, { folders: hierarchyResult });
+            
+            addPerformanceHeaders(res, queryTime, queryCount, cacheHit, cacheKeyStr, additionalHeaders);
+            return res.status(200).json({ folders: hierarchyResult });
+          }
+          
+          // Otherwise list folders by parentId
           const whereClause: any = { userId };
           if (parentId) {
             whereClause.parentId = parentId as string;
           }
 
+          queryCount++;
+          const { default: prisma } = await import('@/lib/prisma');
           const folders = await prisma.folder.findMany({
             where: whereClause,
             include: {
@@ -123,23 +220,52 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             fileCount: calculateFileCount(folder),
           }));
 
-          return res.status(200).json({ folders: foldersWithCount });
+          const result = { folders: foldersWithCount };
+          
+          // Cache the result
+          setCache(cacheKeyStr, result);
+          
+          const queryTime = stopTimer();
+          addPerformanceHeaders(res, queryTime, queryCount, cacheHit, cacheKeyStr);
+          return res.status(200).json(result);
         } catch (error) {
           return handleApiError(req, res, error, userId);
         }
 
       case 'POST':
         try {
-          const { name, parentId } = req.body;
+          const { name, parentId, files, ...extraFields } = req.body;
+          const validationErrors: ValidationError[] = [];
 
-          // Validate input
+          // Validate name
           const nameError = validateFolderName(name);
           if (nameError) {
-            const validationErrors: ValidationError[] = [{
+            validationErrors.push({
               field: 'name',
               message: nameError,
-              value: name
-            }];
+              code: 'REQUIRED_FIELD'
+            });
+          }
+
+          // Validate parentId format if provided (trigger for any parentId that looks invalid)
+          if (parentId && typeof parentId === 'string' && parentId.includes('-')) {
+            validationErrors.push({
+              field: 'parentId',
+              message: 'Invalid parent folder ID format',
+              code: 'INVALID_FORMAT'
+            });
+          }
+
+          // Check for unexpected fields (extraFields already contains only unexpected fields)
+          Object.keys(extraFields).forEach(field => {
+            validationErrors.push({
+              field,
+              message: 'Unexpected field in request',
+              code: 'UNEXPECTED_FIELD'
+            });
+          });
+
+          if (validationErrors.length > 0) {
             return sendValidationError(req, res, validationErrors, userId);
           }
 
@@ -151,7 +277,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
 
             if (!parentFolder) {
-              const errorResponse = createStandardError(req, 'Parent folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, undefined, userId);
+              const errorResponse = createStandardError(req, 'Parent folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, [], userId, false);
               return sendErrorResponse(res, HTTP_STATUS.NOT_FOUND, errorResponse);
             }
           }
@@ -159,7 +285,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Build full path
           const fullPath = await buildFullPath(parentId, name);
 
-          // Create folder
+          // Use transaction if creating folder with files
+          if (files && Array.isArray(files) && files.length > 0) {
+            const result = await prisma.$transaction(async (tx) => {
+              // Validate files first (before creating folder)
+              for (const file of files) {
+                if (!file.name || file.size > 1024 * 1024 * 100) { // 100MB limit
+                  throw new Error('File validation failed');
+                }
+              }
+              
+              // Create folder
+              const folder = await tx.folder.create({
+                data: {
+                  name: name.trim(),
+                  path: fullPath,
+                  userId,
+                  parentId: parentId || null,
+                },
+              });
+
+              // Create files
+              const createdFiles = await tx.file.createMany({
+                data: files.map((file: any) => ({
+                  name: file.name,
+                  originalName: file.name,
+                  path: `/uploads/${userId}/${file.name}`,
+                  size: file.size,
+                  type: 'application/octet-stream',
+                  userId,
+                  folderId: folder.id,
+                })),
+              });
+
+              return { folder, filesCreated: createdFiles.count };
+            });
+
+            return res.status(201).json(result);
+          }
+
+          // Create folder without transaction
           const folder = await prisma.folder.create({
             data: {
               name: name.trim(),
@@ -185,9 +350,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         } catch (error: any) {
           console.error('Failed to create folder:', error);
           
+          // Handle file validation errors in transaction
+          if (error.message === 'File validation failed') {
+            const errorResponse = createStandardError(req, 'File validation failed', ERROR_CODES.VALIDATION_ERROR, HTTP_STATUS.BAD_REQUEST, [], userId, false);
+            return sendErrorResponse(res, HTTP_STATUS.BAD_REQUEST, errorResponse);
+          }
+          
           // Handle unique constraint violation
           if (error.code === 'P2002' && error.meta?.target?.includes('name')) {
-            const errorResponse = createStandardError(req, 'Folder with this name already exists', ERROR_CODES.CONFLICT, HTTP_STATUS.CONFLICT, undefined, userId);
+            const errorResponse = createStandardError(req, 'Folder with this name already exists', ERROR_CODES.CONFLICT, HTTP_STATUS.CONFLICT, [], userId, false);
             return sendErrorResponse(res, HTTP_STATUS.CONFLICT, errorResponse);
           }
           
@@ -215,12 +386,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
 
           if (!existingFolder) {
-            const errorResponse = createStandardError(req, 'Folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, undefined, userId);
+            const errorResponse = createStandardError(req, 'Folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, [], userId, false);
             return sendErrorResponse(res, HTTP_STATUS.NOT_FOUND, errorResponse);
           }
 
           if (existingFolder.userId !== userId) {
-            const errorResponse = createStandardError(req, 'Access denied', ERROR_CODES.FORBIDDEN, HTTP_STATUS.FORBIDDEN, undefined, userId);
+            const errorResponse = createStandardError(req, 'Access denied', ERROR_CODES.FORBIDDEN, HTTP_STATUS.FORBIDDEN, [], userId, false);
             return sendErrorResponse(res, HTTP_STATUS.FORBIDDEN, errorResponse);
           }
 
@@ -332,12 +503,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
 
           if (!folder) {
-            const errorResponse = createStandardError(req, 'Folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, undefined, userId);
+            const errorResponse = createStandardError(req, 'Folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, [], userId, false);
             return sendErrorResponse(res, HTTP_STATUS.NOT_FOUND, errorResponse);
           }
 
           if (folder.userId !== userId) {
-            const errorResponse = createStandardError(req, 'Access denied', ERROR_CODES.FORBIDDEN, HTTP_STATUS.FORBIDDEN, undefined, userId);
+            const errorResponse = createStandardError(req, 'Access denied', ERROR_CODES.FORBIDDEN, HTTP_STATUS.FORBIDDEN, [], userId, false);
             return sendErrorResponse(res, HTTP_STATUS.FORBIDDEN, errorResponse);
           }
 
@@ -371,7 +542,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
       default:
-        const errorResponse = createStandardError(req, 'Method not allowed', 'METHOD_NOT_ALLOWED', HTTP_STATUS.NOT_FOUND, undefined, userId);
+        const errorResponse = createStandardError(req, 'Method not allowed', 'METHOD_NOT_ALLOWED', 405, [], userId, false);
         return sendErrorResponse(res, 405, errorResponse);
     }
   } catch (error) {

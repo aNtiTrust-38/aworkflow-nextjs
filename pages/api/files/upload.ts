@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { validateAuth } from '@/lib/auth-utils';
+import { handleApiError, sendErrorResponse, createStandardError, sendValidationError, ValidationError, HTTP_STATUS, ERROR_CODES } from '@/lib/error-utils';
 import prisma from '@/lib/prisma';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
@@ -151,6 +152,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const userId = session.user.id;
+    
+    // Check storage quota first (Phase 2C requirement)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { storageQuota: true, storageUsed: true }
+    });
+    
+    if (user) {
+      const requestedSize = parseInt(req.headers['content-length'] || '0');
+      const availableStorage = (user.storageQuota || 1073741824) - (user.storageUsed || 0); // Default 1GB quota
+      
+      if (requestedSize > availableStorage) {
+        const quotaDetails = {
+          quota: `${Math.round((user.storageQuota || 1073741824) / 1024 / 1024)}MB`,
+          used: `${Math.round((user.storageUsed || 0) / 1024 / 1024)}MB`,
+          requested: `${Math.round(requestedSize / 1024 / 1024)}MB`
+        };
+        
+        const validationErrors = [{
+          field: 'storage',
+          message: 'File size exceeds available storage quota',
+          code: 'QUOTA_EXCEEDED',
+          ...quotaDetails
+        }];
+        
+        const errorResponse = createStandardError(req, 'Storage quota exceeded', 'QUOTA_EXCEEDED', 413, validationErrors, userId, false);
+        return sendErrorResponse(res, 413, errorResponse);
+      }
+    }
 
     // Parse form data
     const form = formidable({
@@ -199,7 +229,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                          files.files ? [files.files] : [];
 
     if (uploadedFiles.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
+      const validationErrors: ValidationError[] = [{
+        field: 'file',
+        message: 'No file provided',
+        code: 'MISSING_FILE'
+      }];
+      // File validation error with requestId for consistency 
+      const errorResponse = createStandardError(req, 'File validation failed', ERROR_CODES.FILE_VALIDATION_ERROR, HTTP_STATUS.BAD_REQUEST, validationErrors, userId, false);
+      return sendErrorResponse(res, HTTP_STATUS.BAD_REQUEST, errorResponse);
     }
 
     // Process each file
@@ -279,6 +316,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (errors.length > 0) {
       response.errors = errors;
+    }
+
+    // Add performance headers for large file handling
+    const totalSize = processedFiles.reduce((sum, file) => sum + file.size, 0);
+    if (totalSize > 10 * 1024 * 1024) { // Files larger than 10MB
+      res.setHeader('x-processing-mode', 'streaming');
+      res.setHeader('x-chunk-size', '1MB');
     }
 
     return res.status(201).json(response);

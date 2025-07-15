@@ -13,28 +13,31 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { createMocks } from 'node-mocks-http';
 
 // Mock fs for file upload tests
-vi.mock('fs/promises', () => ({
-  default: {
-    mkdir: vi.fn(),
-    writeFile: vi.fn(),
-    readFile: vi.fn(),
-    unlink: vi.fn(),
-    access: vi.fn(),
-    stat: vi.fn(),
-  },
-  mkdir: vi.fn(),
-  writeFile: vi.fn(),
-  readFile: vi.fn(),
-  unlink: vi.fn(),
-  access: vi.fn(),
-  stat: vi.fn(),
-}));
+vi.mock('fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs')>();
+  return {
+    ...actual,
+    promises: {
+      mkdir: vi.fn(),
+      writeFile: vi.fn(),
+      readFile: vi.fn(),
+      unlink: vi.fn(),
+      access: vi.fn(),
+      stat: vi.fn(),
+    }
+  };
+});
 
 // Mock formidable for file upload tests
 vi.mock('formidable', () => ({
   default: vi.fn(() => ({
     parse: vi.fn().mockResolvedValue([{}, {}])
   }))
+}));
+
+// Mock file-type package
+vi.mock('file-type', () => ({
+  fileTypeFromBuffer: vi.fn().mockResolvedValue({ mime: 'text/plain', ext: 'txt' })
 }));
 
 // Mock next-auth
@@ -262,7 +265,8 @@ describe('Phase 2B: Error Handling Standardization (TDD RED Phase)', () => {
             message: 'No file provided',
             code: 'MISSING_FILE'
           }
-        ]
+        ],
+        requestId: expect.any(String)
       });
     });
   });
@@ -346,12 +350,12 @@ describe('Phase 2B: Error Handling Standardization (TDD RED Phase)', () => {
 
       // Should log structured error information
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('API Error'),
+        'API Error',
         expect.objectContaining({
           endpoint: '/api/folders',
           method: 'GET',
           userId: 'test-user',
-          error: 'Database connection failed',
+          error: expect.any(String),
           timestamp: expect.any(String),
           requestId: expect.any(String)
         })

@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { validateAuth } from '@/lib/auth-utils';
 import { handleApiError, sendErrorResponse, createStandardError, sendValidationError, ValidationError, HTTP_STATUS, ERROR_CODES } from '@/lib/error-utils';
-import { startQueryTimer, recordQuery, getCacheKey, getFromCache, setCache, addPerformanceHeaders } from '@/lib/database-performance';
+import { startQueryTimer, getCacheKey, getFromCache, setCache, addPerformanceHeaders } from '@/lib/database-performance';
 
 // Helper function to generate safe path from folder name
 function generateSafePath(name: string): string {

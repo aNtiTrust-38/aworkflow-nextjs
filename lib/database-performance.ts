@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
 // Performance tracking state
-let queryMetrics = {
+const queryMetrics = {
   queryCount: 0,
   totalQueryTime: 0,
   cacheHits: 0,

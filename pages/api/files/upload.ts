@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { validateAuth } from '@/lib/auth-utils';
-import { handleApiError, sendErrorResponse, createStandardError, sendValidationError, ValidationError, HTTP_STATUS, ERROR_CODES } from '@/lib/error-utils';
+import { sendErrorResponse, createStandardError, ValidationError, HTTP_STATUS, ERROR_CODES } from '@/lib/error-utils';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
 import { fileTypeFromBuffer } from 'file-type';

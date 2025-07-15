@@ -148,7 +148,7 @@ export function handleApiError(
 ): void {
   let statusCode = 500;
   let errorCode = ERROR_CODES.INTERNAL_ERROR;
-  let errorMessage = sanitizeErrorMessage(error);
+  const errorMessage = sanitizeErrorMessage(error);
 
   // Determine appropriate status code and error code based on error type
   if (error instanceof Error) {

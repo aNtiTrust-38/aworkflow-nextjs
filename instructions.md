@@ -1,381 +1,257 @@
-# Development Instructions - Phase 2: API Endpoint Reliability
-
-## Current Development Status
-- **Phase**: 2 - API Endpoint Reliability  
-- **Status**: **PHASE 1 COMPLETE ✅ - READY FOR PHASE 2 IMPLEMENTATION**
-- **Achievement**: Test infrastructure stabilized, foundation ready for API fixes
-- **Assessment**: Completion increased from 85% → 90%, timeline reduced to 4-5 weeks
-
-## Phase 1 Completion Summary
-
-### ✅ **PHASE 1: TEST INFRASTRUCTURE STABILIZATION - COMPLETE**
-
-Following CLAUDE.md TDD methodology, Phase 1 successfully resolved critical infrastructure blockers:
-
-#### **Major Achievements:**
-1. **Prisma Client Mocking** - Created centralized `lib/prisma.ts` with comprehensive test mocking
-2. **TypeScript Compilation** - Fixed async path resolution, file-type imports, null assignments  
-3. **API Endpoint Foundation** - Tests now run and validate business logic vs infrastructure crashes
-4. **Component Test Environment** - DOM rendering and accessibility tests working correctly
-
-#### **Metrics Achieved:**
-- ✅ **Prisma Mocking Tests**: 9/9 passing
-- ✅ **TypeScript Compilation Tests**: 11/11 passing  
-- ✅ **Component Rendering Tests**: 10/14 passing
-- ✅ **Infrastructure Stability**: No more "undefined" property errors
-
-## PHASE 2: API ENDPOINT RELIABILITY (Current Focus)
-
-### **Goal**: Achieve 100% API endpoint reliability with proper error handling and authentication
-
-Based on Phase 1 foundation, Phase 2 will systematically address remaining API endpoint issues using proven TDD methodology.
-
-### **PHASE 2A: AUTHENTICATION AND SESSION MANAGEMENT (Days 6-7)**
-
-#### **Problem Analysis:**
-- Current API tests failing with authentication issues (401 Unauthorized)
-- getServerSession mocking not properly configured in existing tests
-- Inconsistent authentication patterns across endpoints
-
-#### **TDD Implementation Plan:**
-
-**Step 1: Write Failing Authentication Tests**
-```typescript
-// Target: Fix authentication mocking in existing API tests
-// Files: __tests__/api/folders.test.ts, __tests__/api/files-upload.test.ts
-// Expected: Tests pass with proper session validation
-```
-
-**Step 2: Implement Authentication Fixes**
-1. **Update Test Setup Patterns**
-   - Fix getServerSession mocking in all API tests
-   - Ensure consistent mock session objects across tests
-   - Add proper cleanup between test runs
-
-2. **Standardize API Authentication**
-   - Verify all endpoints use getServerSession consistently  
-   - Add proper error responses for unauthenticated requests
-   - Implement consistent session validation patterns
-
-**Step 3: Verify Authentication Working**
-- All API tests should pass authentication checks
-- No 401 errors in properly mocked scenarios
-- Consistent error responses for invalid sessions
-
-#### **Success Criteria:**
-- [ ] `/api/folders` tests passing (currently 0/4)
-- [ ] `/api/files/upload` tests passing (currently 0/23)  
-- [ ] Consistent authentication across all endpoints
-- [ ] Proper error responses for authentication failures
-
-### **PHASE 2B: ERROR HANDLING STANDARDIZATION (Days 8-9)**
-
-#### **Problem Analysis:**
-- Inconsistent error response formats across endpoints
-- Poor error logging and debugging information
-- No standardized validation patterns
-
-#### **TDD Implementation Plan:**
-
-**Step 1: Write Error Handling Tests**
-```typescript
-// Target: Standardized error response format
-interface APIError {
-  error: string;
-  code: string;
-  details?: string[];
-  timestamp?: string;
-}
-```
-
-**Step 2: Implement Error Handling Standards**
-1. **Create Error Response Utilities**
-   - Centralized error formatting functions
-   - Consistent HTTP status code usage
-   - Proper error logging without sensitive data exposure
-
-2. **Update All API Endpoints**
-   - Apply standardized error handling to `/api/folders`
-   - Apply standardized error handling to `/api/files/upload`
-   - Add input validation with proper error messages
-
-3. **Security Considerations**
-   - Sanitize error messages to prevent information leakage
-   - Add rate limiting for authentication failures
-   - Implement proper logging for security monitoring
-
-**Step 3: Verify Error Handling**
-- All endpoints return consistent error formats
-- No sensitive information exposed in error messages
-- Proper HTTP status codes for different error types
-
-#### **Success Criteria:**
-- [ ] Standardized error response format across all endpoints
-- [ ] Proper input validation with meaningful error messages
-- [ ] Security-conscious error handling (no sensitive data leakage)
-- [ ] Comprehensive error logging for debugging
-
-### **PHASE 2C: DATABASE CONNECTION OPTIMIZATION (Days 9-10)**
-
-#### **Problem Analysis:**
-- File upload tests showing database connection issues
-- Potential performance problems with large file operations
-- Missing transaction handling for multi-step operations
-
-#### **TDD Implementation Plan:**
-
-**Step 1: Write Database Performance Tests**
-```typescript
-// Target: Reliable database operations under load
-// Focus: Connection pooling, transaction handling, error recovery
-```
-
-**Step 2: Implement Database Optimizations**
-1. **Connection Management**
-   - Verify Prisma client singleton working correctly
-   - Add connection health checks
-   - Implement proper connection cleanup
-
-2. **Transaction Handling**
-   - Add proper transaction handling for file upload operations
-   - Implement rollback on upload failures
-   - Add storage quota validation within transactions
-
-3. **Performance Optimization**
-   - Optimize folder hierarchy queries
-   - Add database query monitoring
-   - Implement proper indexing recommendations
-
-**Step 3: Verify Database Reliability**
-- All database operations complete successfully
-- Proper error handling for connection failures
-- Performance benchmarks met for common operations
-
-#### **Success Criteria:**
-- [ ] Database connection stability under test load
-- [ ] Proper transaction handling for multi-step operations
-- [ ] Performance optimization for folder/file operations
-- [ ] Storage quota enforcement working correctly
-
-## DEVELOPMENT METHODOLOGY (PHASE 2)
-
-### **Continuing CLAUDE.md TDD Approach:**
-
-1. **Write Failing Tests First**
-   - Each fix starts with tests that demonstrate the problem
-   - Tests define expected behavior before implementation
-   - No implementation without corresponding tests
-
-2. **Implement Minimal Fixes**
-   - Fix only what's needed to make tests pass
-   - Avoid over-engineering solutions
-   - Maintain focus on specific API endpoint issues
-
-3. **Verify and Commit**
-   - Ensure all related tests pass after each fix
-   - Commit working code frequently
-   - Update documentation with progress
-
-4. **Use Subagents for Complex Analysis**
-   - Deploy subagents to investigate specific API endpoint issues
-   - Use subagents to verify fix quality and completeness
-   - Leverage subagents for performance testing validation
-
-### **Quality Standards Maintained:**
-- **TypeScript Strict Mode**: All new code properly typed
-- **WCAG 2.1 AA Compliance**: Accessibility maintained in UI components
-- **Security Best Practices**: No sensitive data exposure, proper input validation
-- **Performance Requirements**: Database operations optimized for production load
-
-## PHASE 2 SUCCESS CRITERIA
-
-### **Technical Requirements:**
-- [ ] **API Test Suite**: All existing API tests passing (current: ~10/50)
-- [ ] **Authentication**: Consistent session handling across all endpoints
-- [ ] **Error Handling**: Standardized error responses and logging
-- [ ] **Database Operations**: Reliable connection handling and transactions
-- [ ] **Performance**: Meeting benchmarks for folder/file operations
-
-### **Quality Gates:**
-- [ ] **No Infrastructure Failures**: All tests run successfully without setup errors
-- [ ] **Proper Error Responses**: No undefined/null errors in API responses  
-- [ ] **Security Validation**: No sensitive data leakage in error messages
-- [ ] **Performance Benchmarks**: Database operations within acceptable limits
-
-### **Documentation Requirements:**
-- [ ] **API Documentation**: Updated with error response formats
-- [ ] **Test Coverage**: Comprehensive test coverage for all API endpoints
-- [ ] **Security Guidelines**: Documented security practices for API development
-- [ ] **Performance Guidelines**: Database optimization patterns documented
-
-## **📋 PHASE 2 DETAILED TECHNICAL IMPLEMENTATION PLAN**
-
-Based on comprehensive subagent analysis completed July 15, 2025:
-
-**Current Status**: 31/50 tests passing (62% → Target: 100%)
-**Critical Blockers Identified**: 5 specific infrastructure issues preventing Phase 2 implementation
-**Implementation Strategy**: Fix infrastructure blockers first, then systematic TDD implementation
-
-### **PHASE 2A: AUTHENTICATION AND SESSION MANAGEMENT (Days 6-7)**
-
-#### **CRITICAL INFRASTRUCTURE FIXES (Immediate Priority)**
-
-**🚨 BLOCKER 1: File Upload Authentication Module Error**
-- **File**: `__tests__/api/files-upload.test.ts:3`
-- **Issue**: `getSession` imported from `next-auth/react` instead of `getServerSession` from `next-auth/next`
-- **Impact**: All 23 file upload tests failing
-- **Fix**: Update import statement and mock setup
-- **Estimated Time**: 30 minutes
-
-**🚨 BLOCKER 2: File System Mocking Incomplete**
-- **File**: `__tests__/api/files-upload.test.ts:24-30`
-- **Issue**: Missing `default` export in fs/promises mock causing "No default export defined" error
-- **Impact**: File upload tests crash before execution
-- **Fix**: Complete fs/promises module mocking with proper export structure
-- **Estimated Time**: 30 minutes
-
-**🚨 BLOCKER 3: Error Utils Header Handling**
-- **File**: `lib/error-utils.ts:221`
-- **Issue**: `req.headers` undefined in test mocks causing property access errors
-- **Impact**: All API tests throwing "Cannot read properties of undefined"
-- **Fix**: Add null checks for req.headers in error utility functions
-- **Estimated Time**: 15 minutes
-
-**🚨 BLOCKER 4: Prisma Mock Import Conflicts**
-- **Files**: Multiple test files with inconsistent Prisma mocking
-- **Issue**: Some tests import `@/lib/prisma`, others mock `@prisma/client`
-- **Impact**: "Cannot read properties of undefined (reading 'findMany')" errors
-- **Fix**: Standardize Prisma mocking approach across all tests
-- **Estimated Time**: 45 minutes
-
-**🚨 BLOCKER 5: Test Expectation Mismatches**
-- **Files**: All folders API tests (`__tests__/api/folders.test.ts`)
-- **Issue**: Tests expect simple error objects but API returns standardized responses with `requestId`, `timestamp`, `code`
-- **Impact**: 31/31 folders API tests failing due to assertion mismatches
-- **Fix**: Update test expectations to match new standardized error response format
-- **Estimated Time**: 60 minutes
-
-**CRITICAL FIXES SUCCESS CRITERIA**: Infrastructure blockers resolved, tests can execute without crashes
-
-#### **Day 7: Authentication Pattern Standardization**
-
-**🔧 Task 1: Audit All Authentication Patterns**
-- **Scope**: Review all 19 API endpoints for consistency
-- **Method**: Create authentication audit script and documentation
-
-**🔧 Task 2: Standardize Authentication Error Responses**
-- **File**: Create `lib/auth-utils.ts`
-- **Goal**: Consistent 401 error handling across all endpoints
-
-**🔧 Task 3: Update Inconsistent Endpoints**
-- **Focus**: `setup-status.ts` and endpoints missing authOptions
-- **Method**: Apply standard authentication pattern uniformly
-
-**Day 7 Success Criteria**: All 19 endpoints use identical authentication pattern
-
-### **PHASE 2B: ERROR HANDLING STANDARDIZATION (Days 8-9)**
-
-#### **Day 8: Centralized Error Response Utilities**
-
-**🔧 Task 1: Create Standard Error Response Types**
-- **File**: Create `lib/api-error-utils.ts`
-- **Goal**: Standardized APIError interface and response utilities
-
-**🔧 Task 2: Audit Current Error Response Patterns**
-- **Finding**: 4 different error response formats across endpoints
-- **Action**: Create migration plan and security audit
-
-**🔧 Task 3: Security-Conscious Error Handling**
-- **Focus**: Prevent information disclosure in error messages
-- **Implementation**: Sanitize database errors and remove sensitive data
-
-**Day 8 Success Criteria**: Centralized error utilities created, security audit completed
-
-#### **Day 9: Error Response Migration and Input Validation**
-
-**🔧 Task 1: Migrate High-Priority Endpoints**
-- **Files**: `folders.ts`, `files/upload.ts`, `user-settings.ts`
-- **Goal**: Apply standardized error responses to critical endpoints
-
-**🔧 Task 2: Implement Consistent Input Validation**
-- **Method**: Use Zod or similar for standardized validation error responses
-
-**🔧 Task 3: Add Proper Error Logging**
-- **Integration**: Enhance existing `lib/logger.ts` with structured API error logging
-
-**Day 9 Success Criteria**: 3+ critical endpoints migrated, consistent validation implemented
-
-### **PHASE 2C: DATABASE CONNECTION OPTIMIZATION (Day 10)**
-
-#### **Day 10: Database Performance and Transaction Handling**
-
-**🔧 Task 1: Database Connection Health Checks**
-- **File**: Enhance `pages/api/health.ts`
-- **Goal**: Monitor database connection reliability and performance
-
-**🔧 Task 2: Add Transaction Support for Multi-Step Operations**
-- **File**: `pages/api/folders.ts`
-- **Goal**: Atomic operations for folder creation with files
-
-**🔧 Task 3: Performance Optimization for File Operations**
-- **Focus**: Large file upload handling and folder hierarchy queries
-- **Implementation**: Query performance monitoring and connection pool optimization
-
-**Day 10 Success Criteria**: Database health monitoring, transaction support, performance benchmarks met
-
-## **📊 PHASE 2 SUCCESS CRITERIA SUMMARY**
-
-### **Technical Requirements**:
-- [ ] **API Test Coverage**: 50/50 tests passing (Target: 100%)
-- [ ] **Authentication Consistency**: All 19 endpoints using identical pattern
-- [ ] **Error Handling**: Standardized format across all endpoints  
-- [ ] **Database Operations**: Transaction support and health monitoring
+# Development Instructions - Phase 2 Infrastructure Recovery Plan
+
+## Current Status: July 15, 2025
+**Phase**: Infrastructure Recovery (Pre-Phase 2)  
+**Completion**: 76% overall, blocked by test infrastructure failures  
+**Critical Issue**: 5 infrastructure blockers preventing TDD methodology
+
+## Immediate Action Plan - Infrastructure Fixes (3 Hours)
+
+### **Priority 1: Prisma Mock Recovery** (60 minutes)
+**Root Cause**: Test-level mock conflicts overriding comprehensive global setup
+**Action Items**:
+1. Remove duplicate `vi.mock('@/lib/prisma')` from individual test files
+2. Fix `vi.mocked(prisma)` usage patterns - use direct import instead
+3. Enhance global mock in vitest.setup.ts with missing methods (file model, $transaction, etc.)
+4. Standardize test setup pattern across all API tests
+
+### **Priority 2: Test Expectation Modernization** (45 minutes)
+**Root Cause**: Tests expect simple error objects, API returns standardized format
+**Action Items**:
+1. Update 31 folder API test expectations to match standardized error responses
+2. Fix authentication error expectations to include full context object
+3. Update validation error expectations to match details array format
+4. Modernize file upload test expectations
+
+### **Priority 3: File System Mocking** (30 minutes)  
+**Root Cause**: Missing `fs/promises` module mock and incomplete method coverage
+**Action Items**:
+1. Add comprehensive `fs/promises` mock to vitest.setup.ts
+2. Include all required methods (access, copyFile, stat, readdir, etc.)
+3. Provide both named exports and default export structure
+4. Test file system operations in upload functionality
+
+### **Priority 4: Request Headers Safety** (30 minutes)
+**Root Cause**: Test mock objects missing headers property causing crashes
+**Action Items**:
+1. Add headers property to all `createMockReqRes` functions in test files
+2. Add null checks to unsafe header access in API handlers (files/upload.ts:186, etc.)
+3. Include socket property for IP address access
+4. Create safe header access utility function
+
+### **Priority 5: Final Verification** (15 minutes)
+**Action Items**:
+1. Run crypto tests as baseline (should pass)
+2. Test database operations with folder API tests
+3. Test file operations with upload API tests
+4. Execute full test suite and verify significant improvement
+
+## Implementation Guidelines
+
+### **TDD Methodology**:
+1. Write failing tests first to verify blockers exist
+2. Implement fixes incrementally 
+3. Verify each fix with test execution
+4. Commit only verified working solutions
 
 ### **Quality Gates**:
-- [ ] **Zero Authentication Test Failures**: All session validation working
-- [ ] **Standardized Error Responses**: Single schema across all endpoints
-- [ ] **Security Audit Pass**: No sensitive data in error messages
-- [ ] **Performance Benchmarks**: Database operations within limits
+- All changes must pass lint and build checks
+- Test fixes must be verified with actual test execution
+- No claiming completion without demonstrated test passes
+- Each blocker fix must be independently verifiable
 
-### **Implementation Approach**:
-Following CLAUDE.md TDD methodology:
-1. **Write Failing Tests**: Demonstrate current issues (already exist)
-2. **Implement Minimal Fixes**: Address specific test failures systematically  
-3. **Verify and Commit**: Ensure all tests pass after each fix
-4. **Use Subagents**: For complex analysis and verification
+### **File Change Targets**:
+- `vitest.setup.ts` - Enhance global mocks
+- `__tests__/api/folders.test.ts` - Update test expectations
+- `__tests__/api/files-upload.test.ts` - Fix mocking and expectations
+- `pages/api/files/upload.ts` - Add header null checks
+- Multiple API test files - Remove duplicate mocks
 
-## RISK MITIGATION
+## Success Criteria for Phase 2 Readiness
 
-### **Known Risks and Mitigation Strategies:**
-1. **Complex Authentication Issues**: Use subagents to investigate specific session handling problems
-2. **Database Performance**: Implement monitoring early to catch performance issues
-3. **Error Handling Complexity**: Start with simple standardization, add complexity incrementally
-4. **File Upload System**: Focus on reliability before optimization
+### **Infrastructure Fixed State**:
+- [ ] Prisma operations work consistently across all tests
+- [ ] File upload tests execute without mock errors
+- [ ] API responses match test expectations (standardized format)
+- [ ] No "undefined property" errors in test execution
+- [ ] Test suite runs to completion without infrastructure crashes
 
-### **Rollback Plan:**
-- Each day's work should be committable independently
-- Maintain working baseline throughout Phase 2
-- Use feature flags for major changes if needed
-- Comprehensive test coverage to prevent regressions
+### **Development Ready State**:
+- [ ] TDD methodology can proceed reliably
+- [ ] Clear test failures indicate business logic issues, not infrastructure
+- [ ] Consistent development environment established
+- [ ] Version control state clean and documented
 
-## PHASE 3 PREPARATION
+## Post-Infrastructure Phase 2 Plan
 
-### **Prerequisites for Phase 3 (Export Functionality):**
-- [ ] **Stable API Layer**: All Phase 2 API reliability goals met
-- [ ] **Reliable Database Operations**: File/folder operations working consistently  
-- [ ] **Proper Error Handling**: Foundation for export error handling established
-- [ ] **Performance Baseline**: Database performance suitable for export operations
+Once infrastructure is genuinely stable:
 
-Phase 3 (Export Functionality Completion) can begin once Phase 2 API reliability is fully established and all success criteria are met.
+### **Phase 2A: Authentication Standardization** (1-2 days)
+- Standardize authentication across 19 API endpoints
+- Implement consistent error responses for auth failures
+- Comprehensive session validation testing
 
-## STATUS SUMMARY
+### **Phase 2B: Error Handling Standardization** (1-2 days)
+- Centralized error response utilities
+- Security-conscious error handling patterns
+- Standardized input validation across endpoints
 
-**🎯 PHASE 2 READY FOR IMMEDIATE IMPLEMENTATION**
+### **Phase 2C: Database Optimization** (1 day)
+- Transaction handling for multi-step operations
+- Connection health monitoring and optimization
+- Performance optimization for folder/file operations
 
-With Phase 1 test infrastructure stable, Phase 2 API endpoint reliability work can proceed with confidence using proven TDD methodology. The foundation is solid, development environment is reliable, and clear success criteria are established.
+---
 
-**Next Actions:**
-1. Begin authentication mocking fixes in existing API tests
-2. Implement standardized error handling patterns  
-3. Optimize database connection and transaction handling
-4. Validate all API endpoints working reliably
+## COMPREHENSIVE INFRASTRUCTURE RECOVERY PLAN (RULE 3 ADDITION)
+
+### **Strategic Analysis from Subagent Investigations**
+
+Based on comprehensive Rule 2 subagent investigations, this infrastructure crisis requires **systematic architectural fixes**, not point fixes. The documentation claims "98% complete" but reality shows fundamental test infrastructure breakdown.
+
+### **Root Cause Analysis**
+- **Mock Architecture Crisis**: Global vs test-specific mock conflicts creating undefined behavior
+- **Dynamic Import Bypass**: API handlers use `await import('@/lib/prisma')` which bypasses vitest static mocks
+- **Test Pattern Drift**: API responses evolved to standardized format but tests still expect legacy format
+- **Documentation Fraud**: Multiple recent commits claim fixes but tests still fail - false progress reporting
+
+### **Emergency Infrastructure Recovery Strategy**
+
+#### **PHASE 1: Critical Blocker Resolution (3-4 hours)**
+
+**BLOCKER 1: Prisma Mock Architecture Rebuild**
+- **Root Problem**: Multiple conflicting mock definitions between global setup and test-specific mocks
+- **Impact**: Dynamic imports in API handlers bypass mocked Prisma client
+- **Solution Strategy**:
+  1. **Standardize Mock Strategy**: Remove ALL test-level `vi.mock('@/lib/prisma')` calls
+  2. **Enhance Global Mock**: Add missing methods ($connect, $queryRaw, createMany, deleteMany)
+  3. **Dynamic Import Handling**: Configure vitest to properly mock dynamic imports
+  4. **Type Safety**: Create typed mock access utilities for tests
+
+**BLOCKER 2: Authentication Flow Mismatch**
+- **Root Problem**: Tests mock `getServerSession` but handlers use `validateAuth()` wrapper
+- **Impact**: All API tests fail authentication before reaching business logic
+- **Solution Strategy**:
+  1. **Mock Pattern Alignment**: Update test mocks to handle `validateAuth()` pattern
+  2. **Session Format Consistency**: Ensure consistent session object format across all tests
+  3. **NextAuth Integration**: Fix NextAuth module mocking to match actual usage patterns
+
+**BLOCKER 3: File System Mock Completion**
+- **Root Problem**: Dynamic imports for fs/promises bypass static mocks
+- **Impact**: File upload tests crash on filesystem operations
+- **Solution Strategy**:
+  1. **Default Export Addition**: Add proper default export to fs/promises mock
+  2. **Dynamic Import Support**: Handle `await import('fs/promises')` patterns
+  3. **Method Coverage**: Ensure all file operations (readFile, copyFile, stat) are mocked
+
+**BLOCKER 4: Request Object Mock Infrastructure**
+- **Root Problem**: Test request objects missing headers/socket properties
+- **Impact**: Error handling crashes on undefined property access
+- **Solution Strategy**:
+  1. **Complete Request Mocking**: Add headers, socket properties to all test request objects
+  2. **Safe Header Access**: Implement null checks in error-utils.ts
+  3. **Mock Utilities**: Create standardized request/response mock generators
+
+**BLOCKER 5: Test Expectation Modernization**
+- **Root Problem**: Tests expect old error format, API returns standardized format
+- **Impact**: 31/31 folder API tests fail due to response format mismatch
+- **Solution Strategy**:
+  1. **Response Format Alignment**: Update all tests to expect standardized error format
+  2. **Authentication Expectations**: Fix auth test expectations to match current session format
+  3. **Validation Patterns**: Update validation error expectations to match details array format
+
+#### **PHASE 2: Architecture Stabilization (1-2 days)**
+
+**Infrastructure Hardening**:
+- Implement test isolation framework to prevent test contamination
+- Add comprehensive error handling and recovery in mock systems
+- Create mock verification utilities for debugging
+- Establish quality gates requiring test execution before commits
+
+**Documentation Accuracy Recovery**:
+- Update all completion percentages to reflect actual infrastructure state
+- Correct CHANGELOG claims to match verified implementation
+- Implement mandatory verification requirements for documentation updates
+
+#### **PHASE 3: Quality Assurance Framework (ongoing)**
+
+**Testing Standards Implementation**:
+- Mandatory test execution before any commit claiming fixes
+- Automated infrastructure health verification
+- Regular infrastructure health monitoring
+- Quality gate enforcement for future changes
+
+### **Implementation Verification Protocol**
+
+Each fix must be verified with actual test execution:
+
+```bash
+# Phase 1 Verification Steps
+npm run test __tests__/crypto.test.ts          # Baseline (should pass)
+npm run test __tests__/api/folders.test.ts     # Prisma/Auth verification
+npm run test __tests__/api/files-upload.test.ts # File system verification
+npm run test                                   # Full suite verification
+```
+
+### **Success Criteria for Phase 2 Readiness**
+
+**Infrastructure Fixed State**:
+- [ ] Prisma operations work consistently across all tests
+- [ ] File upload tests execute without mock errors  
+- [ ] API responses match test expectations (standardized format)
+- [ ] No "undefined property" errors in test execution
+- [ ] Test suite runs to completion without infrastructure crashes
+- [ ] Documentation accurately reflects actual implementation state
+
+**Development Ready State**:
+- [ ] TDD methodology can proceed reliably
+- [ ] Clear distinction between infrastructure issues and business logic failures
+- [ ] Consistent development environment across team
+- [ ] Version control state clean and properly documented
+
+### **Critical Implementation Notes**
+
+1. **No Point Fixes**: This requires systematic architectural changes, not individual bug fixes
+2. **Verification Required**: Every fix must be proven with actual test execution
+3. **Documentation Accuracy**: All claims must be verified before documentation updates
+4. **Quality Gates**: Implement mandatory verification before claiming completion
+
+**ESTIMATED RECOVERY TIME**: 3-4 hours emergency fixes, 1-2 days proper architecture
+**RISK LEVEL**: HIGH-CRITICAL - cannot proceed with reliable development until fixed
+
+*Last Updated: July 15, 2025 via Rule 3 comprehensive planning*  
+*Next Phase: Rule 4 - Create failing tests to verify blockers*
+- Connection health monitoring and metrics
+- Performance optimization for file operations
+
+## Risk Mitigation
+
+### **High-Risk Areas**:
+- Mock configuration conflicts between global and test-level setups
+- Test expectation drift from API implementation changes
+- File system operation mocking complexity
+
+### **Mitigation Strategies**:
+- Implement each fix incrementally with immediate verification
+- Maintain test isolation to prevent mock state pollution
+- Document all mock patterns for consistency
+- Create verification protocol to catch regressions
+
+### **Rollback Plan**:
+- Each fix can be implemented and tested independently
+- Git commits for each completed blocker resolution
+- Ability to isolate and address individual failures
+
+## Critical Success Factors
+
+1. **Accuracy in Documentation**: Only claim completion when verified with tests
+2. **Test-First Validation**: Every fix must be proven with actual test execution  
+3. **Infrastructure Priority**: No feature development until test foundation is stable
+4. **Systematic Approach**: Address blockers in priority order with verification at each step
+
+**Estimated Time to Phase 2 Readiness**: 3-4 hours if emergency fixes successful  
+**Next Milestone**: Reliable TDD development environment for Phase 2 implementation
+
+---
+*Last Updated: July 15, 2025*  
+*Next Update Required: After infrastructure emergency fixes completion*

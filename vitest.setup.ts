@@ -41,6 +41,7 @@ vi.mock('@/lib/prisma', () => {
       upsert: vi.fn(),
     },
     $disconnect: vi.fn(),
+    $connect: vi.fn(),
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
   };
@@ -52,9 +53,19 @@ vi.mock('next-auth/next', () => ({
   getServerSession: vi.fn(),
 }));
 
+// Mock NextAuth configuration
+vi.mock('@/pages/api/auth/[...nextauth]', () => ({
+  authOptions: {
+    providers: [],
+    callbacks: {},
+    pages: {},
+    secret: 'test-secret'
+  }
+}));
+
 // Mock file system operations
-vi.mock('fs', () => ({
-  promises: {
+vi.mock('fs', () => {
+  const mockMethods = {
     readFile: vi.fn(),
     writeFile: vi.fn(),
     unlink: vi.fn(),
@@ -77,8 +88,21 @@ vi.mock('fs', () => ({
     readdir: vi.fn(),
     lstat: vi.fn(),
     link: vi.fn(),
-  },
-}));
+  };
+  
+  return {
+    promises: mockMethods,
+    default: {
+      promises: mockMethods,
+    },
+    // Also provide sync methods that might be used
+    readFileSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    existsSync: vi.fn(),
+    mkdirSync: vi.fn(),
+    statSync: vi.fn(),
+  };
+});
 
 // Mock fs/promises module separately
 vi.mock('fs/promises', () => {

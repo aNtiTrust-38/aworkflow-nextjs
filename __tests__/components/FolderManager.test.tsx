@@ -21,11 +21,13 @@ const mockFolders = [
         path: '/research-papers/literature-review',
         parentId: 'folder1',
         children: [],
+        files: [],
         fileCount: 5,
         createdAt: '2024-01-01T00:00:00Z',
         updatedAt: '2024-01-01T00:00:00Z'
       }
     ],
+    files: [],
     fileCount: 10,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
@@ -36,6 +38,7 @@ const mockFolders = [
     path: '/references',
     parentId: null,
     children: [],
+    files: [],
     fileCount: 3,
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
@@ -65,6 +68,7 @@ describe('FolderManager', () => {
               path: '/new-folder',
               parentId: null,
               children: [],
+              files: [],
               fileCount: 0,
               createdAt: '2024-01-01T00:00:00Z',
               updatedAt: '2024-01-01T00:00:00Z'

@@ -125,31 +125,6 @@ async function handler(
     const responseTime = Date.now() - startTime
     metrics.totalResponseTime += responseTime
     
-    // For Phase 2C tests, return simplified format when database is healthy
-    if (dbHealth.status === 'connected') {
-      const simplifiedResponse = {
-        status: 'healthy',
-        timestamp,
-        database: dbHealth,
-        performance: {
-          averageQueryTime: `${responseTime + Math.floor(Math.random() * 10)}ms`,
-          slowQueryCount: 0,
-          errorRate: 0
-        }
-      };
-      return res.status(200).json(simplifiedResponse);
-    }
-    
-    // If database is disconnected, return Phase 2C test format
-    if (dbHealth.status === 'disconnected') {
-      const failureResponse = {
-        status: 'unhealthy',
-        timestamp,
-        database: dbHealth
-      };
-      return res.status(503).json(failureResponse);
-    }
-    
     const healthResponse: HealthCheckResponse = {
       status: overallStatus,
       timestamp,
@@ -197,57 +172,32 @@ async function checkDatabaseHealth() {
   const startTime = Date.now()
   
   try {
-    // Import prisma dynamically to allow mocking
-    const { default: prisma } = await import('@/lib/prisma');
+    const prisma = getPrismaClient()
     
-    // Try to execute a simple query
-    await prisma.$queryRaw`SELECT 1 as test`;
-    const connectionTime = Date.now() - startTime
+    // For testing, use the test instance if available
+    if (prismaClientInstance) {
+      await prismaClientInstance.$connect()
+      await prismaClientInstance.user.count()
+    } else {
+      // Import prisma dynamically to allow mocking in production
+      const { default: prodPrisma } = await import('@/lib/prisma');
+      await prodPrisma.$queryRaw`SELECT 1 as test`;
+    }
     
-    // Update last successful connection
-    globalLastSuccessfulConnection = new Date().toISOString();
-    
-    // Mock pool metrics (in real implementation, these would come from Prisma metrics)
-    const poolSize = 10;
-    const activeConnections = Math.floor(Math.random() * 5) + 1;
-    const poolAvailable = poolSize - activeConnections;
+    const responseTime = Date.now() - startTime
     
     return {
-      status: 'connected' as const,
-      connectionTime: `${connectionTime}ms`,
-      activeConnections,
-      poolSize,
-      poolAvailable,
-      lastQuery: new Date().toISOString()
+      status: 'healthy' as const,
+      responseTime
     }
   } catch (error) {
-    // In test environment, if we're not specifically testing failure scenarios,
-    // default to healthy status to allow positive tests to pass
-    const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    
-    // Only return error state if this is a specifically mocked failure
-    if (isTestEnv && !errorMessage.includes('Connection refused') && !errorMessage.includes('ECONNREFUSED')) {
-      // Default to healthy for general tests
-      const connectionTime = Date.now() - startTime;
-      const poolSize = 10;
-      const activeConnections = Math.floor(Math.random() * 5) + 1;
-      const poolAvailable = poolSize - activeConnections;
-      
-      return {
-        status: 'connected' as const,
-        connectionTime: `${connectionTime}ms`,
-        activeConnections,
-        poolSize,
-        poolAvailable,
-        lastQuery: new Date().toISOString()
-      }
-    }
+    const responseTime = Date.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : String(error)
     
     return {
-      status: 'disconnected' as const,
-      error: 'Database connection failed',
-      lastSuccessfulConnection: globalLastSuccessfulConnection
+      status: 'unhealthy' as const,
+      responseTime,
+      error: errorMessage
     }
   }
 }

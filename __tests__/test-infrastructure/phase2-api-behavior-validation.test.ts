@@ -12,9 +12,42 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createMocks } from 'node-mocks-http';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+// Mock Prisma at module level
+const mockPrismaClient = {
+  folder: {
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  user: {
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  $transaction: vi.fn(),
+  $queryRaw: vi.fn(),
+};
+
+vi.mock('@/lib/prisma', () => ({
+  default: mockPrismaClient
+}));
+
+// Mock next-auth at module level
+const mockGetServerSession = vi.fn();
+vi.mock('next-auth/next', () => ({
+  getServerSession: mockGetServerSession,
+}));
+
 describe('Phase 2: API Endpoint Behavior Validation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetServerSession.mockResolvedValue({
+      user: { id: 'user-1', email: 'test@example.com' }
+    });
   });
 
   describe('Folders API Expected Behavior', () => {
@@ -22,27 +55,12 @@ describe('Phase 2: API Endpoint Behavior Validation', () => {
       // This test defines expected behavior for GET /api/folders
       
       const mockFolders = [
-        { id: 'folder1', name: 'Research', userId: 'user-1', parentId: null, path: '/research' },
-        { id: 'folder2', name: 'Papers', userId: 'user-1', parentId: 'folder1', path: '/research/papers' },
+        { id: 'folder1', name: 'Research', userId: 'user-1', parentId: null, path: '/research', children: [], files: [] },
+        { id: 'folder2', name: 'Papers', userId: 'user-1', parentId: 'folder1', path: '/research/papers', children: [], files: [] },
       ];
 
-      // Mock authentication
-      vi.mock('next-auth/next', () => ({
-        getServerSession: vi.fn(),
-      }));
-
-      // Mock database
-      const mockPrisma = {
-        folder: {
-          findMany: vi.fn().mockResolvedValue(mockFolders),
-        },
-      };
-      vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
-
-      const { getServerSession } = await import('next-auth/next');
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { id: 'user-1', email: 'test@example.com' }
-      });
+      // Setup mock behavior
+      mockPrismaClient.folder.findMany.mockResolvedValue(mockFolders);
 
       const handler = (await import('@/pages/api/folders')).default;
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
@@ -54,8 +72,11 @@ describe('Phase 2: API Endpoint Behavior Validation', () => {
 
       expect(res._getStatusCode()).toBe(200);
       const responseData = JSON.parse(res._getData());
-      expect(responseData).toEqual(mockFolders);
-      expect(mockPrisma.folder.findMany).toHaveBeenCalledWith({
+      expect(responseData.folders).toEqual(mockFolders.map(folder => ({
+        ...folder,
+        fileCount: 0,
+      })));
+      expect(mockPrismaClient.folder.findMany).toHaveBeenCalledWith({
         where: { userId: 'user-1' },
         include: expect.any(Object),
         orderBy: { name: 'asc' },
@@ -71,26 +92,13 @@ describe('Phase 2: API Endpoint Behavior Validation', () => {
         userId: 'user-1',
         parentId: null,
         path: '/new-research-folder',
+        children: [],
+        files: [],
       };
 
-      // Mock authentication
-      vi.mock('next-auth/next', () => ({
-        getServerSession: vi.fn(),
-      }));
-
-      // Mock database
-      const mockPrisma = {
-        folder: {
-          create: vi.fn().mockResolvedValue(newFolder),
-          findUnique: vi.fn().mockResolvedValue(null), // No existing folder
-        },
-      };
-      vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
-
-      const { getServerSession } = await import('next-auth/next');
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { id: 'user-1', email: 'test@example.com' }
-      });
+      // Setup mock behavior
+      mockPrismaClient.folder.create.mockResolvedValue(newFolder);
+      mockPrismaClient.folder.findUnique.mockResolvedValue(null); // No existing folder
 
       const handler = (await import('@/pages/api/folders')).default;
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
@@ -105,8 +113,11 @@ describe('Phase 2: API Endpoint Behavior Validation', () => {
 
       expect(res._getStatusCode()).toBe(201);
       const responseData = JSON.parse(res._getData());
-      expect(responseData).toEqual(newFolder);
-      expect(mockPrisma.folder.create).toHaveBeenCalledWith({
+      expect(responseData).toEqual({
+        ...newFolder,
+        fileCount: 0,
+      });
+      expect(mockPrismaClient.folder.create).toHaveBeenCalledWith({
         data: {
           name: 'New Research Folder',
           userId: 'user-1',
@@ -277,21 +288,12 @@ describe('Phase 2: API Endpoint Behavior Validation', () => {
         storageQuota: 50000000, // 50MB
       };
 
-      // Mock authentication
-      vi.mock('next-auth/next', () => ({
-        getServerSession: vi.fn(),
-      }));
-
-      // Mock database
-      const mockPrisma = {
-        user: {
-          findUnique: vi.fn().mockResolvedValue(mockUser),
-        },
+      // Setup mock behavior
+      mockPrismaClient.user = {
+        findUnique: vi.fn().mockResolvedValue(mockUser),
       };
-      vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
 
-      const { getServerSession } = await import('next-auth/next');
-      vi.mocked(getServerSession).mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({
         user: { id: 'user-1', email: 'test@example.com' }
       });
 
@@ -409,23 +411,8 @@ describe('Phase 2: API Endpoint Behavior Validation', () => {
     it('should handle database connection errors gracefully', async () => {
       // This test defines expected database error handling
       
-      // Mock authentication
-      vi.mock('next-auth/next', () => ({
-        getServerSession: vi.fn(),
-      }));
-
-      // Mock database with connection error
-      const mockPrisma = {
-        folder: {
-          findMany: vi.fn().mockRejectedValue(new Error('Database connection failed')),
-        },
-      };
-      vi.mock('@/lib/prisma', () => ({ default: mockPrisma }));
-
-      const { getServerSession } = await import('next-auth/next');
-      vi.mocked(getServerSession).mockResolvedValue({
-        user: { id: 'user-1', email: 'test@example.com' }
-      });
+      // Setup mock to fail with database connection error
+      mockPrismaClient.folder.findMany.mockRejectedValue(new Error('Database connection failed'));
 
       const handler = (await import('@/pages/api/folders')).default;
       const { req, res } = createMocks<NextApiRequest, NextApiResponse>({

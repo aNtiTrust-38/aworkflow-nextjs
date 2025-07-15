@@ -3,28 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import handler from '../../pages/api/folders';
 import prisma from '@/lib/prisma';
 
-// Mock next-auth - FIXED: Mock the correct module that API handlers use
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
-}));
-
-// Mock Prisma client from lib/prisma
-vi.mock('@/lib/prisma', () => ({
-  default: {
-    folder: {
-      findMany: vi.fn(),
-      findUnique: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-    file: {
-      findMany: vi.fn(),
-      count: vi.fn(),
-      deleteMany: vi.fn(),
-    },
-  },
-}));
+// Note: Prisma and next-auth mocks are defined globally in vitest.setup.ts
 
 const { getServerSession } = await import('next-auth/next');
 const mockGetServerSession = vi.mocked(getServerSession);
@@ -138,7 +117,12 @@ describe('/api/folders', () => {
     });
 
     it('should return empty array when no folders exist', async () => {
+      // Clear all mocks and set empty result
+      vi.clearAllMocks();
       mockPrisma.folder.findMany.mockResolvedValue([]);
+      mockGetServerSession.mockResolvedValue({
+        user: { id: 'user123', email: 'test@example.com' },
+      });
 
       const { req, res } = createMockReqRes('GET');
       await handler(req, res);

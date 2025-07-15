@@ -17,6 +17,16 @@ vi.mock('@/lib/prisma', () => {
       update: vi.fn(),
       delete: vi.fn(),
     },
+    file: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      createMany: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+      count: vi.fn(),
+    },
     paper: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
@@ -31,6 +41,8 @@ vi.mock('@/lib/prisma', () => {
       upsert: vi.fn(),
     },
     $disconnect: vi.fn(),
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
   };
   return { default: mockPrisma };
 });
@@ -47,8 +59,59 @@ vi.mock('fs', () => ({
     writeFile: vi.fn(),
     unlink: vi.fn(),
     mkdir: vi.fn(),
+    access: vi.fn(),
+    copyFile: vi.fn(),
+    stat: vi.fn(),
+    appendFile: vi.fn(),
+    chmod: vi.fn(),
+    chown: vi.fn(),
+    utimes: vi.fn(),
+    realpath: vi.fn(),
+    mkdtemp: vi.fn(),
+    rmdir: vi.fn(),
+    rename: vi.fn(),
+    truncate: vi.fn(),
+    rm: vi.fn(),
+    symlink: vi.fn(),
+    readlink: vi.fn(),
+    readdir: vi.fn(),
+    lstat: vi.fn(),
+    link: vi.fn(),
   },
 }));
+
+// Mock fs/promises module separately
+vi.mock('fs/promises', () => {
+  const mockMethods = {
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    unlink: vi.fn(),
+    mkdir: vi.fn(),
+    access: vi.fn(),
+    copyFile: vi.fn(),
+    stat: vi.fn(),
+    appendFile: vi.fn(),
+    chmod: vi.fn(),
+    chown: vi.fn(),
+    utimes: vi.fn(),
+    realpath: vi.fn(),
+    mkdtemp: vi.fn(),
+    rmdir: vi.fn(),
+    rename: vi.fn(),
+    truncate: vi.fn(),
+    rm: vi.fn(),
+    symlink: vi.fn(),
+    readlink: vi.fn(),
+    readdir: vi.fn(),
+    lstat: vi.fn(),
+    link: vi.fn(),
+  };
+  
+  return {
+    ...mockMethods,
+    default: mockMethods, // Provide default export as well
+  };
+});
 
 // Mock path module for consistent results
 vi.mock('path', async () => {

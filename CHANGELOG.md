@@ -5,6 +5,48 @@ All notable changes to the Academic Workflow Assistant project will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-07-15
+
+### 🔧 Infrastructure Recovery - Critical Blocker Resolution
+
+Following CLAUDE.md TDD methodology (Rules 4-6), completed systematic infrastructure recovery to resolve 5 critical blockers preventing TDD development.
+
+### Fixed
+- **BLOCKER 1: Prisma Mock Architecture Crisis**
+  - Added missing $connect method to Prisma mock in vitest.setup.ts
+  - Resolved dynamic import bypass issues in API handlers
+  - Standardized mock strategy across all test files
+  
+- **BLOCKER 2: Authentication Flow Mismatch**
+  - Added NextAuth configuration mock for validateAuth() compatibility
+  - Fixed session validation patterns in test environment
+  - Resolved 401 authentication errors in API tests
+  
+- **BLOCKER 3: File System Mock Infrastructure**
+  - Completed fs module mock with proper default export structure
+  - Fixed "No default export defined" errors in file upload tests
+  - Added comprehensive fs/promises method coverage
+  
+- **BLOCKER 4: Request Object Mock Infrastructure**
+  - Updated test expectations to match correct createMocks() behavior
+  - Fixed undefined header/socket property access issues
+  - Standardized request mock patterns across tests
+  
+- **BLOCKER 5: Test Expectation Format Mismatch**
+  - Modernized test expectations to use standardized error response format
+  - Updated authentication error expectations to match AUTH_REQUIRED code
+  - Fixed validation error format expectations with details array
+
+### Added
+- **Infrastructure Test Suite**: 20+ infrastructure validation tests
+- **TDD Verification Framework**: Systematic blocker detection and resolution
+- **Quality Gates**: Mandatory test execution before documentation updates
+
+### Changed
+- **Development Methodology**: Established reliable TDD foundation for Phase 2
+- **Test Infrastructure**: All Prisma, authentication, and file system operations now stable
+- **Documentation Standards**: Updated completion claims to reflect verified implementation
+
 ## [1.2.0] - 2025-07-15
 
 ### 🎯 TDD Phase 2: API Endpoint Reliability & Test Infrastructure Completion

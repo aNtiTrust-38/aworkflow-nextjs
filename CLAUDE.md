@@ -33,6 +33,156 @@ npx vitest run __tests__/api/                         # API endpoint tests
 ## First Line Directive
 - CLAUDE.md MUST be followed explicitly.
 
+## Global Commands
+### /resync
+- **Purpose**: Force development to perform {/clear} and restart the CLAUDE.md development loop
+- **Action**: Clear all context and begin again at Inviolate Rule 1
+- **Usage**: When development has gone off-track or user wants to restart the cycle
+- **Implementation**: 
+  1. Clear all previous context and todos
+  2. Start fresh at Rule 1 (read nextsteps.md, README.md, logging docs, changelog)
+  3. Wait for user approval at each mandatory stop point
+
+### /document
+- **Purpose**: Perform comprehensive codebase review and update all relevant documentation
+- **Action**: Review codebase changes, update documentation, commit, and push
+- **Usage**: When significant changes have been made and documentation needs updating
+- **Implementation**:
+  1. **Codebase Review Phase**:
+     - Scan all source files for recent changes
+     - Identify new features, API changes, and architectural updates
+     - Review test coverage and functionality changes
+     - Analyze package.json dependencies and scripts
+  2. **Documentation Update Phase**:
+     - Update README.md with new features and changes
+     - Update CHANGELOG.md with version entries
+     - Update nextsteps.md with current development status
+     - Update any API documentation or user guides
+     - Update CLAUDE.md if development patterns changed
+  3. **Validation Phase**:
+     - Run linting and type checking
+     - Verify documentation links and formatting
+     - Ensure all changes are consistent
+  4. **Commit and Push Phase**:
+     - Stage all documentation changes
+     - Create commit with descriptive message
+     - Push to remote repository
+- **Commit Message Format**: "docs: comprehensive documentation update [feature/changes summary]"
+
+### /devstatus
+- **Purpose**: Stop development, clear context, and provide comprehensive status summary
+- **Action**: Analyze current development state with completion percentage and concern areas
+- **Usage**: When you need a clear overview of project status and development progress
+- **Implementation**:
+  1. **Stop Development**: Halt any ongoing development work immediately
+  2. **Clear Context**: Execute the /clear command to ensure fresh analysis
+  3. **Status Analysis Phase**:
+     - Read nextsteps.md for current phase and blockers
+     - Read CHANGELOG.md for recent progress
+     - Read README.md for feature completion status
+     - Scan test results and coverage reports
+     - Analyze git status and recent commits
+  4. **Completion Assessment**:
+     - Calculate overall project completion percentage
+     - Break down completion by major areas (UI, API, Testing, Documentation)
+     - Identify completed features vs. planned features
+     - Assess code quality and technical debt
+  5. **Areas of Concern Analysis**:
+     - Identify critical blockers and failed tests
+     - Highlight security vulnerabilities or technical debt
+     - Note missing documentation or incomplete features
+     - Flag performance issues or accessibility gaps
+     - Identify dependency issues or outdated packages
+  6. **Summary Report Format**:
+     ```
+     ## Development Status Report
+     **Overall Completion**: X%
+     **Current Phase**: [Phase Name]
+     **Last Updated**: [Date]
+     
+     ### Completion Breakdown:
+     - Core Features: X%
+     - UI/UX: X%
+     - API Endpoints: X%
+     - Testing: X%
+     - Documentation: X%
+     - Security: X%
+     
+     ### Areas of Concern:
+     🚨 **Critical**: [List critical issues]
+     ⚠️  **High**: [List high priority issues]
+     📝 **Medium**: [List medium priority issues]
+     
+     ### Next Recommended Actions:
+     1. [Immediate next step]
+     2. [Second priority]
+     3. [Third priority]
+     ```
+  7. **Update nextsteps.md**: Rewrite nextsteps.md with comprehensive development status
+     - Replace entire contents with current development summary
+     - Include snapshot of current blockers and their solutions
+     - Add completion percentages and phase information
+     - Document immediate next actions and timeline estimates
+     - Include risk assessment and mitigation strategies
+     - Provide technical debt summary and resolution plans
+
+### /verifyphase
+- **Purpose**: Analyze the last sprint and verify implementation matches the last acted upon plan
+- **Action**: Compare planned vs actual development outcomes and identify discrepancies
+- **Usage**: After completing development work to validate execution against planning
+- **Implementation**:
+  1. **Sprint Identification**: Determine the last development sprint/phase from recent commits and documentation
+  2. **Plan Analysis Phase**:
+     - Read previous version of nextsteps.md or development plans
+     - Identify what was supposed to be accomplished
+     - Extract success criteria and deliverables from the plan
+     - Note estimated timelines and resource allocation
+  3. **Actual Implementation Analysis**:
+     - Review recent git commits and their messages
+     - Run current tests to validate claimed functionality
+     - Check current codebase state vs planned outcomes
+     - Analyze test pass/fail rates vs expected results
+  4. **Comparison and Verification**:
+     - Compare planned deliverables vs actual implementation
+     - Identify completed items vs missed items
+     - Analyze quality of implementation vs plan requirements
+     - Check if success criteria were actually met
+  5. **Discrepancy Analysis**:
+     - Document gaps between plan and execution
+     - Identify root causes for any missed objectives
+     - Assess impact of deviations on overall project
+     - Note any unplanned work that was completed
+  6. **Verification Report Format**:
+     ```
+     ## Sprint Verification Report
+     **Sprint Period**: [Date Range]
+     **Planned Objectives**: [List from plan]
+     **Actual Outcomes**: [List from implementation]
+     
+     ### Verification Results:
+     ✅ **Completed as Planned**: [List items]
+     ⚠️  **Partially Completed**: [List with details]
+     ❌ **Not Completed**: [List with reasons]
+     🆕 **Unplanned Work**: [List additional items]
+     
+     ### Quality Assessment:
+     - **Test Coverage**: Expected vs Actual
+     - **Performance**: Meets requirements (Y/N)
+     - **Documentation**: Updated appropriately (Y/N)
+     - **Code Quality**: Passes all checks (Y/N)
+     
+     ### Discrepancy Analysis:
+     - **Major Gaps**: [Critical missed items]
+     - **Root Causes**: [Why objectives were missed]
+     - **Impact Assessment**: [Effect on project timeline]
+     
+     ### Recommendations:
+     1. [Immediate actions needed]
+     2. [Process improvements]
+     3. [Next sprint adjustments]
+     ```
+  7. **Plan Accuracy Assessment**: Evaluate how realistic the original plan was and suggest improvements for future planning
+
 ## Architecture Overview
 
 ### Multi-LLM AI Provider System
@@ -127,12 +277,25 @@ const prisma = new PrismaClient();
     2) README.md
     3) Logging documentation
     4) Changelog
+    **STOP AND WAIT FOR USER APPROVAL BEFORE PROCEEDING TO RULE 2**
+
 2) NO DEVELOPMENT WILL HAPPEN NOW, THIS IS JUST FOR PLANNING PURPOSES.
     1) Use subagents to verify details or investigate any blockers in development.
     2) Use subagents to investigate questions you may have related to development in a conversation or task.
+    **STOP AND WAIT FOR USER APPROVAL BEFORE PROCEEDING TO RULE 3**
+
 3) Think hard about and make a plan for how to address blockers in development. If there are no blockers think about and design a plan to move from the current stage of development to the next. If there is no development plan ultrathink of a plan and design one. And plan written should be appended to instructions.md (make it if it doesn't exist and ensure that it is up to date if it does.) and immediate next steps will be written into nextsteps.md (replacing the content and including a summary of development).
-4)  Implement your solutions in code. (Verify the reasonability of the solution as it goes. Our goal is efficiency of code. We don't want to over-engineer our solution.)
-5) commit the result and create a pull request (if necessary and relevant). update README.md and the changelog.
+    **STOP AND WAIT FOR USER APPROVAL BEFORE PROCEEDING TO RULE 4**
+
+4) Create tests that will meet the plan developed in step 3. At this phase **NO** implementation will be done. This is strictly designing the RED phase of our TDD methodology.
+    **STOP AND WAIT FOR USER APPROVAL BEFORE PROCEEDING TO RULE 5**
+
+5) Implement your solutions in code to pass the existing tests. The GREEN phase - **NO** tests can be changed. Code must be implemented to pass the existing tests. (Verify the reasonability of the solution as it goes. Our goal is efficiency of code. We don't want to over-engineer our solution.)
+    - After each green test verify that the solution has actually been implemented.
+    **STOP AND WAIT FOR USER APPROVAL BEFORE PROCEEDING TO RULE 6**
+
+6) commit the result and create a pull request (if necessary and relevant). update README.md and the changelog.
+    **STOP AND WAIT FOR USER APPROVAL AFTER COMPLETING THIS RULE**
 
 ## Coding Rules
 1) Write tests based on expected input/output pairs.
@@ -145,3 +308,14 @@ const prisma = new PrismaClient();
     2) Keep going until all tests pass.
     3) Use subagents to ensure that implementation isn't overfitting the tests.
 5) Once satisfied with the code (and approved by me) always commit the code.
+
+## Inviolate Rules
+- **All code browsing, internet access, and file operations should run through puppeteer mcp.**
+
+## TDD Guidelines
+- **Red Phase Guidelines**:
+  - step 5 is the green phase and **NO** test can me changed. Code must be implemented to pass the existing test.
+  - **Subagents should be used to ensure that RED tests (Rule 4) are efficient**
+
+## Additional Guidelines
+- Another inviolate rule: At the end of each development phase (when a phase of the plan is completed) Update documentation and explicitly echo to the user what the next stage is. Ensure that nextsteps.md is explicitly notated that the phase is complete.

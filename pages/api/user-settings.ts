@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth/next';
+import { validateAuth } from '@/lib/auth-utils';
 import { getUserSettingsStorage } from '../../lib/user-settings-storage';
 
 interface UserSettingsUpdateRequest {
@@ -17,10 +17,10 @@ interface UserSettingsUpdateRequest {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Check authentication
-    const session = await getServerSession(req, res, {});
-    if (!session || !session.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    // Check authentication using standardized auth utilities
+    const session = await validateAuth(req, res);
+    if (!session) {
+      return; // validateAuth already sent the response
     }
 
     const userId = session.user.id;

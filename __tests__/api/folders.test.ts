@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getSession } from 'next-auth/react';
 import handler from '../../pages/api/folders';
 import { PrismaClient } from '@prisma/client';
 
-// Mock next-auth
-vi.mock('next-auth/react', () => ({
-  getSession: vi.fn(),
+// Mock next-auth - FIXED: Mock the correct module that API handlers use
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }));
 
 // Mock Prisma client
@@ -14,7 +13,8 @@ vi.mock('@prisma/client', () => ({
   PrismaClient: vi.fn(),
 }));
 
-const mockGetSession = vi.mocked(getSession);
+const { getServerSession } = await import('next-auth/next');
+const mockGetServerSession = vi.mocked(getServerSession);
 const mockPrisma = {
   folder: {
     findMany: vi.fn(),
@@ -98,7 +98,7 @@ describe('/api/folders', () => {
     vi.clearAllMocks();
     
     // Default authenticated session
-    mockGetSession.mockResolvedValue({
+    mockGetServerSession.mockResolvedValue({
       user: mockUser,
       expires: '2024-12-31',
     });
@@ -171,7 +171,7 @@ describe('/api/folders', () => {
     });
 
     it('should return 401 when user not authenticated', async () => {
-      mockGetSession.mockResolvedValue(null);
+      mockGetServerSession.mockResolvedValue(null);
 
       const { req, res } = createMockReqRes('GET');
       await handler(req, res);
@@ -363,7 +363,7 @@ describe('/api/folders', () => {
     });
 
     it('should return 401 when user not authenticated', async () => {
-      mockGetSession.mockResolvedValue(null);
+      mockGetServerSession.mockResolvedValue(null);
 
       const { req, res } = createMockReqRes('POST', {
         name: 'New Folder',
@@ -551,7 +551,7 @@ describe('/api/folders', () => {
     });
 
     it('should return 401 when user not authenticated', async () => {
-      mockGetSession.mockResolvedValue(null);
+      mockGetServerSession.mockResolvedValue(null);
 
       const { req, res } = createMockReqRes('PUT', {
         name: 'Updated Name',
@@ -681,7 +681,7 @@ describe('/api/folders', () => {
     });
 
     it('should return 401 when user not authenticated', async () => {
-      mockGetSession.mockResolvedValue(null);
+      mockGetServerSession.mockResolvedValue(null);
 
       const { req, res } = createMockReqRes('DELETE', null, { id: 'folder1' });
       

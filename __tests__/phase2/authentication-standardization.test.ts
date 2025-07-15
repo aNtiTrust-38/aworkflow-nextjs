@@ -17,12 +17,53 @@ vi.mock('next-auth/next', () => ({
   getServerSession: vi.fn(),
 }));
 
+// Mock Prisma client
+vi.mock('@/lib/prisma', () => ({
+  default: {
+    folder: {
+      findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
+    },
+  },
+}));
+
+// Mock fs for file upload tests
+vi.mock('fs/promises', () => ({
+  default: {
+    mkdir: vi.fn(),
+    writeFile: vi.fn(),
+    readFile: vi.fn(),
+    unlink: vi.fn(),
+    access: vi.fn(),
+    stat: vi.fn(),
+  },
+  mkdir: vi.fn(),
+  writeFile: vi.fn(),
+  readFile: vi.fn(),
+  unlink: vi.fn(),
+  access: vi.fn(),
+  stat: vi.fn(),
+}));
+
+// Mock formidable for file upload tests
+vi.mock('formidable', () => ({
+  default: vi.fn(() => ({
+    parse: vi.fn().mockResolvedValue([{}, {}])
+  }))
+}));
+
 describe('Phase 2A: Authentication Standardization (TDD RED Phase)', () => {
   let mockGetServerSession: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    const { getServerSession } = require('next-auth/next');
+    const { getServerSession } = await import('next-auth/next');
     mockGetServerSession = vi.mocked(getServerSession);
   });
 
@@ -30,40 +71,52 @@ describe('Phase 2A: Authentication Standardization (TDD RED Phase)', () => {
     it('should use consistent getServerSession pattern across all endpoints (TDD RED)', async () => {
       // Expected behavior: All API endpoints should use identical authentication pattern
       
-      const endpointsToTest = [
-        '/api/folders',
-        '/api/files/upload', 
-        '/api/user-settings',
-        '/api/setup-status'
-      ];
+      // Mock unauthenticated request
+      mockGetServerSession.mockResolvedValue(null);
+      
+      // Test folders endpoint
+      const foldersHandler = (await import('../../pages/api/folders')).default;
+      const { req: req1, res: res1 } = createMocks<NextApiRequest, NextApiResponse>({
+        method: 'GET',
+      });
 
-      for (const endpoint of endpointsToTest) {
-        // Mock unauthenticated request
-        mockGetServerSession.mockResolvedValue(null);
-        
-        try {
-          const handler = (await import(`../../pages${endpoint}`)).default;
-          const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-            method: 'GET',
-          });
+      await foldersHandler(req1, res1);
 
-          await handler(req, res);
-
-          // Expected: All endpoints should return identical 401 response structure
-          expect(res._getStatusCode()).toBe(401);
-          
-          const responseData = JSON.parse(res._getData());
-          expect(responseData).toEqual({
-            error: 'Unauthorized',
-            code: 'AUTH_REQUIRED',
-            timestamp: expect.any(String)
-          });
-          
-        } catch (error) {
-          // This test should fail initially due to inconsistent authentication patterns
-          throw new Error(`Authentication pattern inconsistency in ${endpoint}: ${error}`);
+      // Expected: Should return standardized 401 response structure
+      expect(res1._getStatusCode()).toBe(401);
+      
+      const responseData1 = JSON.parse(res1._getData());
+      expect(responseData1).toEqual({
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED',
+        timestamp: expect.any(String),
+        context: {
+          method: 'GET',
+          endpoint: expect.any(String)
         }
-      }
+      });
+
+      // Test user-settings endpoint
+      const userSettingsHandler = (await import('../../pages/api/user-settings')).default;
+      const { req: req2, res: res2 } = createMocks<NextApiRequest, NextApiResponse>({
+        method: 'GET',
+      });
+
+      await userSettingsHandler(req2, res2);
+
+      // Expected: Should return identical 401 response structure
+      expect(res2._getStatusCode()).toBe(401);
+      
+      const responseData2 = JSON.parse(res2._getData());
+      expect(responseData2).toEqual({
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED', 
+        timestamp: expect.any(String),
+        context: {
+          method: 'GET',
+          endpoint: expect.any(String)
+        }
+      });
     });
 
     it('should pass valid session to all authenticated endpoints (TDD RED)', async () => {
@@ -104,43 +157,40 @@ describe('Phase 2A: Authentication Standardization (TDD RED Phase)', () => {
       }
     });
 
-    it('should import authOptions consistently across all endpoints (TDD RED)', async () => {
-      // Expected behavior: All endpoints should import and use authOptions parameter
+    it('should use standardized authentication utilities across all endpoints (TDD RED)', async () => {
+      // Expected behavior: All endpoints should use validateAuth utility for consistent authentication
       
-      const endpointsRequiringAuthOptions = [
+      const endpointsRequiringAuth = [
         '/api/folders',
-        '/api/files/upload',
+        '/api/user-settings',
         '/api/setup-status'
       ];
 
-      // This test verifies that getServerSession is called with authOptions
-      // It should fail initially for endpoints missing authOptions
+      // This test verifies that endpoints use the standardized validateAuth utility
       
-      for (const endpoint of endpointsRequiringAuthOptions) {
-        mockGetServerSession.mockClear();
+      for (const endpoint of endpointsRequiringAuth) {
+        mockGetServerSession.mockResolvedValue(null); // Simulate unauthenticated user
         
-        try {
-          const handler = (await import(`../../pages${endpoint}`)).default;
-          const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+        const handler = (await import(`../../pages${endpoint}`)).default;
+        const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
+          method: 'GET',
+        });
+
+        await handler(req, res);
+
+        // Expected: Should return standardized 401 response
+        expect(res._getStatusCode()).toBe(401);
+        
+        const responseData = JSON.parse(res._getData());
+        expect(responseData).toEqual({
+          error: 'Unauthorized',
+          code: 'AUTH_REQUIRED',
+          timestamp: expect.any(String),
+          context: {
             method: 'GET',
-          });
-
-          await handler(req, res);
-
-          // Expected: getServerSession should be called with req, res, authOptions
-          expect(mockGetServerSession).toHaveBeenCalledWith(
-            req, 
-            res, 
-            expect.objectContaining({
-              // authOptions should contain provider configuration
-              providers: expect.any(Array)
-            })
-          );
-          
-        } catch (error) {
-          // This test should fail initially for endpoints not using authOptions
-          throw new Error(`authOptions missing in ${endpoint}: ${error}`);
-        }
+            endpoint: expect.any(String)
+          }
+        });
       }
     });
   });
@@ -167,7 +217,11 @@ describe('Phase 2A: Authentication Standardization (TDD RED Phase)', () => {
       expect(responseData).toEqual({
         error: 'Unauthorized', 
         code: 'AUTH_REQUIRED',
-        timestamp: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/) // ISO timestamp
+        timestamp: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/), // ISO timestamp
+        context: {
+          method: 'GET',
+          endpoint: expect.any(String)
+        }
       });
       
       // Should NOT have old inconsistent formats

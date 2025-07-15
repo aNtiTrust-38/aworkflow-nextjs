@@ -12,6 +12,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createMocks } from 'node-mocks-http';
 
+// Mock fs for file upload tests
+vi.mock('fs/promises', () => ({
+  default: {
+    mkdir: vi.fn(),
+    writeFile: vi.fn(),
+    readFile: vi.fn(),
+    unlink: vi.fn(),
+    access: vi.fn(),
+    stat: vi.fn(),
+  },
+  mkdir: vi.fn(),
+  writeFile: vi.fn(),
+  readFile: vi.fn(),
+  unlink: vi.fn(),
+  access: vi.fn(),
+  stat: vi.fn(),
+}));
+
+// Mock formidable for file upload tests
+vi.mock('formidable', () => ({
+  default: vi.fn(() => ({
+    parse: vi.fn().mockResolvedValue([{}, {}])
+  }))
+}));
+
 // Mock next-auth
 vi.mock('next-auth/next', () => ({
   getServerSession: vi.fn(),
@@ -20,9 +45,9 @@ vi.mock('next-auth/next', () => ({
 describe('Phase 2B: Error Handling Standardization (TDD RED Phase)', () => {
   let mockGetServerSession: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    const { getServerSession } = require('next-auth/next');
+    const { getServerSession } = await import('next-auth/next');
     mockGetServerSession = vi.mocked(getServerSession);
     
     // Mock valid session for non-auth error tests

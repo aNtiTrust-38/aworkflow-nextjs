@@ -1,14 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth/next';
+import { validateAuth } from '@/lib/auth-utils';
 import { getSetupStatus, updateSetupStatus } from '../../lib/settings-storage';
 import { SetupStatus } from '../../types/settings';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const session = await getServerSession();
-    
-    if (!session?.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    // Check authentication using standardized auth utilities
+    const session = await validateAuth(req, res);
+    if (!session) {
+      return; // validateAuth already sent the response
     }
 
     const userId = session.user.id;

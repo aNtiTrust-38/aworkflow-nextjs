@@ -208,32 +208,117 @@ interface APIError {
 - [ ] **Security Guidelines**: Documented security practices for API development
 - [ ] **Performance Guidelines**: Database optimization patterns documented
 
-## IMMEDIATE PHASE 2 TASKS
+## **📋 PHASE 2 DETAILED TECHNICAL IMPLEMENTATION PLAN**
 
-### **Day 6: Authentication Foundation**
-1. Fix getServerSession mocking in all API tests
-2. Ensure consistent authentication patterns
-3. Get basic API tests passing with proper session handling
+Based on comprehensive subagent analysis of API endpoint reliability and authentication patterns:
 
-### **Day 7: Authentication Completion**  
-1. Complete authentication standardization across all endpoints
-2. Implement proper error responses for authentication failures
-3. Add security considerations for session handling
+**Current Status**: 38/50 tests passing (76% → Target: 100%)
+**Key Blockers**: 2 endpoints with authentication mocking failures, 12 failing tests due to module mocking issues
 
-### **Day 8: Error Handling Implementation**
-1. Create standardized error response utilities
-2. Update all API endpoints with consistent error handling
-3. Add proper input validation with meaningful error messages
+### **PHASE 2A: AUTHENTICATION AND SESSION MANAGEMENT (Days 6-7)**
 
-### **Day 9: Database Optimization**
-1. Optimize database connection handling
-2. Implement transaction support for complex operations
-3. Add performance monitoring and health checks
+#### **Day 6: Authentication Test Infrastructure Fixes**
 
-### **Day 10: Phase 2 Completion**
-1. Final testing and validation of all API endpoints
-2. Performance benchmarking and optimization
-3. Documentation updates and Phase 3 preparation
+**🔧 Task 1: Fix Folders API Authentication Tests**
+- **File**: `__tests__/api/folders.test.ts`
+- **Issue**: ReferenceError: getSession is not defined (line 16)
+- **Solution**: Replace client-side `getSession` with server-side `getServerSession`
+- **Target**: 4/4 folders tests passing (currently 0/4)
+
+**🔧 Task 2: Fix File Upload Authentication Tests**  
+- **File**: `__tests__/api/files-upload.test.ts`
+- **Issue**: Multiple mocking issues blocking 23 tests
+- **Solution**: Fix authentication import + complete fs module mocking
+- **Target**: 23/23 file upload tests passing (currently 0/23)
+
+**Day 6 Success Criteria**: 65/50 tests passing (≥100% target achieved)
+
+#### **Day 7: Authentication Pattern Standardization**
+
+**🔧 Task 1: Audit All Authentication Patterns**
+- **Scope**: Review all 19 API endpoints for consistency
+- **Method**: Create authentication audit script and documentation
+
+**🔧 Task 2: Standardize Authentication Error Responses**
+- **File**: Create `lib/auth-utils.ts`
+- **Goal**: Consistent 401 error handling across all endpoints
+
+**🔧 Task 3: Update Inconsistent Endpoints**
+- **Focus**: `setup-status.ts` and endpoints missing authOptions
+- **Method**: Apply standard authentication pattern uniformly
+
+**Day 7 Success Criteria**: All 19 endpoints use identical authentication pattern
+
+### **PHASE 2B: ERROR HANDLING STANDARDIZATION (Days 8-9)**
+
+#### **Day 8: Centralized Error Response Utilities**
+
+**🔧 Task 1: Create Standard Error Response Types**
+- **File**: Create `lib/api-error-utils.ts`
+- **Goal**: Standardized APIError interface and response utilities
+
+**🔧 Task 2: Audit Current Error Response Patterns**
+- **Finding**: 4 different error response formats across endpoints
+- **Action**: Create migration plan and security audit
+
+**🔧 Task 3: Security-Conscious Error Handling**
+- **Focus**: Prevent information disclosure in error messages
+- **Implementation**: Sanitize database errors and remove sensitive data
+
+**Day 8 Success Criteria**: Centralized error utilities created, security audit completed
+
+#### **Day 9: Error Response Migration and Input Validation**
+
+**🔧 Task 1: Migrate High-Priority Endpoints**
+- **Files**: `folders.ts`, `files/upload.ts`, `user-settings.ts`
+- **Goal**: Apply standardized error responses to critical endpoints
+
+**🔧 Task 2: Implement Consistent Input Validation**
+- **Method**: Use Zod or similar for standardized validation error responses
+
+**🔧 Task 3: Add Proper Error Logging**
+- **Integration**: Enhance existing `lib/logger.ts` with structured API error logging
+
+**Day 9 Success Criteria**: 3+ critical endpoints migrated, consistent validation implemented
+
+### **PHASE 2C: DATABASE CONNECTION OPTIMIZATION (Day 10)**
+
+#### **Day 10: Database Performance and Transaction Handling**
+
+**🔧 Task 1: Database Connection Health Checks**
+- **File**: Enhance `pages/api/health.ts`
+- **Goal**: Monitor database connection reliability and performance
+
+**🔧 Task 2: Add Transaction Support for Multi-Step Operations**
+- **File**: `pages/api/folders.ts`
+- **Goal**: Atomic operations for folder creation with files
+
+**🔧 Task 3: Performance Optimization for File Operations**
+- **Focus**: Large file upload handling and folder hierarchy queries
+- **Implementation**: Query performance monitoring and connection pool optimization
+
+**Day 10 Success Criteria**: Database health monitoring, transaction support, performance benchmarks met
+
+## **📊 PHASE 2 SUCCESS CRITERIA SUMMARY**
+
+### **Technical Requirements**:
+- [ ] **API Test Coverage**: 50/50 tests passing (Target: 100%)
+- [ ] **Authentication Consistency**: All 19 endpoints using identical pattern
+- [ ] **Error Handling**: Standardized format across all endpoints  
+- [ ] **Database Operations**: Transaction support and health monitoring
+
+### **Quality Gates**:
+- [ ] **Zero Authentication Test Failures**: All session validation working
+- [ ] **Standardized Error Responses**: Single schema across all endpoints
+- [ ] **Security Audit Pass**: No sensitive data in error messages
+- [ ] **Performance Benchmarks**: Database operations within limits
+
+### **Implementation Approach**:
+Following CLAUDE.md TDD methodology:
+1. **Write Failing Tests**: Demonstrate current issues (already exist)
+2. **Implement Minimal Fixes**: Address specific test failures systematically  
+3. **Verify and Commit**: Ensure all tests pass after each fix
+4. **Use Subagents**: For complex analysis and verification
 
 ## RISK MITIGATION
 

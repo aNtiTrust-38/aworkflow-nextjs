@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from './auth/[...nextauth]';
+import { validateAuth } from '@/lib/auth-utils';
+import { handleApiError, sendErrorResponse, createStandardError, sendValidationError, ValidationError, HTTP_STATUS, ERROR_CODES } from '@/lib/error-utils';
 import prisma from '@/lib/prisma';
 
 // Helper function to generate safe path from folder name
@@ -85,10 +85,10 @@ async function checkCircularReference(folderId: string, targetParentId: string):
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Check authentication
-    const session = await getServerSession(req, res, authOptions);
-    if (!session?.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    // Check authentication using standardized auth utilities
+    const session = await validateAuth(req, res);
+    if (!session) {
+      return; // validateAuth already sent the response
     }
 
     const userId = session.user.id;
@@ -125,8 +125,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           return res.status(200).json({ folders: foldersWithCount });
         } catch (error) {
-          console.error('Failed to fetch folders:', error);
-          return res.status(500).json({ error: 'Failed to fetch folders' });
+          return handleApiError(req, res, error, userId);
         }
 
       case 'POST':
@@ -136,7 +135,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Validate input
           const nameError = validateFolderName(name);
           if (nameError) {
-            return res.status(400).json({ error: nameError });
+            const validationErrors: ValidationError[] = [{
+              field: 'name',
+              message: nameError,
+              value: name
+            }];
+            return sendValidationError(req, res, validationErrors, userId);
           }
 
           // Check if parent folder exists (if parentId provided)
@@ -147,7 +151,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             });
 
             if (!parentFolder) {
-              return res.status(404).json({ error: 'Parent folder not found' });
+              const errorResponse = createStandardError(req, 'Parent folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, undefined, userId);
+              return sendErrorResponse(res, HTTP_STATUS.NOT_FOUND, errorResponse);
             }
           }
 
@@ -182,10 +187,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           // Handle unique constraint violation
           if (error.code === 'P2002' && error.meta?.target?.includes('name')) {
-            return res.status(409).json({ error: 'Folder with this name already exists' });
+            const errorResponse = createStandardError(req, 'Folder with this name already exists', ERROR_CODES.CONFLICT, HTTP_STATUS.CONFLICT, undefined, userId);
+            return sendErrorResponse(res, HTTP_STATUS.CONFLICT, errorResponse);
           }
           
-          return res.status(500).json({ error: 'Failed to create folder' });
+          return handleApiError(req, res, error, userId);
         }
 
       case 'PUT':
@@ -194,7 +200,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const { name, parentId } = req.body;
 
           if (!id) {
-            return res.status(400).json({ error: 'Folder ID is required' });
+            const validationErrors: ValidationError[] = [{
+              field: 'id',
+              message: 'Folder ID is required',
+              value: id
+            }];
+            return sendValidationError(req, res, validationErrors, userId);
           }
 
           // Check if folder exists and user owns it
@@ -204,18 +215,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
 
           if (!existingFolder) {
-            return res.status(404).json({ error: 'Folder not found' });
+            const errorResponse = createStandardError(req, 'Folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, undefined, userId);
+            return sendErrorResponse(res, HTTP_STATUS.NOT_FOUND, errorResponse);
           }
 
           if (existingFolder.userId !== userId) {
-            return res.status(403).json({ error: 'Access denied' });
+            const errorResponse = createStandardError(req, 'Access denied', ERROR_CODES.FORBIDDEN, HTTP_STATUS.FORBIDDEN, undefined, userId);
+            return sendErrorResponse(res, HTTP_STATUS.FORBIDDEN, errorResponse);
           }
 
           // Validate name if provided
           if (name) {
             const nameError = validateFolderName(name);
             if (nameError) {
-              return res.status(400).json({ error: nameError });
+              const validationErrors: ValidationError[] = [{
+                field: 'name',
+                message: nameError,
+                value: name
+              }];
+              return sendValidationError(req, res, validationErrors, userId);
             }
           }
 
@@ -223,13 +241,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (parentId && parentId !== id) {
             const isCircular = await checkCircularReference(id as string, parentId);
             if (isCircular) {
-              return res.status(400).json({ error: 'Cannot create circular folder structure' });
+              const validationErrors: ValidationError[] = [{
+                field: 'parentId',
+                message: 'Cannot create circular folder structure',
+                value: parentId
+              }];
+              return sendValidationError(req, res, validationErrors, userId);
             }
           }
 
           // Prevent moving folder to itself
           if (parentId === id) {
-            return res.status(400).json({ error: 'Cannot move folder to itself' });
+            const validationErrors: ValidationError[] = [{
+              field: 'parentId',
+              message: 'Cannot move folder to itself',
+              value: parentId
+            }];
+            return sendValidationError(req, res, validationErrors, userId);
           }
 
           // Build update data
@@ -272,13 +300,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             fileCount: calculateFileCount(folder),
           });
         } catch (error: any) {
-          console.error('Failed to update folder:', error);
-          
           if (error.message === 'Parent folder not found') {
-            return res.status(404).json({ error: 'Parent folder not found' });
+            const errorResponse = createStandardError(req, 'Parent folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, undefined, userId);
+            return sendErrorResponse(res, HTTP_STATUS.NOT_FOUND, errorResponse);
           }
           
-          return res.status(500).json({ error: 'Failed to update folder' });
+          return handleApiError(req, res, error, userId);
         }
 
       case 'DELETE':
@@ -287,7 +314,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const { force } = req.query;
 
           if (!id) {
-            return res.status(400).json({ error: 'Folder ID is required' });
+            const validationErrors: ValidationError[] = [{
+              field: 'id',
+              message: 'Folder ID is required',
+              value: id
+            }];
+            return sendValidationError(req, res, validationErrors, userId);
           }
 
           // Check if folder exists and user owns it
@@ -300,26 +332,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
 
           if (!folder) {
-            return res.status(404).json({ error: 'Folder not found' });
+            const errorResponse = createStandardError(req, 'Folder not found', ERROR_CODES.NOT_FOUND, HTTP_STATUS.NOT_FOUND, undefined, userId);
+            return sendErrorResponse(res, HTTP_STATUS.NOT_FOUND, errorResponse);
           }
 
           if (folder.userId !== userId) {
-            return res.status(403).json({ error: 'Access denied' });
+            const errorResponse = createStandardError(req, 'Access denied', ERROR_CODES.FORBIDDEN, HTTP_STATUS.FORBIDDEN, undefined, userId);
+            return sendErrorResponse(res, HTTP_STATUS.FORBIDDEN, errorResponse);
           }
 
           // Check if folder has files or subfolders
           if (folder.files.length > 0 && force !== 'true') {
-            return res.status(400).json({
-              error: 'Cannot delete folder with files. Use force=true to delete with files.',
-              fileCount: folder.files.length,
-            });
+            const validationErrors: ValidationError[] = [{
+              field: 'force',
+              message: 'Cannot delete folder with files. Use force=true to delete with files.',
+              value: { fileCount: folder.files.length }
+            }];
+            return sendValidationError(req, res, validationErrors, userId);
           }
 
           if (folder.children.length > 0 && force !== 'true') {
-            return res.status(400).json({
-              error: 'Cannot delete folder with subfolders. Use force=true to delete with subfolders.',
-              subfolderCount: folder.children.length,
-            });
+            const validationErrors: ValidationError[] = [{
+              field: 'force',
+              message: 'Cannot delete folder with subfolders. Use force=true to delete with subfolders.',
+              value: { subfolderCount: folder.children.length }
+            }];
+            return sendValidationError(req, res, validationErrors, userId);
           }
 
           // Delete folder (cascade will handle files and subfolders)
@@ -329,15 +367,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           return res.status(200).json({ success: true });
         } catch (error) {
-          console.error('Failed to delete folder:', error);
-          return res.status(500).json({ error: 'Failed to delete folder' });
+          return handleApiError(req, res, error, userId);
         }
 
       default:
-        return res.status(405).json({ error: 'Method not allowed' });
+        const errorResponse = createStandardError(req, 'Method not allowed', 'METHOD_NOT_ALLOWED', HTTP_STATUS.NOT_FOUND, undefined, userId);
+        return sendErrorResponse(res, 405, errorResponse);
     }
   } catch (error) {
-    console.error('API error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    // userId might not be available here if authentication failed
+    return handleApiError(req, res, error);
   }
 }

@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../auth/[...nextauth]';
+import { validateAuth } from '@/lib/auth-utils';
 import prisma from '@/lib/prisma';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
@@ -145,10 +144,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Check authentication
-    const session = await getServerSession(req, res, authOptions);
-    if (!session?.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    // Check authentication using standardized auth utilities
+    const session = await validateAuth(req, res);
+    if (!session) {
+      return; // validateAuth already sent the response
     }
 
     const userId = session.user.id;

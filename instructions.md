@@ -210,28 +210,52 @@ interface APIError {
 
 ## **📋 PHASE 2 DETAILED TECHNICAL IMPLEMENTATION PLAN**
 
-Based on comprehensive subagent analysis of API endpoint reliability and authentication patterns:
+Based on comprehensive subagent analysis completed July 15, 2025:
 
-**Current Status**: 38/50 tests passing (76% → Target: 100%)
-**Key Blockers**: 2 endpoints with authentication mocking failures, 12 failing tests due to module mocking issues
+**Current Status**: 31/50 tests passing (62% → Target: 100%)
+**Critical Blockers Identified**: 5 specific infrastructure issues preventing Phase 2 implementation
+**Implementation Strategy**: Fix infrastructure blockers first, then systematic TDD implementation
 
 ### **PHASE 2A: AUTHENTICATION AND SESSION MANAGEMENT (Days 6-7)**
 
-#### **Day 6: Authentication Test Infrastructure Fixes**
+#### **CRITICAL INFRASTRUCTURE FIXES (Immediate Priority)**
 
-**🔧 Task 1: Fix Folders API Authentication Tests**
-- **File**: `__tests__/api/folders.test.ts`
-- **Issue**: ReferenceError: getSession is not defined (line 16)
-- **Solution**: Replace client-side `getSession` with server-side `getServerSession`
-- **Target**: 4/4 folders tests passing (currently 0/4)
+**🚨 BLOCKER 1: File Upload Authentication Module Error**
+- **File**: `__tests__/api/files-upload.test.ts:3`
+- **Issue**: `getSession` imported from `next-auth/react` instead of `getServerSession` from `next-auth/next`
+- **Impact**: All 23 file upload tests failing
+- **Fix**: Update import statement and mock setup
+- **Estimated Time**: 30 minutes
 
-**🔧 Task 2: Fix File Upload Authentication Tests**  
-- **File**: `__tests__/api/files-upload.test.ts`
-- **Issue**: Multiple mocking issues blocking 23 tests
-- **Solution**: Fix authentication import + complete fs module mocking
-- **Target**: 23/23 file upload tests passing (currently 0/23)
+**🚨 BLOCKER 2: File System Mocking Incomplete**
+- **File**: `__tests__/api/files-upload.test.ts:24-30`
+- **Issue**: Missing `default` export in fs/promises mock causing "No default export defined" error
+- **Impact**: File upload tests crash before execution
+- **Fix**: Complete fs/promises module mocking with proper export structure
+- **Estimated Time**: 30 minutes
 
-**Day 6 Success Criteria**: 65/50 tests passing (≥100% target achieved)
+**🚨 BLOCKER 3: Error Utils Header Handling**
+- **File**: `lib/error-utils.ts:221`
+- **Issue**: `req.headers` undefined in test mocks causing property access errors
+- **Impact**: All API tests throwing "Cannot read properties of undefined"
+- **Fix**: Add null checks for req.headers in error utility functions
+- **Estimated Time**: 15 minutes
+
+**🚨 BLOCKER 4: Prisma Mock Import Conflicts**
+- **Files**: Multiple test files with inconsistent Prisma mocking
+- **Issue**: Some tests import `@/lib/prisma`, others mock `@prisma/client`
+- **Impact**: "Cannot read properties of undefined (reading 'findMany')" errors
+- **Fix**: Standardize Prisma mocking approach across all tests
+- **Estimated Time**: 45 minutes
+
+**🚨 BLOCKER 5: Test Expectation Mismatches**
+- **Files**: All folders API tests (`__tests__/api/folders.test.ts`)
+- **Issue**: Tests expect simple error objects but API returns standardized responses with `requestId`, `timestamp`, `code`
+- **Impact**: 31/31 folders API tests failing due to assertion mismatches
+- **Fix**: Update test expectations to match new standardized error response format
+- **Estimated Time**: 60 minutes
+
+**CRITICAL FIXES SUCCESS CRITERIA**: Infrastructure blockers resolved, tests can execute without crashes
 
 #### **Day 7: Authentication Pattern Standardization**
 

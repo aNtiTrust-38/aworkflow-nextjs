@@ -1,18 +1,32 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth/next';
 import handler from '../../pages/api/files/upload';
-import { PrismaClient } from '@prisma/client';
 import formidable from 'formidable';
+import prisma from '@/lib/prisma';
 
 // Mock next-auth
-vi.mock('next-auth/react', () => ({
-  getSession: vi.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }));
 
-// Mock Prisma client
-vi.mock('@prisma/client', () => ({
-  PrismaClient: vi.fn(),
+// Mock Prisma client from lib/prisma
+vi.mock('@/lib/prisma', () => ({
+  default: {
+    file: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    folder: {
+      findUnique: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(),
+    },
+  },
 }));
 
 // Mock formidable
@@ -20,13 +34,24 @@ vi.mock('formidable', () => ({
   default: vi.fn(),
 }));
 
-// Mock fs promises
-vi.mock('fs/promises', () => ({
-  mkdir: vi.fn(),
-  copyFile: vi.fn(),
-  unlink: vi.fn(),
-  access: vi.fn(),
-  stat: vi.fn(),
+// Mock fs module
+vi.mock('fs', () => ({
+  default: {
+    promises: {
+      mkdir: vi.fn(),
+      copyFile: vi.fn(),
+      unlink: vi.fn(),
+      access: vi.fn(),
+      stat: vi.fn(),
+    }
+  },
+  promises: {
+    mkdir: vi.fn(),
+    copyFile: vi.fn(),
+    unlink: vi.fn(),
+    access: vi.fn(),
+    stat: vi.fn(),
+  }
 }));
 
 // Mock file-type
@@ -36,30 +61,19 @@ vi.mock('file-type', () => ({
 
 // Mock path
 vi.mock('path', () => ({
+  default: {
+    join: vi.fn((...args) => args.join('/')),
+    extname: vi.fn((path) => path.split('.').pop()),
+    basename: vi.fn((path) => path.split('/').pop()),
+  },
   join: vi.fn((...args) => args.join('/')),
   extname: vi.fn((path) => path.split('.').pop()),
   basename: vi.fn((path) => path.split('/').pop()),
 }));
 
-const mockGetSession = vi.mocked(getSession);
+const mockGetServerSession = vi.mocked(getServerSession);
 const mockFormidable = vi.mocked(formidable);
-const mockPrisma = {
-  file: {
-    create: vi.fn(),
-    findMany: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-  },
-  folder: {
-    findUnique: vi.fn(),
-  },
-  user: {
-    findUnique: vi.fn(),
-  },
-};
-
-// Mock PrismaClient constructor
-vi.mocked(PrismaClient).mockImplementation(() => mockPrisma as any);
+const mockPrisma = vi.mocked(prisma);
 
 // Mock data
 const mockUser = {
@@ -107,7 +121,7 @@ describe('/api/files/upload', () => {
     vi.clearAllMocks();
     
     // Default authenticated session
-    mockGetSession.mockResolvedValue({
+    mockGetServerSession.mockResolvedValue({
       user: mockUser,
       expires: '2024-12-31',
     });
@@ -500,7 +514,7 @@ describe('/api/files/upload', () => {
     });
 
     it('should return 401 when user not authenticated', async () => {
-      mockGetSession.mockResolvedValue(null);
+      mockGetServerSession.mockResolvedValue(null);
 
       const { req, res } = createMockReqRes('POST');
       await handler(req, res);
@@ -527,7 +541,7 @@ describe('/api/files/upload', () => {
 
     it('should handle storage quota exceeded', async () => {
       // Mock user with storage quota
-      mockGetSession.mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({
         user: { ...mockUser, storageQuota: 1024 * 1024 }, // 1MB quota
         expires: '2024-12-31',
       });

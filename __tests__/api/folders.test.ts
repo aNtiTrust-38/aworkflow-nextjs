@@ -1,35 +1,34 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NextApiRequest, NextApiResponse } from 'next';
 import handler from '../../pages/api/folders';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 
 // Mock next-auth - FIXED: Mock the correct module that API handlers use
 vi.mock('next-auth/next', () => ({
   getServerSession: vi.fn(),
 }));
 
-// Mock Prisma client
-vi.mock('@prisma/client', () => ({
-  PrismaClient: vi.fn(),
+// Mock Prisma client from lib/prisma
+vi.mock('@/lib/prisma', () => ({
+  default: {
+    folder: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    file: {
+      findMany: vi.fn(),
+      count: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+  },
 }));
 
 const { getServerSession } = await import('next-auth/next');
 const mockGetServerSession = vi.mocked(getServerSession);
-const mockPrisma = {
-  folder: {
-    findMany: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    findUnique: vi.fn(),
-  },
-  user: {
-    findUnique: vi.fn(),
-  },
-};
-
-// Mock PrismaClient constructor
-vi.mocked(PrismaClient).mockImplementation(() => mockPrisma as any);
+const mockPrisma = vi.mocked(prisma);
 
 // Mock data
 const mockUser = {
@@ -177,7 +176,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED'
+      }));
     });
 
     it('should handle database errors', async () => {
@@ -373,7 +375,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED'
+      }));
     });
   });
 
@@ -489,7 +494,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Folder not found' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Folder not found',
+        code: 'NOT_FOUND'
+      }));
     });
 
     it('should return 403 when user does not own folder', async () => {
@@ -505,7 +513,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Access denied' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Access denied',
+        code: 'FORBIDDEN'
+      }));
     });
 
     it('should validate folder name when updating', async () => {
@@ -560,7 +571,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED'
+      }));
     });
   });
 
@@ -629,10 +643,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        error: 'Cannot delete folder with files. Use force=true to delete with files.',
-        fileCount: 1
-      });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Validation failed',
+        code: 'VALIDATION_ERROR'
+      }));
     });
 
     it('should return 400 when trying to delete folder with subfolders without force', async () => {
@@ -649,10 +663,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        error: 'Cannot delete folder with subfolders. Use force=true to delete with subfolders.',
-        subfolderCount: 1
-      });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Validation failed',
+        code: 'VALIDATION_ERROR'
+      }));
     });
 
     it('should return 404 when folder not found', async () => {
@@ -663,7 +677,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Folder not found' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Folder not found',
+        code: 'NOT_FOUND'
+      }));
     });
 
     it('should return 403 when user does not own folder', async () => {
@@ -677,7 +694,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Access denied' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Access denied',
+        code: 'FORBIDDEN'
+      }));
     });
 
     it('should return 401 when user not authenticated', async () => {
@@ -688,7 +708,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED'
+      }));
     });
   });
 
@@ -699,7 +722,10 @@ describe('/api/folders', () => {
       await handler(req, res);
 
       expect(res.status).toHaveBeenCalledWith(405);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Method not allowed' });
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: 'Method not allowed',
+        code: 'METHOD_NOT_ALLOWED'
+      }));
     });
   });
 

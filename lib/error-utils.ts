@@ -218,8 +218,8 @@ export function logStructuredError(
     requestId: errorResponse.requestId,
     error: error instanceof Error ? error.message : String(error),
     statusCode: errorResponse.code,
-    userAgent: req.headers['user-agent'],
-    ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress
+    userAgent: req.headers?.['user-agent'] || 'unknown',
+    ip: req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown'
   };
 
   console.error('API Error', structuredLog);

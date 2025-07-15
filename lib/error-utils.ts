@@ -57,12 +57,31 @@ export function sanitizeErrorMessage(error: unknown): string {
       /ENOENT/i,
       /EACCES/i,
       /permission denied/i,
-      /no such file/i
+      /no such file/i,
+      /file not found/i,
+      /\/var\/secure/i,
+      /\/etc\/passwd/i,
+      /\/uploads\/user/i
     ];
 
     for (const pattern of fsPatterns) {
       if (pattern.test(error.message)) {
-        return 'File operation failed';
+        return 'Internal server error';
+      }
+    }
+
+    // Security sensitive patterns that should be sanitized
+    const securityPatterns = [
+      /API_KEY/i,
+      /sk-[a-zA-Z0-9]/i,
+      /postgres:\/\//i,
+      /password/i,
+      /secret/i
+    ];
+
+    for (const pattern of securityPatterns) {
+      if (pattern.test(error.message)) {
+        return 'Internal server error';
       }
     }
 

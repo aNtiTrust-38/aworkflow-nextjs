@@ -19,9 +19,73 @@ vi.mock('next-auth/next', () => ({
   }),
 }));
 
+// Mock authOptions
+vi.mock('../pages/api/auth/[...nextauth]', () => ({
+  authOptions: {}
+}));
+
+// Mock fs for file operations
+vi.mock('fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs')>();
+  return {
+    ...actual,
+    default: actual,
+    promises: {
+      mkdir: vi.fn(),
+      writeFile: vi.fn(),
+      readFile: vi.fn(),
+      unlink: vi.fn(),
+      access: vi.fn(),
+      stat: vi.fn(),
+      copyFile: vi.fn(),
+    }
+  };
+});
+
+// Create a mutable prisma mock that can be overridden per test
+const mockPrismaInstance = {
+  folder: {
+    findUnique: vi.fn(),
+    findMany: vi.fn().mockResolvedValue([]),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+  file: {
+    findMany: vi.fn(),
+    create: vi.fn(),
+    createMany: vi.fn(),
+  },
+  user: {
+    findUnique: vi.fn(),
+  },
+  $transaction: vi.fn(),
+  $queryRaw: vi.fn(),
+  $disconnect: vi.fn(),
+};
+
+// Mock @/lib/prisma with the mutable instance
+vi.mock('@/lib/prisma', () => ({
+  default: mockPrismaInstance
+}));
+
 describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Reset mockPrismaInstance to default state
+    mockPrismaInstance.folder.findUnique = vi.fn();
+    mockPrismaInstance.folder.findMany = vi.fn().mockResolvedValue([]);
+    mockPrismaInstance.folder.create = vi.fn();
+    mockPrismaInstance.folder.update = vi.fn();
+    mockPrismaInstance.folder.delete = vi.fn();
+    mockPrismaInstance.file.findMany = vi.fn();
+    mockPrismaInstance.file.create = vi.fn();
+    mockPrismaInstance.file.createMany = vi.fn();
+    mockPrismaInstance.user.findUnique = vi.fn();
+    mockPrismaInstance.$transaction = vi.fn();
+    mockPrismaInstance.$queryRaw = vi.fn();
+    mockPrismaInstance.$disconnect = vi.fn();
   });
 
   describe('Database Connection Health Tests', () => {
@@ -125,23 +189,20 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
         }
       });
 
-      // Mock transaction-capable Prisma client
-      const mockTransaction = vi.fn();
-      const mockPrisma = {
-        $transaction: mockTransaction.mockImplementation((callback) => {
-          const tx = {
-            folder: {
-              create: vi.fn().mockResolvedValue({ id: 'folder123', name: 'Research Project' })
-            },
-            file: {
-              createMany: vi.fn().mockResolvedValue({ count: 2 })
-            }
-          };
-          return callback(tx);
-        })
-      };
+      // Setup transaction mock
+      const mockTransaction = vi.fn().mockImplementation((callback) => {
+        const tx = {
+          folder: {
+            create: vi.fn().mockResolvedValue({ id: 'folder123', name: 'Research Project' })
+          },
+          file: {
+            createMany: vi.fn().mockResolvedValue({ count: 2 })
+          }
+        };
+        return callback(tx);
+      });
       
-      vi.doMock('@/lib/prisma', () => ({ default: mockPrisma }));
+      mockPrismaInstance.$transaction = mockTransaction;
 
       const foldersHandler = (await import('../../pages/api/folders')).default;
       await foldersHandler(req, res);
@@ -244,24 +305,19 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
         query: { includeHierarchy: 'true', maxDepth: '10' }
       });
 
-      const mockPrisma = {
-        $queryRaw: vi.fn(),
-        folder: {
-          findMany: vi.fn().mockResolvedValue([
-            { id: 'root', name: 'Root', parentId: null, children: [] }
-          ])
-        }
-      };
-      
-      vi.doMock('@/lib/prisma', () => ({ default: mockPrisma }));
+      // Setup hierarchy query mock
+      mockPrismaInstance.$queryRaw = vi.fn().mockResolvedValue([
+        { id: 'root', name: 'Root', parentId: null, depth: 0 }
+      ]);
 
       const foldersHandler = (await import('../../pages/api/folders')).default;
       await foldersHandler(req, res);
 
       // Should use efficient query pattern (WITH RECURSIVE or similar)
-      expect(mockPrisma.$queryRaw).toHaveBeenCalledWith(
-        expect.stringContaining('WITH RECURSIVE')
-      );
+      expect(mockPrismaInstance.$queryRaw).toHaveBeenCalled();
+      const callArgs = mockPrismaInstance.$queryRaw.mock.calls[0];
+      const queryString = callArgs[0].join(' ');
+      expect(queryString).toContain('WITH RECURSIVE');
       
       expect(res._getStatusCode()).toBe(200);
       
@@ -275,8 +331,6 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
     it('should implement query result caching (TDD RED)', async () => {
       // Expected behavior: Frequently accessed data should be cached
       
-      const cacheKey = 'folders:user123';
-      
       // First request - should hit database
       const { req: req1, res: res1 } = createMocks<NextApiRequest, NextApiResponse>({
         method: 'GET'
@@ -286,6 +340,10 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
       await foldersHandler(req1, res1);
 
       expect(res1.getHeaders()['x-cache-hit']).toBe('false');
+      expect(res1.getHeaders()['x-cache-key']).toEqual(expect.any(String));
+      
+      // Get the cache key from first request
+      const cacheKey = res1.getHeaders()['x-cache-key'];
       
       // Second identical request - should hit cache
       const { req: req2, res: res2 } = createMocks<NextApiRequest, NextApiResponse>({

@@ -284,22 +284,26 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
       const requests = Array.from({ length: 5 }, (_, i) => 
         createMocks<NextApiRequest, NextApiResponse>({
           method: 'POST',
-          body: { name: `Concurrent Folder ${i}`, parentId: 'same-parent' }
+          body: { 
+            name: `Concurrent Folder ${i}`, 
+            parentId: 'same-parent',
+            files: [{ name: `file${i}.txt`, size: 1024 }] // Add files to trigger transactions
+          }
         })
       );
 
-      const mockPrisma = {
-        $transaction: vi.fn().mockImplementation((callback) => {
-          const tx = {
-            folder: {
-              create: vi.fn().mockResolvedValue({ id: `folder-${Date.now()}` })
-            }
-          };
-          return callback(tx);
-        })
-      };
-      
-      vi.doMock('@/lib/prisma', () => ({ default: mockPrisma }));
+      // Set up transaction mock using global mock instance
+      mockPrismaInstance.$transaction = vi.fn().mockImplementation((callback) => {
+        const tx = {
+          folder: {
+            create: vi.fn().mockResolvedValue({ id: `folder-${Date.now()}` })
+          },
+          file: {
+            createMany: vi.fn().mockResolvedValue({ count: 1 })
+          }
+        };
+        return callback(tx);
+      });
 
       const foldersHandler = (await import('../../pages/api/folders')).default;
       
@@ -312,7 +316,7 @@ describe('Phase 2C: Database Connection Optimization (TDD RED Phase)', () => {
       expect(results.every(r => r.status === 'fulfilled')).toBe(true);
       
       // Each transaction should have been called
-      expect(mockPrisma.$transaction).toHaveBeenCalledTimes(5);
+      expect(mockPrismaInstance.$transaction).toHaveBeenCalledTimes(5);
     });
   });
 

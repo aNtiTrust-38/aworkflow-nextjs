@@ -1,41 +1,94 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { createErrorResponse, sanitizeErrorMessage } from '../../lib/error-utils';
+import { 
+  validateRequired, 
+  validateStringLength,
+  validateArray,
+  ValidationErrorCollector,
+  createValidationErrorResponse 
+} from '../../lib/validation-utils';
 
 interface ResearchRequest {
-  prompt: string;
+  prompt?: string;
   goals?: string[];
+  query?: string;
+  topics?: string[];
+  researchQuestions?: string[];
 }
-
-// Commented out unused interface - kept for future implementation
-// interface Source {
-//   title: string;
-//   url: string;
-//   type: 'academic' | 'industry' | 'professional';
-//   authors?: string[];
-//   year?: number;
-//   summary?: string;
-// }
-
-// interface Rating {
-//   sourceTitle: string;
-//   credibility: number; // 1-5
-//   notes?: string;
-// }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return createErrorResponse(
+      res,
+      405,
+      'METHOD_NOT_ALLOWED',
+      'Method Not Allowed',
+      req,
+      { allowedMethods: ['POST'] }
+    );
   }
-  
-  const { prompt, goals } = req.body as ResearchRequest;
-  
-  // Acknowledge unused variables to avoid ESLint errors
-  void prompt;
-  void goals;
-  
-  // For backward compatibility, also check for old request format
-  const { topics, researchQuestions } = req.body || {};
-  if (!Array.isArray(topics) || !Array.isArray(researchQuestions)) {
-    return res.status(400).json({ error: 'topics and researchQuestions are required arrays.' });
+
+  // Input validation with standardized error handling
+  const collector = new ValidationErrorCollector();
+  const { prompt, goals, query, topics, researchQuestions } = req.body as ResearchRequest || {};
+
+  // Validate query/prompt (main research parameter)
+  if (query !== undefined) {
+    const queryValidation = validateRequired(query, 'query');
+    if (!queryValidation.valid && queryValidation.error) {
+      collector.addError(queryValidation.error);
+    } else {
+      const lengthValidation = validateStringLength(query, 'query', { min: 10, max: 2000 });
+      if (!lengthValidation.valid && lengthValidation.error) {
+        collector.addError(lengthValidation.error);
+      }
+    }
+  } else if (prompt !== undefined) {
+    const promptValidation = validateRequired(prompt, 'prompt');
+    if (!promptValidation.valid && promptValidation.error) {
+      collector.addError(promptValidation.error);
+    } else {
+      const lengthValidation = validateStringLength(prompt, 'prompt', { min: 10, max: 2000 });
+      if (!lengthValidation.valid && lengthValidation.error) {
+        collector.addError(lengthValidation.error);
+      }
+    }
+  } else {
+    collector.addError({
+      field: 'query',
+      message: 'query or prompt is required',
+      code: 'MISSING_REQUIRED_FIELD',
+      suggestion: 'Please provide a research query or prompt'
+    });
+  }
+
+  // Validate topics array if provided (backward compatibility)
+  if (topics !== undefined) {
+    const topicsValidation = validateArray(topics, 'topics', { minLength: 1 });
+    if (!topicsValidation.valid && topicsValidation.error) {
+      collector.addError(topicsValidation.error);
+    }
+  }
+
+  // Validate research questions array if provided (backward compatibility)
+  if (researchQuestions !== undefined) {
+    const questionsValidation = validateArray(researchQuestions, 'researchQuestions', { minLength: 1 });
+    if (!questionsValidation.valid && questionsValidation.error) {
+      collector.addError(questionsValidation.error);
+    }
+  }
+
+  // Validate goals array if provided
+  if (goals !== undefined) {
+    const goalsValidation = validateArray(goals, 'goals', { minLength: 1, maxLength: 10 });
+    if (!goalsValidation.valid && goalsValidation.error) {
+      collector.addError(goalsValidation.error);
+    }
+  }
+
+  // Return validation errors if any
+  if (collector.hasErrors()) {
+    return createValidationErrorResponse(res, collector.getErrors(), req);
   }
   // GREEN PHASE: Return stub data for TDD
   return res.status(200).json({

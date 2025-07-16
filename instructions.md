@@ -253,5 +253,165 @@ npm run test                                   # Full suite verification
 **Next Milestone**: Reliable TDD development environment for Phase 2 implementation
 
 ---
-*Last Updated: July 15, 2025*  
-*Next Update Required: After infrastructure emergency fixes completion*
+
+## PHASE 2A: AUTHENTICATION STANDARDIZATION PLAN (**DEFERRED**)
+
+### **Strategic Analysis and Decision**
+
+**DISCOVERY**: Rule 2 subagent investigation revealed authentication gaps, but further analysis showed the app is designed for **anonymous access in development mode**.
+
+**DECISION**: **DEFER AUTHENTICATION TO FUTURE DEVELOPMENT**
+- App currently works without authentication (anonymous access)
+- Implementation would break existing functionality  
+- No real user management system exists yet
+- Focus should be on core features before authentication layer
+
+### **Authentication Implementation Plan (For Future Reference)**
+
+When authentication becomes a priority:
+1. **User Management**: Registration, login, profile management
+2. **Session Management**: Frontend authentication guards  
+3. **API Protection**: Standardized authentication across endpoints
+4. **User Data Isolation**: User-specific data and settings
+
+### **Authentication Tests Created**
+- ✅ Comprehensive failing tests created (`__tests__/phase2/authentication-standardization.test.ts`)
+- ✅ Test coverage for 19 API endpoints
+- ✅ Validation of authentication behavior and error handling
+- ✅ **Tests preserved for future implementation**
+
+---
+
+## PHASE 2B: ERROR HANDLING STANDARDIZATION PLAN (RULE 3 ADDITION)
+
+### **Strategic Priority: Error Handling Consistency**
+
+**ANALYSIS COMPLETE**: Comprehensive investigation revealed excellent error handling foundation but inconsistent implementation across API endpoints.
+
+### **Current State Assessment**
+**Strengths**:
+- ✅ **Excellent foundation** in `error-utils.ts` with `StandardErrorResponse` format
+- ✅ **Strong frontend components** (ErrorMessage, ErrorBoundary)
+- ✅ **Security-conscious** approach (sanitization, headers)
+- ✅ **Structured logging** with request tracing
+- ✅ **Accessibility compliance** (ARIA attributes)
+
+**Areas for Improvement**:
+- ❌ **Inconsistent error formats** across 9 API endpoints
+- ❌ **Mixed validation patterns** (some comprehensive, others basic)
+- ❌ **Legacy endpoints** using simple `{ error: string }` format
+- ❌ **No centralized validation library** usage
+
+### **Implementation Plan: 2-Day Error Standardization**
+
+#### **Priority 1: API Error Response Standardization (Day 1 - 6-7 hours)**
+
+**INCONSISTENT ENDPOINTS REQUIRING STANDARDIZATION (9 endpoints):**
+1. `/api/generate.ts` - Convert from `{ error: string }` to `StandardErrorResponse`
+2. `/api/research-assistant.ts` - Standardize research AI error handling
+3. `/api/research.ts` - Fix mixed error formats (some detailed, some simple)
+4. `/api/structure-guidance.ts` - Implement comprehensive error handling
+5. `/api/content-analysis.ts` - Add structured error responses for file analysis
+6. `/api/citations.ts` - Standardize citation management error handling
+7. `/api/zotero/import.ts` - Standardize Zotero import error handling
+8. `/api/zotero/export.ts` - Add comprehensive export error responses
+9. `/api/zotero/sync.ts` - Implement structured synchronization errors
+
+**STANDARDIZATION PATTERN:**
+```typescript
+import { createErrorResponse, handleApiError, sanitizeErrorMessage } from '@/lib/error-utils'
+
+// Replace simple error responses
+res.status(400).json({ error: 'Invalid input' })
+
+// With standardized responses  
+return createErrorResponse(
+  res,
+  400,
+  'INVALID_INPUT',
+  'Invalid input provided',
+  req,
+  { field: 'specific_field', details: 'validation details' }
+)
+```
+
+#### **Priority 2: Input Validation Standardization (Day 2 - 3-4 hours)**
+
+**VALIDATION ENHANCEMENT STRATEGY:**
+- **Create validation utilities** for common patterns (string, number, enum validation)
+- **Standardize field validation** (required fields, types, formats)
+- **Implement business logic validation** consistently
+- **Use validation error arrays** for detailed field-level feedback
+- **Add recovery suggestions** where applicable
+
+**VALIDATION PATTERNS TO STANDARDIZE:**
+- String validation (length, format, required)
+- Number validation (range, type)
+- Enum validation (allowed values)
+- API key format validation
+- File validation (type, size)
+- JSON structure validation
+
+#### **Priority 3: Frontend Error Integration (Day 2 - 3-4 hours)**
+
+**FRONTEND INTEGRATION STRATEGY:**
+- **Update API calls** to handle standardized error responses
+- **Enhance ErrorMessage component usage** for displaying structured errors
+- **Add validation error display** for forms with field-level feedback
+- **Improve loading state error handling** during async operations
+- **Verify error recovery actions** (retry, reset, redirect)
+
+### **TDD Implementation Methodology for Phase 2B**
+
+Following CLAUDE.md Rules 4-6:
+
+**Rule 4 (RED Phase):** Write failing tests for standardized error handling
+**Rule 5 (GREEN Phase):** Implement error standardization to pass tests
+**Rule 6 (Commit & Document):** Commit working solutions and update documentation
+
+### **Success Criteria for Phase 2B Completion**
+
+**Error Response Standardization Complete:**
+- ✅ All 19 API endpoints use `StandardErrorResponse` format
+- ✅ Consistent error codes across similar operations
+- ✅ Field-level validation errors with specific details
+- ✅ Proper HTTP status codes for different error types
+- ✅ Security-conscious error sanitization
+
+**Validation Standardization Complete:**
+- ✅ Consistent validation patterns across all endpoints
+- ✅ Comprehensive input validation for all user inputs
+- ✅ Business logic validation for complex operations
+- ✅ Clear validation error messages with recovery suggestions
+- ✅ Proper handling of edge cases and malformed requests
+
+**Frontend Integration Complete:**
+- ✅ All components properly handle standardized errors
+- ✅ User-friendly error display with recovery options
+- ✅ Proper loading state error handling
+- ✅ Validation errors displayed at field level
+- ✅ Error recovery actions work correctly
+
+### **Phase 2B Benefits**
+
+**User Experience Improvements:**
+- Clear, actionable error messages
+- Field-level validation feedback
+- Recovery suggestions and retry options
+- Consistent error presentation
+
+**Developer Experience Improvements:**
+- Consistent error handling patterns
+- Centralized error utilities
+- Predictable error response formats
+- Better debugging information
+
+**Security and Maintenance:**
+- Consistent sanitization and header handling
+- Structured error logging with context
+- Enhanced security through standardized responses
+- Easier maintenance through centralized utilities
+
+---
+*Last Updated: July 15, 2025 via Rule 3 Phase 2B planning*  
+*Next Update Required: After Phase 2B error handling standardization completion*

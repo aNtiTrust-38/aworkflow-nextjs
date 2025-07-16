@@ -1,6 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import fetch from 'node-fetch';
 import * as xml2js from 'xml2js';
+import { createErrorResponse, sanitizeErrorMessage } from '../../lib/error-utils';
+import { 
+  validateRequired, 
+  validateStringLength,
+  validateNumber,
+  ValidationErrorCollector,
+  createValidationErrorResponse 
+} from '../../lib/validation-utils';
 
 // Type definitions
 interface Reference {
@@ -281,20 +289,89 @@ function sortByRelevance(references: Reference[]): Reference[] {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return createErrorResponse(
+      res,
+      405,
+      'METHOD_NOT_ALLOWED',
+      'Method Not Allowed',
+      req,
+      { allowedMethods: ['POST'] }
+    );
   }
 
   // Error simulation for TDD
   if (req.headers['x-test-error'] === 'api') {
-    return res.status(500).json({ error: 'Simulated API error for test.' });
+    return createErrorResponse(
+      res,
+      500,
+      'EXTERNAL_API_ERROR',
+      'Simulated API error for test',
+      req,
+      { retryable: true }
+    );
   }
   if (req.headers['x-test-error'] === 'rate-limit') {
-    return res.status(429).json({ error: 'Simulated rate limit or timeout error for test.' });
+    return createErrorResponse(
+      res,
+      429,
+      'RATE_LIMIT_EXCEEDED',
+      'Simulated rate limit or timeout error for test',
+      req,
+      { retryable: true, retryAfter: 60 }
+    );
   }
 
-  const { query, export: exportType } = (req.body as RequestBody) || {};
-  if (!query || typeof query !== 'string' || query.trim() === '') {
-    return res.status(400).json({ error: 'Research query is required.' });
+  // Input validation with standardized error handling
+  const collector = new ValidationErrorCollector();
+  const { query, export: exportType, topic, maxResults } = (req.body as RequestBody & {
+    topic?: string;
+    maxResults?: number;
+  }) || {};
+
+  // Validate query parameter (main search parameter)
+  const queryValidation = validateRequired(query, 'query');
+  if (!queryValidation.valid && queryValidation.error) {
+    collector.addError(queryValidation.error);
+  } else if (query) {
+    const lengthValidation = validateStringLength(query, 'query', { min: 3, max: 500 });
+    if (!lengthValidation.valid && lengthValidation.error) {
+      collector.addError(lengthValidation.error);
+    }
+  }
+
+  // Validate topic parameter if provided (alternative to query)
+  if (topic !== undefined) {
+    const topicValidation = validateRequired(topic, 'topic');
+    if (!topicValidation.valid && topicValidation.error) {
+      collector.addError(topicValidation.error);
+    } else {
+      const topicLengthValidation = validateStringLength(topic, 'topic', { min: 3, max: 200 });
+      if (!topicLengthValidation.valid && topicLengthValidation.error) {
+        collector.addError(topicLengthValidation.error);
+      }
+    }
+  }
+
+  // Validate maxResults if provided
+  if (maxResults !== undefined) {
+    const maxResultsValidation = validatePositiveInteger(maxResults, 'maxResults');
+    if (!maxResultsValidation.valid && maxResultsValidation.error) {
+      collector.addError(maxResultsValidation.error);
+    } else if (maxResults > 50) {
+      collector.addError({
+        field: 'maxResults',
+        message: 'maxResults must be no more than 50',
+        code: 'FIELD_OUT_OF_RANGE',
+        maxValue: 50,
+        actualValue: maxResults,
+        suggestion: 'Please limit results to 50 or fewer'
+      });
+    }
+  }
+
+  // Return validation errors if any
+  if (collector.hasErrors()) {
+    return createValidationErrorResponse(res, collector.getErrors(), req);
   }
 
   // TDD stub/fallback logic for tests

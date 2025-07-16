@@ -1,4 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { createErrorResponse, sanitizeErrorMessage } from '../../lib/error-utils';
+import { 
+  validateRequired, 
+  validateArray,
+  validateEnum,
+  ValidationErrorCollector,
+  createValidationErrorResponse 
+} from '../../lib/validation-utils';
 
 interface Source {
   title: string;
@@ -9,16 +17,52 @@ interface Source {
 }
 
 interface CitationRequest {
-  sources: Source[];
+  sources?: Source[];
+  action?: string;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return createErrorResponse(
+      res,
+      405,
+      'METHOD_NOT_ALLOWED',
+      'Method Not Allowed',
+      req,
+      { allowedMethods: ['POST'] }
+    );
   }
-  const { sources } = (req.body || {}) as CitationRequest;
-  if (!Array.isArray(sources)) {
-    return res.status(400).json({ error: 'sources is required and must be an array.' });
+
+  // Input validation with standardized error handling
+  const collector = new ValidationErrorCollector();
+  const { sources, action } = (req.body || {}) as CitationRequest;
+
+  // Validate action if provided
+  if (action !== undefined) {
+    const actionValidation = validateEnum(action, 'action', ['list', 'add', 'update', 'delete', 'format']);
+    if (!actionValidation.valid && actionValidation.error) {
+      collector.addError(actionValidation.error);
+    }
+  }
+
+  // Validate sources array
+  if (sources === undefined || sources === null) {
+    collector.addError({
+      field: 'sources',
+      message: 'sources is required',
+      code: 'MISSING_REQUIRED_FIELD',
+      suggestion: 'Please provide a sources array'
+    });
+  } else {
+    const sourcesValidation = validateArray(sources, 'sources', { minLength: 1 });
+    if (!sourcesValidation.valid && sourcesValidation.error) {
+      collector.addError(sourcesValidation.error);
+    }
+  }
+
+  // Return validation errors if any
+  if (collector.hasErrors()) {
+    return createValidationErrorResponse(res, collector.getErrors(), req);
   }
   // GREEN PHASE: Return stub data for TDD
   return res.status(200).json({

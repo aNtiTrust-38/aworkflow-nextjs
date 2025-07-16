@@ -249,5 +249,25 @@ export const ERROR_CODES = {
   INTERNAL_ERROR: 'INTERNAL_SERVER_ERROR',
   FORBIDDEN: 'FORBIDDEN',
   CONFLICT: 'CONFLICT',
-  UNAUTHORIZED: 'UNAUTHORIZED'
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+  EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR',
+  MISSING_REQUIRED_FIELD: 'MISSING_REQUIRED_FIELD',
+  FIELD_INVALID_TYPE: 'FIELD_INVALID_TYPE',
+  FIELD_OUT_OF_RANGE: 'FIELD_OUT_OF_RANGE'
 } as const;
+
+// Convenience function that combines createStandardError and sendErrorResponse
+export function createErrorResponse(
+  res: NextApiResponse,
+  statusCode: number,
+  code: string,
+  error: string,
+  req: NextApiRequest,
+  details?: any,
+  userId?: string
+) {
+  const errorResponse = createStandardError(req, error, code, statusCode, details, userId);
+  return sendErrorResponse(res, statusCode, errorResponse);
+}

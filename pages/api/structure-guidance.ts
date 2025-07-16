@@ -1,4 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { createErrorResponse, sanitizeErrorMessage } from '../../lib/error-utils';
+import { 
+  validateRequired, 
+  validateStringLength,
+  validateOutlineType,
+  ValidationErrorCollector,
+  createValidationErrorResponse 
+} from '../../lib/validation-utils';
 
 export const config = {
   api: {
@@ -14,10 +22,11 @@ interface RubricFile {
 
 interface FormFields {
   prompt?: string | string[];
+  outlineType?: string | string[];
   [key: string]: unknown;
 }
 
-function parseForm(req: NextApiRequest): Promise<{ prompt?: string, rubric?: RubricFile }> {
+function parseForm(req: NextApiRequest): Promise<{ prompt?: string, outlineType?: string, rubric?: RubricFile }> {
   return new Promise((resolve, reject) => {
     import('formidable').then(({ IncomingForm }) => {
       const form = new IncomingForm();
@@ -28,12 +37,21 @@ function parseForm(req: NextApiRequest): Promise<{ prompt?: string, rubric?: Rub
       form.parse(req, (err: Error | null, fields: FormFields) => {
         if (err) return reject(err);
         let promptValue: string | undefined = undefined;
+        let outlineTypeValue: string | undefined = undefined;
+        
         if (typeof fields.prompt === 'string') {
           promptValue = fields.prompt;
         } else if (Array.isArray(fields.prompt)) {
           promptValue = fields.prompt[0];
         }
-        resolve({ prompt: promptValue, rubric });
+        
+        if (typeof fields.outlineType === 'string') {
+          outlineTypeValue = fields.outlineType;
+        } else if (Array.isArray(fields.outlineType)) {
+          outlineTypeValue = fields.outlineType[0];
+        }
+        
+        resolve({ prompt: promptValue, outlineType: outlineTypeValue, rubric });
       });
     }).catch(reject);
   });
@@ -41,26 +59,69 @@ function parseForm(req: NextApiRequest): Promise<{ prompt?: string, rubric?: Rub
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return createErrorResponse(
+      res,
+      405,
+      'METHOD_NOT_ALLOWED',
+      'Method Not Allowed',
+      req,
+      { allowedMethods: ['POST'] }
+    );
   }
 
+  // Input validation with standardized error handling
+  const collector = new ValidationErrorCollector();
   let prompt = '';
+  let outlineType = '';
   let rubric: RubricFile | undefined = undefined;
+
   if (req.headers['content-type']?.includes('multipart/form-data')) {
     try {
       const result = await parseForm(req);
       prompt = result.prompt || '';
+      outlineType = result.outlineType || '';
       rubric = result.rubric;
       void rubric; // Acknowledge unused variable for future implementation
     } catch (err: unknown) {
-      void err; // Acknowledge unused variable
-      return res.status(400).json({ error: 'Failed to parse form data.' });
+      return createErrorResponse(
+        res,
+        400,
+        'FORM_PARSING_ERROR',
+        'Failed to parse form data',
+        req,
+        { 
+          details: sanitizeErrorMessage(err),
+          suggestion: 'Please ensure form data is properly formatted'
+        }
+      );
     }
   } else {
     prompt = req.body.prompt || req.body;
+    outlineType = req.body.outlineType || '';
   }
-  if (!prompt) {
-    return res.status(400).json({ error: 'Prompt is required.' });
+
+  // Validate prompt
+  const promptValidation = validateRequired(prompt, 'prompt');
+  if (!promptValidation.valid && promptValidation.error) {
+    collector.addError(promptValidation.error);
+  } else if (prompt) {
+    const lengthValidation = validateStringLength(prompt, 'prompt', { min: 10, max: 2000 });
+    if (!lengthValidation.valid && lengthValidation.error) {
+      collector.addError(lengthValidation.error);
+    }
+  }
+
+  // Validate outline type if provided
+  if (outlineType && outlineType.trim() !== '') {
+    const outlineTypeValidation = validateOutlineType(outlineType);
+    if (!outlineTypeValidation.valid && outlineTypeValidation.error) {
+      collector.addError(outlineTypeValidation.error);
+    }
+  }
+
+  // Return validation errors if any
+  if (collector.hasErrors()) {
+    return createValidationErrorResponse(res, collector.getErrors(), req);
   }
 
   try {
@@ -134,11 +195,18 @@ Format your response as JSON with these keys:
     return res.status(200).json(response);
 
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Structure guidance error:', error);
-    return res.status(500).json({ 
-      error: 'Failed to generate structure guidance',
-      details: errorMessage 
-    });
+    return createErrorResponse(
+      res,
+      500,
+      'CONTENT_GENERATION_ERROR',
+      'Failed to generate structure guidance',
+      req,
+      { 
+        details: sanitizeErrorMessage(error),
+        retryable: true,
+        suggestion: 'Please try again or simplify your prompt'
+      }
+    );
   }
 } 

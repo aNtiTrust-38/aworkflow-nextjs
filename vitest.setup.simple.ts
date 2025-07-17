@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import '@testing-library/jest-dom';
 
 // Basic environment setup
 // Use Object.assign to avoid TypeScript readonly error

@@ -269,7 +269,8 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+    const formattedSize = (bytes / Math.pow(k, i)).toFixed(1);
+    return `${formattedSize} ${sizes[i]}`;
   };
 
   // Format date
@@ -389,9 +390,10 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
               No files found matching "{searchQuery}"
             </p>
           ) : (
-            <p className="text-gray-500 text-center py-8">
-              No files in this location. Upload files to get started.
-            </p>
+            <div className="text-center py-8">
+              <p className="text-gray-500">No files found</p>
+              <p className="text-gray-500">Upload files to get started</p>
+            </div>
           )
         ) : viewMode === 'list' ? (
           <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -543,11 +545,41 @@ const FileBrowser: React.FC<FileBrowserProps> = ({
           <button
             onClick={() => {
               const file = files.find(f => f.id === contextMenu.fileId);
+              if (file) onFileSelect?.(file);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+          >
+            Open
+          </button>
+          <button
+            onClick={() => {
+              const file = files.find(f => f.id === contextMenu.fileId);
               if (file) handleDownload(file);
             }}
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
           >
             Download
+          </button>
+          <button
+            onClick={() => {
+              const file = files.find(f => f.id === contextMenu.fileId);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+              // TODO: Implement rename functionality
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+          >
+            Rename
+          </button>
+          <button
+            onClick={() => {
+              const file = files.find(f => f.id === contextMenu.fileId);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+              // TODO: Implement move to folder functionality
+            }}
+            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+          >
+            Move to Folder
           </button>
           <button
             onClick={() => {

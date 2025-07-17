@@ -14,7 +14,19 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   
   // Enable external packages for better performance
-  serverExternalPackages: ['@prisma/client']
+  serverExternalPackages: ['@prisma/client'],
+  
+  // Exclude test files from build
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+  webpack: (config, { isServer }) => {
+    // Exclude test directories and files from build
+    config.module.rules.push({
+      test: /\.(test|spec)\.(ts|tsx|js|jsx)$/,
+      use: 'ignore-loader'
+    });
+    
+    return config;
+  }
 };
 
 export default nextConfig;

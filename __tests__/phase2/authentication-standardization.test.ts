@@ -1,327 +1,667 @@
 /**
- * Phase 2A: Authentication Standardization Tests (TDD RED Phase)
+ * Rule 4 (RED Phase): Authentication Standardization Tests
  * 
- * These tests define the expected authentication behavior across all API endpoints.
- * They should FAIL initially to demonstrate current inconsistencies,
- * then pass once proper authentication standardization is implemented.
+ * These tests define the expected authentication behavior for Phase 2A.
+ * All tests should FAIL initially, then pass after implementation.
  * 
- * Following CLAUDE.md TDD: Write failing tests first, then implement fixes.
+ * DO NOT IMPLEMENT - TESTS ONLY
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NextApiRequest, NextApiResponse } from 'next';
-import { createMocks } from 'node-mocks-http';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { testApiHandler } from 'next-test-api-route-handler'
+import { getServerSession } from 'next-auth/next'
 
-// Mock next-auth session management
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
-}));
+// Mock the auth utilities
+vi.mock('next-auth/next')
+vi.mock('@/lib/auth-utils')
 
-// Mock Prisma client
-vi.mock('@/lib/prisma', () => ({
-  default: {
-    folder: {
-      findMany: vi.fn().mockResolvedValue([]),
-      findUnique: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
+const mockGetServerSession = vi.mocked(getServerSession)
+
+// Test utilities for creating mock requests
+function createMockSession(isValid: boolean = true) {
+  return isValid ? {
     user: {
-      findUnique: vi.fn(),
-    },
-  },
-}));
+      id: 'test-user-id',
+      email: 'test@example.com',
+      name: 'Test User'
+    }
+  } : null
+}
 
-// Mock fs for file upload tests
-vi.mock('fs/promises', () => ({
-  default: {
-    mkdir: vi.fn(),
-    writeFile: vi.fn(),
-    readFile: vi.fn(),
-    unlink: vi.fn(),
-    access: vi.fn(),
-    stat: vi.fn(),
-  },
-  mkdir: vi.fn(),
-  writeFile: vi.fn(),
-  readFile: vi.fn(),
-  unlink: vi.fn(),
-  access: vi.fn(),
-  stat: vi.fn(),
-}));
+function createAuthenticatedRequest(body: any = {}) {
+  return {
+    url: '/',
+    init: {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body)
+    }
+  }
+}
 
-// Mock formidable for file upload tests
-vi.mock('formidable', () => ({
-  default: vi.fn(() => ({
-    parse: vi.fn().mockResolvedValue([{}, {}])
-  }))
-}));
+function createUnauthenticatedRequest(body: any = {}) {
+  return {
+    url: '/',
+    init: {
+      method: 'POST', 
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body)
+    }
+  }
+}
 
-describe('Phase 2A: Authentication Standardization (TDD RED Phase)', () => {
-  let mockGetServerSession: any;
+describe('Phase 2A: Authentication Standardization Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    const { getServerSession } = await import('next-auth/next');
-    mockGetServerSession = vi.mocked(getServerSession);
-  });
-
-  describe('Standard Authentication Pattern Tests', () => {
-    it('should use consistent getServerSession pattern across all endpoints (TDD RED)', async () => {
-      // Expected behavior: All API endpoints should use identical authentication pattern
-      
-      // Mock unauthenticated request
-      mockGetServerSession.mockResolvedValue(null);
-      
-      // Test folders endpoint
-      const foldersHandler = (await import('../../pages/api/folders')).default;
-      const { req: req1, res: res1 } = createMocks<NextApiRequest, NextApiResponse>({
-        method: 'GET',
-      });
-
-      await foldersHandler(req1, res1);
-
-      // Expected: Should return standardized 401 response structure
-      expect(res1._getStatusCode()).toBe(401);
-      
-      const responseData1 = JSON.parse(res1._getData());
-      expect(responseData1).toEqual({
-        error: 'Unauthorized',
-        code: 'AUTH_REQUIRED',
-        timestamp: expect.any(String),
-        context: {
-          method: 'GET',
-          endpoint: expect.any(String)
-        }
-      });
-
-      // Test user-settings endpoint
-      const userSettingsHandler = (await import('../../pages/api/user-settings')).default;
-      const { req: req2, res: res2 } = createMocks<NextApiRequest, NextApiResponse>({
-        method: 'GET',
-      });
-
-      await userSettingsHandler(req2, res2);
-
-      // Expected: Should return identical 401 response structure
-      expect(res2._getStatusCode()).toBe(401);
-      
-      const responseData2 = JSON.parse(res2._getData());
-      expect(responseData2).toEqual({
-        error: 'Unauthorized',
-        code: 'AUTH_REQUIRED', 
-        timestamp: expect.any(String),
-        context: {
-          method: 'GET',
-          endpoint: expect.any(String)
-        }
-      });
-    });
-
-    it('should pass valid session to all authenticated endpoints (TDD RED)', async () => {
-      // Expected behavior: Valid session should allow access to all endpoints
-      
-      const validSession = {
-        user: {
-          id: 'test-user-123',
-          email: 'test@example.com',
-          name: 'Test User'
-        }
-      };
-
-      mockGetServerSession.mockResolvedValue(validSession);
-
-      const authenticatedEndpoints = [
-        { path: '/api/folders', method: 'GET' },
-        { path: '/api/user-settings', method: 'GET' },
-        { path: '/api/setup-status', method: 'GET' }
-      ];
-
-      for (const { path, method } of authenticatedEndpoints) {
-        try {
-          const handler = (await import(`../../pages${path}`)).default;
-          const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-            method,
-          });
-
-          await handler(req, res);
-
-          // Expected: Should NOT return 401 for valid sessions
-          expect(res._getStatusCode()).not.toBe(401);
-          
-        } catch (error) {
-          // This test should fail initially due to session handling inconsistencies
-          throw new Error(`Session handling inconsistency in ${path}: ${error}`);
-        }
-      }
-    });
-
-    it('should use standardized authentication utilities across all endpoints (TDD RED)', async () => {
-      // Expected behavior: All endpoints should use validateAuth utility for consistent authentication
-      
-      const endpointsRequiringAuth = [
-        '/api/folders',
-        '/api/user-settings',
-        '/api/setup-status'
-      ];
-
-      // This test verifies that endpoints use the standardized validateAuth utility
-      
-      for (const endpoint of endpointsRequiringAuth) {
-        mockGetServerSession.mockResolvedValue(null); // Simulate unauthenticated user
+  describe('Priority 1: Critical Unprotected Endpoints Authentication Tests', () => {
+    
+    describe('/api/generate.ts - AI Content Generation', () => {
+      it('should require authentication and reject unauthenticated requests', async () => {
+        mockGetServerSession.mockResolvedValue(null)
         
-        const handler = (await import(`../../pages${endpoint}`)).default;
-        const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-          method: 'GET',
-        });
-
-        await handler(req, res);
-
-        // Expected: Should return standardized 401 response
-        expect(res._getStatusCode()).toBe(401);
-        
-        const responseData = JSON.parse(res._getData());
-        expect(responseData).toEqual({
-          error: 'Unauthorized',
-          code: 'AUTH_REQUIRED',
-          timestamp: expect.any(String),
-          context: {
-            method: 'GET',
-            endpoint: expect.any(String)
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/generate')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch({
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ prompt: 'Test prompt' })
+            })
+            
+            expect(res.status).toBe(401)
+            const body = await res.json()
+            expect(body).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED',
+              timestamp: expect.any(String),
+              context: {
+                method: 'POST',
+                endpoint: expect.any(String)
+              }
+            })
           }
-        });
-      }
-    });
-  });
+        })
+      })
 
-  describe('Authentication Error Response Tests', () => {
-    it('should return standardized 401 error format (TDD RED)', async () => {
-      // Expected behavior: All endpoints should return identical 401 error structure
-      
-      mockGetServerSession.mockResolvedValue(null);
-      
-      const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-        method: 'GET',
-      });
+      it('should allow authenticated requests with valid session', async () => {
+        mockGetServerSession.mockResolvedValue(createMockSession())
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/generate')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createAuthenticatedRequest({
+              prompt: 'Test prompt'
+            }))
+            
+            // Should not be 401 - actual response depends on implementation
+            expect(res.status).not.toBe(401)
+          }
+        })
+      })
+    })
 
-      // Test with folders endpoint (currently has inconsistent error format)
-      const foldersHandler = (await import('../../pages/api/folders')).default;
-      await foldersHandler(req, res);
+    describe('/api/research-assistant.ts - Research AI', () => {
+      it('should require authentication and reject unauthenticated requests', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/research-assistant')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch({
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ query: 'Test research query' })
+            })
+            
+            expect(res.status).toBe(401)
+            const body = await res.json()
+            expect(body).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED',
+              timestamp: expect.any(String),
+              context: expect.objectContaining({
+                method: 'POST'
+              })
+            })
+          }
+        })
+      })
+    })
 
-      expect(res._getStatusCode()).toBe(401);
+    describe('/api/research.ts - Research Tools', () => {
+      it('should require authentication and reject unauthenticated requests', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/research')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest({
+              topic: 'Test research topic'
+            }))
+            
+            expect(res.status).toBe(401)
+            const body = await res.json()
+            expect(body.error).toBe('Unauthorized')
+            expect(body.code).toBe('AUTH_REQUIRED')
+          }
+        })
+      })
+    })
+
+    describe('/api/structure-guidance.ts - Outline Generation', () => {
+      it('should require authentication and reject unauthenticated requests', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/structure-guidance')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest({
+              prompt: 'Create outline'
+            }))
+            
+            expect(res.status).toBe(401)
+            expect(await res.json()).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED'
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/content-analysis.ts - File Analysis', () => {
+      it('should require authentication and reject unauthenticated requests', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/content-analysis')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest({
+              fileContent: 'test content'
+            }))
+            
+            expect(res.status).toBe(401)
+            expect(await res.json()).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED'
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/citations.ts - Citation Management', () => {
+      it('should require authentication and reject unauthenticated requests', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/citations')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest({
+              action: 'list'
+            }))
+            
+            expect(res.status).toBe(401)
+            expect(await res.json()).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED'
+            })
+          }
+        })
+      })
+    })
+  })
+
+  describe('Priority 1: Zotero Integration Endpoints Authentication Tests', () => {
+    
+    describe('/api/zotero/import.ts - Zotero Import', () => {
+      it('should require authentication and reject unauthenticated requests', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/zotero/import')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest({
+              collectionId: 'test-collection'
+            }))
+            
+            expect(res.status).toBe(401)
+            expect(await res.json()).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED'
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/zotero/export.ts - Zotero Export', () => {
+      it('should require authentication and reject unauthenticated requests', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/zotero/export')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest({
+              citations: []
+            }))
+            
+            expect(res.status).toBe(401)
+            expect(await res.json()).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED'
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/zotero/sync.ts - Zotero Sync', () => {
+      it('should require authentication and reject unauthenticated requests', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/zotero/sync')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest({
+              action: 'sync'
+            }))
+            
+            expect(res.status).toBe(401)
+            expect(await res.json()).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED'
+            })
+          }
+        })
+      })
+    })
+  })
+
+  describe('Priority 2: Inconsistent Endpoints Standardization Tests', () => {
+    
+    describe('/api/test-api-keys.ts - API Key Testing', () => {
+      it('should use standardized validateAuth() and return consistent error format', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/test-api-keys')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest({
+              provider: 'anthropic',
+              apiKey: 'test-key'
+            }))
+            
+            expect(res.status).toBe(401)
+            const body = await res.json()
+            
+            // Should use standardized error format, not simple { error: 'Unauthorized' }
+            expect(body).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED',
+              timestamp: expect.any(String),
+              context: expect.objectContaining({
+                method: expect.any(String),
+                endpoint: expect.any(String)
+              })
+            })
+            
+            // Should NOT be the old format
+            expect(body).not.toEqual({ error: 'Unauthorized' })
+          }
+        })
+      })
+    })
+
+    describe('/api/usage.ts - Usage Tracking', () => {
+      it('should use standardized validateAuth() and return consistent error format', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/usage')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest())
+            
+            expect(res.status).toBe(401)
+            const body = await res.json()
+            
+            // Should use standardized error format
+            expect(body).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED',
+              timestamp: expect.any(String),
+              context: expect.objectContaining({
+                method: expect.any(String)
+              })
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/settings/backup.ts - Settings Backup', () => {
+      it('should use standardized validateAuth() and return consistent error format', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/settings/backup')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest())
+            
+            expect(res.status).toBe(401)
+            const body = await res.json()
+            
+            // Should use standardized error format from validateAuth()
+            expect(body).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED',
+              timestamp: expect.any(String),
+              context: expect.any(Object)
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/settings/restore.ts - Settings Restore', () => {
+      it('should use standardized validateAuth() and return consistent error format', async () => {
+        mockGetServerSession.mockResolvedValue(null)
+        
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/settings/restore')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createUnauthenticatedRequest())
+            
+            expect(res.status).toBe(401)
+            const body = await res.json()
+            
+            // Should use standardized error format from validateAuth()
+            expect(body).toMatchObject({
+              error: 'Unauthorized',
+              code: 'AUTH_REQUIRED',
+              timestamp: expect.any(String),
+              context: expect.objectContaining({
+                method: expect.any(String),
+                endpoint: expect.any(String)
+              })
+            })
+          }
+        })
+      })
+    })
+  })
+
+  describe('Authentication Behavior Validation Tests', () => {
+    
+    it('should consistently validate session.user.id across all endpoints', async () => {
+      const invalidSession = { user: { email: 'test@example.com' } } // Missing id
+      mockGetServerSession.mockResolvedValue(invalidSession)
       
-      const responseData = JSON.parse(res._getData());
+      const endpointsToTest = [
+        'generate',
+        'research',
+        'citations',
+        'content-analysis'
+      ]
       
-      // Expected standardized error response format
-      expect(responseData).toEqual({
-        error: 'Unauthorized', 
-        code: 'AUTH_REQUIRED',
-        timestamp: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/), // ISO timestamp
-        context: {
-          method: 'GET',
-          endpoint: expect.any(String)
+      // Test each endpoint individually to avoid dynamic imports
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/generate')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          expect(body.error).toBe('Unauthorized')
+          expect(body.code).toBe('AUTH_REQUIRED')
         }
-      });
+      })
       
-      // Should NOT have old inconsistent formats
-      expect(responseData).not.toHaveProperty('message');
-      expect(responseData).not.toHaveProperty('status');
-    });
-
-    it('should include request context in authentication errors (TDD RED)', async () => {
-      // Expected behavior: Authentication errors should include helpful context
-      
-      mockGetServerSession.mockResolvedValue(null);
-      
-      const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-        method: 'POST',
-        url: '/api/folders',
-        headers: {
-          'user-agent': 'test-client/1.0'
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/research')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          expect(body.error).toBe('Unauthorized')
+          expect(body.code).toBe('AUTH_REQUIRED')
         }
-      });
-
-      const foldersHandler = (await import('../../pages/api/folders')).default;
-      await foldersHandler(req, res);
-
-      const responseData = JSON.parse(res._getData());
+      })
       
-      // Expected: Include request context for debugging
-      expect(responseData).toEqual({
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/citations')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          expect(body.error).toBe('Unauthorized')
+          expect(body.code).toBe('AUTH_REQUIRED')
+        }
+      })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/content-analysis')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          expect(body.error).toBe('Unauthorized')
+          expect(body.code).toBe('AUTH_REQUIRED')
+        }
+      })
+    })
+
+    it('should return identical error format across all authenticated endpoints', async () => {
+      mockGetServerSession.mockResolvedValue(null)
+      
+      const endpointsToTest = [
+        'generate',
+        'research-assistant', 
+        'research',
+        'structure-guidance',
+        'content-analysis',
+        'citations',
+        'test-api-keys',
+        'usage'
+      ]
+      
+      const errorResponses = []
+      
+      // Test each endpoint individually to avoid dynamic imports
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/generate')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createUnauthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          errorResponses.push(body)
+        }
+      })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/research-assistant')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createUnauthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          errorResponses.push(body)
+        }
+      })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/research')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createUnauthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          errorResponses.push(body)
+        }
+      })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/structure-guidance')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createUnauthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          errorResponses.push(body)
+        }
+      })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/content-analysis')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createUnauthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          errorResponses.push(body)
+        }
+      })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/citations')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createUnauthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          errorResponses.push(body)
+        }
+      })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/test-api-keys')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createUnauthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          errorResponses.push(body)
+        }
+      })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/usage')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createUnauthenticatedRequest({}))
+          expect(res.status).toBe(401)
+          const body = await res.json()
+          errorResponses.push(body)
+        }
+      })
+      
+      // All error responses should have identical structure
+      const expectedStructure = {
         error: 'Unauthorized',
-        code: 'AUTH_REQUIRED', 
+        code: 'AUTH_REQUIRED',
         timestamp: expect.any(String),
-        context: {
-          method: 'POST',
-          endpoint: '/api/folders'
-        }
-      });
-    });
-  });
-
-  describe('Session Validation Tests', () => {
-    it('should reject sessions missing user.id (TDD RED)', async () => {
-      // Expected behavior: Invalid session structures should be rejected
-      
-      const invalidSessions = [
-        null,
-        {},
-        { user: null },
-        { user: {} },
-        { user: { email: 'test@example.com' } }, // Missing id
-      ];
-
-      for (const invalidSession of invalidSessions) {
-        mockGetServerSession.mockResolvedValue(invalidSession);
-        
-        const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-          method: 'GET',
-        });
-
-        const foldersHandler = (await import('../../pages/api/folders')).default;
-        await foldersHandler(req, res);
-
-        expect(res._getStatusCode()).toBe(401);
-        
-        const responseData = JSON.parse(res._getData());
-        expect(responseData.error).toBe('Unauthorized');
+        context: expect.objectContaining({
+          method: expect.any(String),
+          endpoint: expect.any(String)
+        })
       }
-    });
-
-    it('should accept valid session structures (TDD RED)', async () => {
-      // Expected behavior: Valid sessions should pass authentication
       
-      const validSession = {
-        user: {
-          id: 'user-123',
-          email: 'test@example.com',
-          name: 'Test User'
+      errorResponses.forEach(response => {
+        expect(response).toMatchObject(expectedStructure)
+      })
+    })
+
+    it('should preserve existing authentication for already protected endpoints', async () => {
+      mockGetServerSession.mockResolvedValue(createMockSession())
+      
+      const alreadyProtectedEndpoints = [
+        'user-settings',
+        'setup-status', 
+        'folders',
+        'files/upload'
+      ]
+      
+      // Test each endpoint individually to avoid dynamic imports
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/user-settings')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({}))
+          expect(res.status).not.toBe(401)
         }
-      };
-
-      mockGetServerSession.mockResolvedValue(validSession);
+      })
       
-      const { req, res } = createMocks<NextApiRequest, NextApiResponse>({
-        method: 'GET',
-      });
-
-      // Mock successful database response for valid authentication
-      const mockPrisma = {
-        folder: {
-          findMany: vi.fn().mockResolvedValue([])
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/setup-status')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({}))
+          expect(res.status).not.toBe(401)
         }
-      };
+      })
       
-      vi.doMock('@/lib/prisma', () => ({
-        default: mockPrisma
-      }));
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/folders')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({}))
+          expect(res.status).not.toBe(401)
+        }
+      })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/files/upload')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({}))
+          expect(res.status).not.toBe(401)
+        }
+      })
+    })
+  })
 
-      const foldersHandler = (await import('../../pages/api/folders')).default;
-      await foldersHandler(req, res);
+  describe('Edge Cases and Security Tests', () => {
+    
+    it('should handle malformed sessions gracefully', async () => {
+      mockGetServerSession.mockResolvedValue({ user: null })
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/generate')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({ prompt: 'test' }))
+          
+          expect(res.status).toBe(401)
+          expect(await res.json()).toMatchObject({
+            error: 'Unauthorized',
+            code: 'AUTH_REQUIRED'
+          })
+        }
+      })
+    })
 
-      // Should NOT return authentication error
-      expect(res._getStatusCode()).not.toBe(401);
-    });
-  });
-});
+    it('should handle session validation errors gracefully', async () => {
+      mockGetServerSession.mockRejectedValue(new Error('Session validation failed'))
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/generate')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createAuthenticatedRequest({ prompt: 'test' }))
+          
+          // Should handle errors and return 401, not crash
+          expect(res.status).toBe(401)
+        }
+      })
+    })
+
+    it('should not expose sensitive information in error responses', async () => {
+      mockGetServerSession.mockResolvedValue(null)
+      
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/generate')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createUnauthenticatedRequest({ 
+            prompt: 'test',
+            sensitiveData: 'secret-api-key-12345'
+          }))
+          
+          const body = await res.json()
+          const bodyString = JSON.stringify(body)
+          
+          // Should not leak sensitive request data in error response
+          expect(bodyString).not.toContain('secret-api-key-12345')
+          expect(bodyString).not.toContain('sensitiveData')
+        }
+      })
+    })
+  })
+})

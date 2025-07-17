@@ -7,7 +7,6 @@ import {
   ValidationErrorCollector,
   createValidationErrorResponse 
 } from '../../lib/validation-utils';
-
 interface ResearchRequest {
   prompt?: string;
   goals?: string[];
@@ -17,6 +16,7 @@ interface ResearchRequest {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+
   if (req.method !== 'POST') {
     return createErrorResponse(
       res,

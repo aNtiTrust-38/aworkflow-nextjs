@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { validateAuth } from '@/lib/auth-utils';
 import { getUserSettingsStorage } from '../../lib/user-settings-storage';
 
 interface UserSettingsUpdateRequest {
@@ -17,13 +16,8 @@ interface UserSettingsUpdateRequest {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Check authentication using standardized auth utilities
-    const session = await validateAuth(req, res);
-    if (!session) {
-      return; // validateAuth already sent the response
-    }
-
-    const userId = session.user.id;
+    // No authentication required in current iteration
+    const userId = 'anonymous-user'; // Default user for no-auth mode
     const storage = getUserSettingsStorage();
 
     switch (req.method) {

@@ -58,3 +58,6 @@ simple-electron-app/node_modules/
 
 # archived development files
 .archived/
+
+# old CLAUDE.md file
+claude.old

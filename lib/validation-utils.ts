@@ -28,6 +28,10 @@ export interface ValidationError {
   allowedValues?: any[]
   supportedTypes?: string[]
   retryable?: boolean
+  expectedFormat?: string
+  maxSize?: number
+  actualSize?: number
+  value?: any
 }
 
 export interface MultiValidationResult {

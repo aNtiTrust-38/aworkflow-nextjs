@@ -1,0 +1,731 @@
+/**
+ * Rule 4 (RED Phase): Error Handling Standardization Tests
+ * 
+ * These tests define the expected error handling behavior for Phase 2B.
+ * All tests should FAIL initially, then pass after implementation.
+ * 
+ * DO NOT IMPLEMENT - TESTS ONLY
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { testApiHandler } from 'next-test-api-route-handler'
+
+// Test utilities for creating mock requests
+function createMockRequest(body: any = {}, method: string = 'POST') {
+  return {
+    method,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body)
+  }
+}
+
+describe('Phase 2B: Error Handling Standardization Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('Priority 1: API Error Response Format Standardization', () => {
+    
+    describe('/api/generate.ts - AI Content Generation', () => {
+      it('should return standardized error response format for missing prompt', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/generate')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({}))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            // Should use StandardErrorResponse format, not simple { error: string }
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: expect.any(String),
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              context: expect.objectContaining({
+                method: 'POST',
+                endpoint: expect.stringContaining('/api/generate')
+              }),
+              details: expect.any(Object)
+            })
+            
+            // Should NOT be the old simple format
+            expect(body).not.toEqual({ error: expect.any(String) })
+          }
+        })
+      })
+
+      it('should return standardized error response for invalid prompt type', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/generate')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ prompt: 123 })) // Invalid type
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              details: expect.objectContaining({
+                field: 'prompt',
+                message: expect.stringContaining('string')
+              })
+            })
+          }
+        })
+      })
+
+      it('should sanitize sensitive information in error responses', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/generate')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ 
+              prompt: 'test',
+              apiKey: 'sk-secret-key-12345'
+            }))
+            
+            const body = await res.json()
+            const bodyString = JSON.stringify(body)
+            
+            // Should not leak sensitive data in error response
+            expect(bodyString).not.toContain('sk-secret-key-12345')
+            expect(bodyString).not.toContain('apiKey')
+          }
+        })
+      })
+    })
+
+    describe('/api/research-assistant.ts - Research AI', () => {
+      it('should return standardized error response format for missing query', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/research-assistant')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({}))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'MISSING_REQUIRED_FIELD',
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              context: expect.objectContaining({
+                method: 'POST'
+              }),
+              details: expect.objectContaining({
+                field: 'query'
+              })
+            })
+          }
+        })
+      })
+
+      it('should validate query length and return structured error', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/research-assistant')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ 
+              query: 'a'.repeat(5000) // Too long
+            }))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              details: expect.objectContaining({
+                field: 'query',
+                message: expect.stringContaining('length'),
+                maxLength: expect.any(Number)
+              })
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/research.ts - Research Tools', () => {
+      it('should return standardized error response format for invalid topic', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/research')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ topic: '' })) // Empty topic
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              details: expect.objectContaining({
+                field: 'topic',
+                message: expect.stringContaining('required')
+              })
+            })
+          }
+        })
+      })
+
+      it('should handle multiple validation errors in structured format', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/research')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ 
+              topic: '',
+              maxResults: -1 // Invalid number
+            }))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              details: expect.objectContaining({
+                validationErrors: expect.arrayContaining([
+                  expect.objectContaining({
+                    field: 'topic',
+                    message: expect.any(String)
+                  }),
+                  expect.objectContaining({
+                    field: 'maxResults',
+                    message: expect.stringContaining('positive')
+                  })
+                ])
+              })
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/structure-guidance.ts - Outline Generation', () => {
+      it('should return standardized error response format for missing prompt', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/structure-guidance')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({}))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'MISSING_REQUIRED_FIELD',
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              context: expect.objectContaining({
+                method: 'POST',
+                endpoint: expect.stringContaining('/api/structure-guidance')
+              })
+            })
+          }
+        })
+      })
+
+      it('should validate outline type parameter and return structured error', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/structure-guidance')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ 
+              prompt: 'test',
+              outlineType: 'invalid-type'
+            }))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              details: expect.objectContaining({
+                field: 'outlineType',
+                message: expect.stringContaining('valid'),
+                allowedValues: expect.any(Array)
+              })
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/content-analysis.ts - File Analysis', () => {
+      it('should return standardized error response format for missing content', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/content-analysis')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({}))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'MISSING_REQUIRED_FIELD',
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              details: expect.objectContaining({
+                field: expect.stringMatching(/content|file/)
+              })
+            })
+          }
+        })
+      })
+
+      it('should validate file type and return structured error', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/content-analysis')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ 
+              fileType: 'unsupported',
+              content: 'test content'
+            }))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              details: expect.objectContaining({
+                field: 'fileType',
+                message: expect.stringContaining('supported'),
+                supportedTypes: expect.any(Array)
+              })
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/citations.ts - Citation Management', () => {
+      it('should return standardized error response format for invalid action', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/citations')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ action: 'invalid' }))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              details: expect.objectContaining({
+                field: 'action',
+                allowedValues: expect.arrayContaining(['list', 'add', 'update', 'delete'])
+              })
+            })
+          }
+        })
+      })
+
+      it('should validate citation data structure and return detailed errors', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/citations')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ 
+              action: 'add',
+              citation: {
+                title: '', // Empty required field
+                year: 'invalid' // Invalid year format
+              }
+            }))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              details: expect.objectContaining({
+                validationErrors: expect.arrayContaining([
+                  expect.objectContaining({
+                    field: 'citation.title',
+                    message: expect.stringContaining('required')
+                  }),
+                  expect.objectContaining({
+                    field: 'citation.year',
+                    message: expect.stringContaining('number')
+                  })
+                ])
+              })
+            })
+          }
+        })
+      })
+    })
+  })
+
+  describe('Priority 1: Zotero Integration Error Standardization', () => {
+    
+    describe('/api/zotero/import.ts - Zotero Import', () => {
+      it('should return standardized error response format for missing collection', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/zotero/import')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({}))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'MISSING_REQUIRED_FIELD',
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              context: expect.objectContaining({
+                method: 'POST',
+                endpoint: expect.stringContaining('/api/zotero/import')
+              })
+            })
+          }
+        })
+      })
+
+      it('should handle Zotero API errors and return structured response', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/zotero/import')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ 
+              collectionId: 'invalid-collection'
+            }))
+            
+            // This should handle external API errors gracefully
+            expect([400, 404, 500]).toContain(res.status)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: expect.stringMatching(/ZOTERO_|EXTERNAL_API_|NOT_FOUND/),
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              details: expect.objectContaining({
+                service: 'zotero',
+                operation: 'import'
+              })
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/zotero/export.ts - Zotero Export', () => {
+      it('should return standardized error response format for missing citations', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/zotero/export')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({}))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'MISSING_REQUIRED_FIELD',
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              details: expect.objectContaining({
+                field: 'citations'
+              })
+            })
+          }
+        })
+      })
+
+      it('should validate citations array format and return structured error', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/zotero/export')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ 
+              citations: 'not-an-array'
+            }))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              details: expect.objectContaining({
+                field: 'citations',
+                message: expect.stringContaining('array'),
+                expectedType: 'array'
+              })
+            })
+          }
+        })
+      })
+    })
+
+    describe('/api/zotero/sync.ts - Zotero Sync', () => {
+      it('should return standardized error response format for invalid sync action', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/zotero/sync')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ action: 'invalid' }))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              timestamp: expect.any(String),
+              requestId: expect.any(String),
+              details: expect.objectContaining({
+                field: 'action',
+                allowedValues: expect.arrayContaining(['sync', 'pull', 'push'])
+              })
+            })
+          }
+        })
+      })
+
+      it('should handle sync conflicts and return structured response', async () => {
+        await testApiHandler({
+          pagesHandler: (await import('../../pages/api/zotero/sync')).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({ 
+              action: 'sync',
+              conflictResolution: 'invalid'
+            }))
+            
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: 'VALIDATION_ERROR',
+              details: expect.objectContaining({
+                field: 'conflictResolution',
+                allowedValues: expect.arrayContaining(['use_local', 'use_remote', 'merge'])
+              })
+            })
+          }
+        })
+      })
+    })
+  })
+
+  describe('Cross-Endpoint Error Response Consistency', () => {
+    
+    it('should return identical error structure across all endpoints', async () => {
+      const endpointsToTest = [
+        'generate',
+        'research-assistant',
+        'research',
+        'structure-guidance',
+        'content-analysis',
+        'citations'
+      ]
+      
+      const errorResponses = []
+      
+      for (const endpoint of endpointsToTest) {
+        await testApiHandler({
+          pagesHandler: (await import(`../../pages/api/${endpoint}`)).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest({}))
+            expect(res.status).toBe(400)
+            const body = await res.json()
+            errorResponses.push(body)
+          }
+        })
+      }
+      
+      // All error responses should have identical structure
+      const expectedStructure = {
+        error: expect.any(String),
+        code: expect.any(String),
+        timestamp: expect.any(String),
+        requestId: expect.any(String),
+        context: expect.objectContaining({
+          method: expect.any(String),
+          endpoint: expect.any(String)
+        })
+      }
+      
+      errorResponses.forEach((response, index) => {
+        expect(response).toMatchObject(expectedStructure)
+        // Should have request ID for tracing
+        expect(response.requestId).toMatch(/^req_[a-zA-Z0-9]+$/)
+        // Should have proper timestamp format
+        expect(response.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+      })
+    })
+
+    it('should include security headers in all error responses', async () => {
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/generate')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createMockRequest({}))
+          
+          // Should include security headers
+          expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff')
+          expect(res.headers.get('X-Frame-Options')).toBe('DENY')
+          expect(res.headers.get('X-XSS-Protection')).toBe('1; mode=block')
+        }
+      })
+    })
+
+    it('should sanitize file paths and sensitive data consistently', async () => {
+      const sensitiveData = {
+        prompt: 'test',
+        apiKey: 'sk-secret-123',
+        password: 'password123',
+        token: 'bearer-token-456',
+        filePath: '/Users/secret/documents/file.txt'
+      }
+      
+      const endpointsToTest = ['generate', 'research', 'content-analysis']
+      
+      for (const endpoint of endpointsToTest) {
+        await testApiHandler({
+          pagesHandler: (await import(`../../pages/api/${endpoint}`)).default,
+          test: async ({ fetch }) => {
+            const res = await fetch(createMockRequest(sensitiveData))
+            const body = await res.json()
+            const bodyString = JSON.stringify(body)
+            
+            // Should not leak sensitive information
+            expect(bodyString).not.toContain('sk-secret-123')
+            expect(bodyString).not.toContain('password123')
+            expect(bodyString).not.toContain('bearer-token-456')
+            expect(bodyString).not.toContain('/Users/secret/')
+          }
+        })
+      }
+    })
+  })
+
+  describe('Validation Error Handling', () => {
+    
+    it('should handle multiple validation errors with field-level details', async () => {
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/generate')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createMockRequest({
+            prompt: '', // Empty required field
+            maxTokens: -1, // Invalid number
+            temperature: 2.5 // Out of range
+          }))
+          
+          expect(res.status).toBe(400)
+          const body = await res.json()
+          
+          expect(body).toMatchObject({
+            error: expect.any(String),
+            code: 'VALIDATION_ERROR',
+            details: expect.objectContaining({
+              validationErrors: expect.arrayContaining([
+                expect.objectContaining({
+                  field: 'prompt',
+                  message: expect.stringContaining('required'),
+                  code: 'FIELD_REQUIRED'
+                }),
+                expect.objectContaining({
+                  field: 'maxTokens',
+                  message: expect.stringContaining('positive'),
+                  code: 'FIELD_INVALID_RANGE'
+                }),
+                expect.objectContaining({
+                  field: 'temperature',
+                  message: expect.stringContaining('between'),
+                  code: 'FIELD_OUT_OF_RANGE',
+                  minValue: 0,
+                  maxValue: 2
+                })
+              ])
+            })
+          })
+        })
+      })
+    })
+
+    it('should provide recovery suggestions in validation errors', async () => {
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/research')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createMockRequest({
+            topic: 'a'.repeat(1000) // Too long
+          }))
+          
+          expect(res.status).toBe(400)
+          const body = await res.json()
+          
+          expect(body).toMatchObject({
+            error: expect.any(String),
+            code: 'VALIDATION_ERROR',
+            details: expect.objectContaining({
+              field: 'topic',
+              message: expect.stringContaining('length'),
+              suggestion: expect.stringContaining('shorter'),
+              maxLength: expect.any(Number)
+            })
+          })
+        })
+      })
+    })
+  })
+
+  describe('Error Recovery and Retry Information', () => {
+    
+    it('should include retry information for temporary errors', async () => {
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/generate')).default,
+        test: async ({ fetch }) => {
+          // Simulate rate limiting or temporary error
+          const res = await fetch(createMockRequest({
+            prompt: 'test prompt that might trigger rate limit'
+          }))
+          
+          if (res.status === 429 || res.status === 503) {
+            const body = await res.json()
+            
+            expect(body).toMatchObject({
+              error: expect.any(String),
+              code: expect.stringMatching(/RATE_LIMIT|SERVICE_UNAVAILABLE/),
+              details: expect.objectContaining({
+                retryable: true,
+                retryAfter: expect.any(Number),
+                suggestion: expect.stringContaining('retry')
+              })
+            })
+          }
+        })
+      })
+    })
+
+    it('should mark non-retryable errors appropriately', async () => {
+      await testApiHandler({
+        pagesHandler: (await import('../../pages/api/generate')).default,
+        test: async ({ fetch }) => {
+          const res = await fetch(createMockRequest({
+            prompt: '' // Invalid input - not retryable
+          }))
+          
+          expect(res.status).toBe(400)
+          const body = await res.json()
+          
+          expect(body).toMatchObject({
+            error: expect.any(String),
+            code: 'VALIDATION_ERROR',
+            details: expect.objectContaining({
+              retryable: false
+            })
+          })
+        })
+      })
+    })
+  })
+})

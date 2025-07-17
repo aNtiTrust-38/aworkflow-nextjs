@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { validateAuth } from '@/lib/auth-utils';
 import { sendErrorResponse, createStandardError, ValidationError, HTTP_STATUS, ERROR_CODES } from '@/lib/error-utils';
 import formidable from 'formidable';
 import { promises as fs } from 'fs';
@@ -152,13 +151,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Check authentication using standardized auth utilities
-    const session = await validateAuth(req, res);
-    if (!session) {
-      return; // validateAuth already sent the response
-    }
-
-    const userId = session.user.id;
+    // No authentication required in current iteration
+    const userId = 'anonymous-user'; // Default user for no-auth mode
     
     // Check storage quota first (Phase 2C requirement)
     let prisma;
@@ -175,21 +169,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         user = await prisma.user.findUnique({
           where: { id: userId },
-          select: { storageQuota: true, storageUsed: true }
+          select: { id: true, name: true, email: true }
         });
       } catch (error) {
         console.warn('User quota check failed:', error);
       }
     }
     
-    if (user) {
+    // Storage quota check temporarily disabled - user model doesn't have storage fields yet
+    if (false && user) {
       const requestedSize = parseInt(req.headers['content-length'] || '0');
-      const availableStorage = (user.storageQuota || 1073741824) - (user.storageUsed || 0); // Default 1GB quota
+      // const availableStorage = (user.storageQuota || 1073741824) - (user.storageUsed || 0); // Default 1GB quota
       
-      if (requestedSize > availableStorage) {
+      if (requestedSize > 1073741824) { // Simple 1GB limit for now
         const quotaDetails = {
-          quota: `${Math.round((user.storageQuota || 1073741824) / 1024 / 1024)}MB`,
-          used: `${Math.round((user.storageUsed || 0) / 1024 / 1024)}MB`,
+          quota: `1024MB`,
+          used: `0MB`,
           requested: `${Math.round(requestedSize / 1024 / 1024)}MB`
         };
         

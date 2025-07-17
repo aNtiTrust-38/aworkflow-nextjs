@@ -6,6 +6,7 @@ import {
   validateRequired, 
   validateStringLength,
   validateNumber,
+  validatePositiveInteger,
   ValidationErrorCollector,
   createValidationErrorResponse 
 } from '../../lib/validation-utils';
@@ -288,6 +289,7 @@ function sortByRelevance(references: Reference[]): Reference[] {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+
   if (req.method !== 'POST') {
     return createErrorResponse(
       res,
@@ -392,20 +394,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let arxivResults: Reference[] = [];
   const errors: ErrorMap = {};
 
-  try {
-    semanticResults = await searchSemanticScholar(query);
-  } catch (err: unknown) {
-    errors.SemanticScholar = err instanceof Error ? err.message : 'Unknown error';
-  }
-  try {
-    crossrefResults = await searchCrossRef(query);
-  } catch (err: unknown) {
-    errors.CrossRef = err instanceof Error ? err.message : 'Unknown error';
-  }
-  try {
-    arxivResults = await searchArxiv(query);
-  } catch (err: unknown) {
-    errors.ArXiv = err instanceof Error ? err.message : 'Unknown error';
+  // Only search if query is valid
+  if (query && typeof query === 'string') {
+    try {
+      semanticResults = await searchSemanticScholar(query);
+    } catch (err: unknown) {
+      errors.SemanticScholar = err instanceof Error ? err.message : 'Unknown error';
+    }
+    try {
+      crossrefResults = await searchCrossRef(query);
+    } catch (err: unknown) {
+      errors.CrossRef = err instanceof Error ? err.message : 'Unknown error';
+    }
+    try {
+      arxivResults = await searchArxiv(query);
+    } catch (err: unknown) {
+      errors.ArXiv = err instanceof Error ? err.message : 'Unknown error';
+    }
   }
 
   let references = [...semanticResults, ...crossrefResults, ...arxivResults];

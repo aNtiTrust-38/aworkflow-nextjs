@@ -42,6 +42,7 @@ interface FileObject {
 // TODO: Replace with a compatible file upload parser or integration test for file uploads.
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log('API handler invoked:', req.method, req.headers['content-type']);
+
   if (req.method !== 'POST') {
     return createErrorResponse(
       res,

@@ -7,7 +7,6 @@ import {
   ValidationErrorCollector,
   createValidationErrorResponse 
 } from '../../lib/validation-utils';
-
 // Types for request and response bodies
 interface OutlineSection {
   section: string;
@@ -38,6 +37,7 @@ interface GenerateRequestBody {
 // }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+
   if (req.method !== 'POST') {
     return createErrorResponse(
       res,
@@ -152,14 +152,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // For test mode, use stub implementation
     if (req.headers['x-test-stub']) {
-      const paragraphs = outline.map((section, idx) => {
-        const ref = references[idx % references.length];
-        return `${section.section}\n\n${section.content} ${ref.citation}`;
+      const paragraphs = (outline || []).map((section, idx) => {
+        const ref = (references || [])[idx % (references?.length || 1)];
+        return `${section.section}\n\n${section.content} ${ref?.citation || ''}`;
       });
       const content = paragraphs.join('\n\n');
 
       // Reference linking/validation
-      const citationSet = new Set(references.map(r => r.citation));
+      const citationSet = new Set((references || []).map(r => r.citation));
       const citationRegex = /\(([^)]+, \d{4})\)/g;
       const foundCitations = Array.from(content.matchAll(citationRegex)).map(m => `(${m[1]})`);
       const unmatched = foundCitations.filter(c => !citationSet.has(c));
@@ -178,8 +178,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const usage = {
-        tokens: 100 * outline.length,
-        cost: 0.01 * outline.length,
+        tokens: 100 * (outline?.length || 0),
+        cost: 0.01 * (outline?.length || 0),
       };
 
       return res.status(200).json({
@@ -212,8 +212,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // No need to check available providers here; router will throw if none are available
 
     // Build comprehensive prompt
-    const outlineText = outline.map(section => `${section.section}: ${section.content}`).join('\n');
-    const referencesText = references.map(ref => `- ${ref.citation}`).join('\n');
+    const outlineText = (outline || []).map(section => `${section.section}: ${section.content}`).join('\n');
+    const referencesText = (references || []).map(ref => `- ${ref.citation}`).join('\n');
     
     const generatePrompt = `
 You are an expert academic writer. Generate high-quality academic content based on this outline and references.
@@ -237,7 +237,7 @@ Write detailed paragraphs for each section. Include in-text citations in the for
     const result = await (await router).generateWithFailover(generatePrompt, TaskType.WRITING);
     
     // Validate citations in generated content
-    const citationSet = new Set(references.map(r => r.citation));
+    const citationSet = new Set((references || []).map(r => r.citation));
     const citationRegex = /\(([^)]+, \d{4})\)/g;
     const foundCitations = (Array.from(result.content.matchAll(citationRegex)) as RegExpMatchArray[])
       .map(m => m[1])

@@ -27,6 +27,7 @@ interface ExportRequestBody {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+
   if (req.method !== 'POST') {
     return createErrorResponse(
       res,
@@ -100,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // For test mode, return mock export result
     if (req.headers['x-test-stub']) {
-      const mockExported = references.slice(0, 2).map((ref, idx) => ({
+      const mockExported = (references || []).slice(0, 2).map((ref, idx) => ({
         key: `ZOTERO_EXPORT_${idx + 1}`,
         title: ref.title,
         authors: ref.authors,

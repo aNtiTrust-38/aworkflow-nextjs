@@ -1,0 +1,1359 @@
+
+> academic-workflow@0.1.0 test
+> vitest run __tests__/infrastructure/ --reporter=junit
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="72" failures="2" errors="0" time="0.123420001">
+    <testsuite name="__tests__/infrastructure/blocker1-prisma-mock-crisis.test.ts" timestamp="2025-07-15T19:33:36.568Z" hostname="dNkMini.local" tests="3" failures="0" errors="0" skipped="0" time="0.018770125">
+        <testcase classname="__tests__/infrastructure/blocker1-prisma-mock-crisis.test.ts" name="BLOCKER 1: Prisma Mock Architecture Crisis &gt; should demonstrate dynamic import bypassing global Prisma mock" time="0.017077833">
+            <system-out>
+Global mock exists: [33mtrue[39m
+
+Error response: {
+  error: [32m&apos;Internal server error&apos;[39m,
+  code: [32m&apos;INTERNAL_SERVER_ERROR&apos;[39m,
+  timestamp: [32m&apos;2025-07-15T19:33:35.753Z&apos;[39m,
+  details: [],
+  requestId: [32m&apos;req_1752608015753_49ra4tjmd&apos;[39m,
+  context: { method: [32m&apos;GET&apos;[39m, endpoint: [32m&apos;UNKNOWN&apos;[39m, userId: [32m&apos;test-user&apos;[39m }
+}
+
+            </system-out>
+            <system-err>
+API Error {
+  timestamp: [32m&apos;2025-07-15T19:33:35.753Z&apos;[39m,
+  method: [32m&apos;GET&apos;[39m,
+  endpoint: [32m&apos;/api/folders&apos;[39m,
+  userId: [32m&apos;test-user&apos;[39m,
+  requestId: [32m&apos;req_1752608015753_49ra4tjmd&apos;[39m,
+  error: [32m&quot;Cannot read properties of undefined (reading &apos;map&apos;)&quot;[39m,
+  statusCode: [32m&apos;INTERNAL_SERVER_ERROR&apos;[39m,
+  userAgent: [32m&apos;unknown&apos;[39m,
+  ip: [32m&apos;unknown&apos;[39m
+}
+
+            </system-err>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker1-prisma-mock-crisis.test.ts" name="BLOCKER 1: Prisma Mock Architecture Crisis &gt; should show conflict when test adds its own Prisma mock" time="0.00095825">
+            <system-out>
+Which mock is active? {
+  folder: {
+    findMany: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    }
+  }
+}
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker1-prisma-mock-crisis.test.ts" name="BLOCKER 1: Prisma Mock Architecture Crisis &gt; should demonstrate mockPrisma is not defined error pattern" time="0.00015175">
+        </testcase>
+    </testsuite>
+    <testsuite name="__tests__/infrastructure/blocker2-auth-flow-mismatch.test.ts" timestamp="2025-07-15T19:33:36.569Z" hostname="dNkMini.local" tests="4" failures="0" errors="0" skipped="0" time="0.009309667">
+        <testcase classname="__tests__/infrastructure/blocker2-auth-flow-mismatch.test.ts" name="BLOCKER 2: Authentication Flow Mismatch &gt; should demonstrate mocking getServerSession does not fix validateAuth() calls" time="0.003189208">
+            <system-out>
+Session from validateAuth: { user: { id: [32m&apos;test-user&apos;[39m, email: [32m&apos;test@example.com&apos;[39m } }
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker2-auth-flow-mismatch.test.ts" name="BLOCKER 2: Authentication Flow Mismatch &gt; should show 401 errors in API endpoints despite mocking auth" time="0.004719417">
+            <system-out>
+Auth error response: {
+  error: [32m&apos;Internal server error&apos;[39m,
+  code: [32m&apos;INTERNAL_SERVER_ERROR&apos;[39m,
+  timestamp: [32m&apos;2025-07-15T19:33:36.152Z&apos;[39m,
+  details: [],
+  requestId: [32m&apos;req_1752608016152_fik44kv7h&apos;[39m,
+  context: { method: [32m&apos;GET&apos;[39m, endpoint: [32m&apos;UNKNOWN&apos;[39m, userId: [32m&apos;test-user&apos;[39m }
+}
+
+            </system-out>
+            <system-err>
+API Error {
+  timestamp: [32m&apos;2025-07-15T19:33:36.152Z&apos;[39m,
+  method: [32m&apos;GET&apos;[39m,
+  endpoint: [32m&apos;/api/folders&apos;[39m,
+  userId: [32m&apos;test-user&apos;[39m,
+  requestId: [32m&apos;req_1752608016152_fik44kv7h&apos;[39m,
+  error: [32m&quot;Cannot read properties of undefined (reading &apos;map&apos;)&quot;[39m,
+  statusCode: [32m&apos;INTERNAL_SERVER_ERROR&apos;[39m,
+  userAgent: [32m&apos;unknown&apos;[39m,
+  ip: [32m&apos;unknown&apos;[39m
+}
+
+            </system-err>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker2-auth-flow-mismatch.test.ts" name="BLOCKER 2: Authentication Flow Mismatch &gt; should demonstrate validateAuth vs getServerSession implementation gap" time="0.000224584">
+            <system-out>
+validateAuth implementation: 
+    // From lib/auth-utils.ts
+    export async function validateAuth(req, res) {
+      const session = await getServerSession(req, res, authOptions);
+      if (!session) {
+        res.status(401).json({ error: &apos;Unauthorized&apos; });
+        return null;
+      }
+      return session;
+    }
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker2-auth-flow-mismatch.test.ts" name="BLOCKER 2: Authentication Flow Mismatch &gt; should show how authOptions import affects mocking" time="0.000123083">
+            <system-out>
+authOptions exists: [33mtrue[39m
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="__tests__/infrastructure/blocker3-filesystem-mock-incomplete.test.ts" timestamp="2025-07-15T19:33:36.569Z" hostname="dNkMini.local" tests="4" failures="0" errors="0" skipped="0" time="0.017188084">
+        <testcase classname="__tests__/infrastructure/blocker3-filesystem-mock-incomplete.test.ts" name="BLOCKER 3: File System Mock Incomplete &gt; should demonstrate fs/promises dynamic import fails despite global mock" time="0.003298375">
+            <system-out>
+Static fs import works: [33mtrue[39m
+
+Dynamic fs/promises import: {
+  readFile: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  writeFile: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  unlink: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  mkdir: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  access: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  copyFile: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  stat: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  appendFile: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  chmod: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  chown: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  utimes: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  realpath: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  mkdtemp: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  rmdir: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  rename: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  truncate: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  rm: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  symlink: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  readlink: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  readdir: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  lstat: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  link: [Function: spy] {
+    getMockName: [36m[Function (anonymous)][39m,
+    mockName: [36m[Function (anonymous)][39m,
+    mockClear: [36m[Function (anonymous)][39m,
+    mockReset: [36m[Function (anonymous)][39m,
+    mockRestore: [36m[Function (anonymous)][39m,
+    getMockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementation: [36m[Function (anonymous)][39m,
+    mockImplementationOnce: [36m[Function (anonymous)][39m,
+    withImplementation: [36m[Function: withImplementation][39m,
+    mockReturnThis: [36m[Function (anonymous)][39m,
+    mockReturnValue: [36m[Function (anonymous)][39m,
+    mockReturnValueOnce: [36m[Function (anonymous)][39m,
+    mockResolvedValue: [36m[Function (anonymous)][39m,
+    mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+    mockRejectedValue: [36m[Function (anonymous)][39m,
+    mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+    [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+  },
+  default: {
+    readFile: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    writeFile: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    unlink: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    mkdir: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    access: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    copyFile: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    stat: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    appendFile: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    chmod: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    chown: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    utimes: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    realpath: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    mkdtemp: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    rmdir: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    rename: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    truncate: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    rm: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    symlink: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    readlink: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    readdir: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    lstat: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    },
+    link: [Function: spy] {
+      getMockName: [36m[Function (anonymous)][39m,
+      mockName: [36m[Function (anonymous)][39m,
+      mockClear: [36m[Function (anonymous)][39m,
+      mockReset: [36m[Function (anonymous)][39m,
+      mockRestore: [36m[Function (anonymous)][39m,
+      getMockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementation: [36m[Function (anonymous)][39m,
+      mockImplementationOnce: [36m[Function (anonymous)][39m,
+      withImplementation: [36m[Function: withImplementation][39m,
+      mockReturnThis: [36m[Function (anonymous)][39m,
+      mockReturnValue: [36m[Function (anonymous)][39m,
+      mockReturnValueOnce: [36m[Function (anonymous)][39m,
+      mockResolvedValue: [36m[Function (anonymous)][39m,
+      mockResolvedValueOnce: [36m[Function (anonymous)][39m,
+      mockRejectedValue: [36m[Function (anonymous)][39m,
+      mockRejectedValueOnce: [36m[Function (anonymous)][39m,
+      [[32mSymbol(Symbol.dispose)[39m]: [36m[Function (anonymous)][39m
+    }
+  }
+}
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker3-filesystem-mock-incomplete.test.ts" name="BLOCKER 3: File System Mock Incomplete &gt; should show file upload handler can import fs without errors" time="0.000792042">
+            <system-out>
+fs methods available: [
+  [32m&apos;readFile&apos;[39m, [32m&apos;writeFile&apos;[39m,
+  [32m&apos;unlink&apos;[39m,   [32m&apos;mkdir&apos;[39m,
+  [32m&apos;access&apos;[39m,   [32m&apos;copyFile&apos;[39m,
+  [32m&apos;stat&apos;[39m,     [32m&apos;appendFile&apos;[39m,
+  [32m&apos;chmod&apos;[39m,    [32m&apos;chown&apos;[39m,
+  [32m&apos;utimes&apos;[39m,   [32m&apos;realpath&apos;[39m,
+  [32m&apos;mkdtemp&apos;[39m,  [32m&apos;rmdir&apos;[39m,
+  [32m&apos;rename&apos;[39m,   [32m&apos;truncate&apos;[39m,
+  [32m&apos;rm&apos;[39m,       [32m&apos;symlink&apos;[39m,
+  [32m&apos;readlink&apos;[39m, [32m&apos;readdir&apos;[39m,
+  [32m&apos;lstat&apos;[39m,    [32m&apos;link&apos;[39m
+]
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker3-filesystem-mock-incomplete.test.ts" name="BLOCKER 3: File System Mock Incomplete &gt; should demonstrate missing fs/promises methods in mock" time="0.0006335">
+            <system-out>
+Global mocks: []
+fs.readFile mocked: [33mfalse[39m
+fs.writeFile mocked: [33mfalse[39m
+fs.copyFile mocked: [33mfalse[39m
+fs.unlink mocked: [33mfalse[39m
+fs.mkdir mocked: [33mfalse[39m
+fs.stat mocked: [33mfalse[39m
+fs.access mocked: [33mfalse[39m
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker3-filesystem-mock-incomplete.test.ts" name="BLOCKER 3: File System Mock Incomplete &gt; should show formidable integration with fs mocking issues" time="0.011892084">
+            <system-out>
+Formidable instance: IncomingForm {
+  _events: [Object: null prototype] { field: [36m[Function (anonymous)][39m },
+  _eventsCount: [33m1[39m,
+  _maxListeners: [90mundefined[39m,
+  options: {
+    maxFields: [33m1000[39m,
+    maxFieldsSize: [33m20971520[39m,
+    maxFiles: [33mInfinity[39m,
+    maxFileSize: [33m209715200[39m,
+    maxTotalFileSize: [33m209715200[39m,
+    minFileSize: [33m1[39m,
+    allowEmptyFiles: [33mfalse[39m,
+    createDirsFromUploads: [33mfalse[39m,
+    keepExtensions: [33mtrue[39m,
+    encoding: [32m&apos;utf-8&apos;[39m,
+    hashAlgorithm: [33mfalse[39m,
+    uploadDir: [32m&apos;/tmp/uploads&apos;[39m,
+    enabledPlugins: [
+      [36m[AsyncFunction: plugin][39m,
+      [36m[Function: plugin][39m,
+      [36m[Function: plugin][39m,
+      [36m[Function: plugin][39m
+    ],
+    fileWriteStreamHandler: [1mnull[22m,
+    defaultInvalidName: [32m&apos;invalid-name&apos;[39m,
+    filter: [36m[Function: filter][39m,
+    filename: [90mundefined[39m
+  },
+  uploaddir: [32m&apos;/tmp/uploads&apos;[39m,
+  uploadDir: [32m&apos;/tmp/uploads&apos;[39m,
+  error: [1mnull[22m,
+  headers: [1mnull[22m,
+  type: [90mundefined[39m,
+  bytesExpected: [1mnull[22m,
+  bytesReceived: [1mnull[22m,
+  _parser: [1mnull[22m,
+  req: [1mnull[22m,
+  _getNewName: [36m[Function (anonymous)][39m,
+  _flushing: [33m0[39m,
+  _fieldsSize: [33m0[39m,
+  _totalFileSize: [33m0[39m,
+  _plugins: [
+    [36m[Function: bound plugin] AsyncFunction[39m,
+    [36m[Function: bound plugin][39m,
+    [36m[Function: bound plugin][39m,
+    [36m[Function: bound plugin][39m
+  ],
+  openedFiles: [],
+  ended: [90mundefined[39m,
+  [[32mSymbol(shapeMode)[39m]: [33mfalse[39m,
+  [[32mSymbol(kCapture)[39m]: [33mfalse[39m
+}
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="__tests__/infrastructure/blocker4-request-mock-incomplete.test.ts" timestamp="2025-07-15T19:33:36.569Z" hostname="dNkMini.local" tests="5" failures="0" errors="0" skipped="0" time="0.003521292">
+        <testcase classname="__tests__/infrastructure/blocker4-request-mock-incomplete.test.ts" name="BLOCKER 4: Request Object Mock Infrastructure &gt; should demonstrate createMocks missing headers property" time="0.001850709">
+            <system-out>
+req properties: [
+  [32m&apos;_events&apos;[39m,
+  [32m&apos;_eventsCount&apos;[39m,
+  [32m&apos;_maxListeners&apos;[39m,
+  [32m&apos;method&apos;[39m,
+  [32m&apos;url&apos;[39m,
+  [32m&apos;originalUrl&apos;[39m,
+  [32m&apos;baseUrl&apos;[39m,
+  [32m&apos;path&apos;[39m,
+  [32m&apos;params&apos;[39m,
+  [32m&apos;cookies&apos;[39m,
+  [32m&apos;headers&apos;[39m,
+  [32m&apos;body&apos;[39m,
+  [32m&apos;query&apos;[39m,
+  [32m&apos;files&apos;[39m,
+  [32m&apos;socket&apos;[39m,
+  [32m&apos;ip&apos;[39m,
+  [32m&apos;ips&apos;[39m,
+  [32m&apos;destroy&apos;[39m,
+  [32m&apos;getHeader&apos;[39m,
+  [32m&apos;header&apos;[39m,
+  [32m&apos;get&apos;[39m,
+  [32m&apos;is&apos;[39m,
+  [32m&apos;accepts&apos;[39m,
+  [32m&apos;acceptsEncodings&apos;[39m,
+  [32m&apos;acceptsCharsets&apos;[39m,
+  [32m&apos;acceptsLanguages&apos;[39m,
+  [32m&apos;range&apos;[39m,
+  [32m&apos;param&apos;[39m,
+  [32m&apos;_setParameter&apos;[39m,
+  [32m&apos;_setSessionVariable&apos;[39m,
+  [32m&apos;_setCookiesVariable&apos;[39m,
+  [32m&apos;_setSignedCookiesVariable&apos;[39m,
+  [32m&apos;_setHeadersVariable&apos;[39m,
+  [32m&apos;_setFilesVariable&apos;[39m,
+  [32m&apos;_setMethod&apos;[39m,
+  [32m&apos;_setURL&apos;[39m,
+  [32m&apos;_setBaseUrl&apos;[39m,
+  [32m&apos;_setOriginalUrl&apos;[39m,
+  [32m&apos;_setBody&apos;[39m,
+  [32m&apos;_addBody&apos;[39m,
+  [32m&apos;send&apos;[39m,
+  [32m&apos;hostname&apos;[39m,
+  [32m&apos;subdomains&apos;[39m
+]
+req.headers exists: [33mtrue[39m
+req.headers value: {}
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker4-request-mock-incomplete.test.ts" name="BLOCKER 4: Request Object Mock Infrastructure &gt; should show error-utils crashes on undefined headers" time="0.000334375">
+            <system-out>
+userAgent: unknown
+ip: unknown
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker4-request-mock-incomplete.test.ts" name="BLOCKER 4: Request Object Mock Infrastructure &gt; should demonstrate socket property is also missing" time="0.00020675">
+            <system-out>
+req.socket exists: [33mtrue[39m
+req.socket value: {}
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker4-request-mock-incomplete.test.ts" name="BLOCKER 4: Request Object Mock Infrastructure &gt; should show how missing properties affect error handling" time="0.000353666">
+            <system-out>
+Error context created: {
+  error: [32m&apos;Test error&apos;[39m,
+  code: [32m&apos;TEST_ERROR&apos;[39m,
+  timestamp: [32m&apos;2025-07-15T19:33:36.525Z&apos;[39m,
+  details: [],
+  requestId: [32m&apos;req_1752608016525_sgmpoj502&apos;[39m
+}
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker4-request-mock-incomplete.test.ts" name="BLOCKER 4: Request Object Mock Infrastructure &gt; should demonstrate proper request mock structure needed" time="0.000173792">
+        </testcase>
+    </testsuite>
+    <testsuite name="__tests__/infrastructure/blocker5-expectation-format-mismatch.test.ts" timestamp="2025-07-15T19:33:36.570Z" hostname="dNkMini.local" tests="4" failures="0" errors="0" skipped="0" time="0.009123375">
+        <testcase classname="__tests__/infrastructure/blocker5-expectation-format-mismatch.test.ts" name="BLOCKER 5: Test Expectation Format Mismatch &gt; should demonstrate old vs new error response format mismatch" time="0.005124208">
+            <system-out>
+Actual API response: {
+  error: [32m&apos;Validation failed&apos;[39m,
+  code: [32m&apos;VALIDATION_ERROR&apos;[39m,
+  timestamp: [32m&apos;2025-07-15T19:33:36.154Z&apos;[39m,
+  details: [
+    {
+      field: [32m&apos;name&apos;[39m,
+      message: [32m&apos;Folder name is required&apos;[39m,
+      code: [32m&apos;REQUIRED_FIELD&apos;[39m
+    },
+    {
+      field: [32m&apos;parentId&apos;[39m,
+      message: [32m&apos;Invalid parent folder ID format&apos;[39m,
+      code: [32m&apos;INVALID_FORMAT&apos;[39m
+    }
+  ]
+}
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker5-expectation-format-mismatch.test.ts" name="BLOCKER 5: Test Expectation Format Mismatch &gt; should show authentication error format evolution" time="0.000481125">
+            <system-out>
+Actual auth error response: {
+  error: [32m&apos;Unauthorized&apos;[39m,
+  code: [32m&apos;AUTH_REQUIRED&apos;[39m,
+  timestamp: [32m&apos;2025-07-15T19:33:36.156Z&apos;[39m,
+  context: { method: [32m&apos;GET&apos;[39m, endpoint: [32m&apos;UNKNOWN&apos;[39m }
+}
+
+            </system-out>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker5-expectation-format-mismatch.test.ts" name="BLOCKER 5: Test Expectation Format Mismatch &gt; should demonstrate success response format changes" time="0.001692208">
+            <system-out>
+Actual success/error response: {
+  error: [32m&apos;Internal server error&apos;[39m,
+  code: [32m&apos;INTERNAL_SERVER_ERROR&apos;[39m,
+  timestamp: [32m&apos;2025-07-15T19:33:36.157Z&apos;[39m,
+  details: [],
+  requestId: [32m&apos;req_1752608016157_1k86jkkpd&apos;[39m,
+  context: { method: [32m&apos;GET&apos;[39m, endpoint: [32m&apos;UNKNOWN&apos;[39m, userId: [32m&apos;test-user&apos;[39m }
+}
+
+            </system-out>
+            <system-err>
+API Error {
+  timestamp: [32m&apos;2025-07-15T19:33:36.157Z&apos;[39m,
+  method: [32m&apos;GET&apos;[39m,
+  endpoint: [32m&apos;/api/folders&apos;[39m,
+  userId: [32m&apos;test-user&apos;[39m,
+  requestId: [32m&apos;req_1752608016157_1k86jkkpd&apos;[39m,
+  error: [32m&quot;Cannot read properties of undefined (reading &apos;map&apos;)&quot;[39m,
+  statusCode: [32m&apos;INTERNAL_SERVER_ERROR&apos;[39m,
+  userAgent: [32m&apos;unknown&apos;[39m,
+  ip: [32m&apos;unknown&apos;[39m
+}
+
+            </system-err>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/blocker5-expectation-format-mismatch.test.ts" name="BLOCKER 5: Test Expectation Format Mismatch &gt; should show validation error details array vs simple string" time="0.001326459">
+            <system-out>
+Standard error format: {
+  error: [32m&apos;Validation failed&apos;[39m,
+  code: [32m&apos;VALIDATION_ERROR&apos;[39m,
+  timestamp: [32m&apos;2025-07-15T19:33:36.158Z&apos;[39m,
+  details: [
+    {
+      field: [32m&apos;name&apos;[39m,
+      message: [32m&apos;Name is required&apos;[39m,
+      code: [32m&apos;REQUIRED_FIELD&apos;[39m
+    },
+    {
+      field: [32m&apos;email&apos;[39m,
+      message: [32m&apos;Email is invalid&apos;[39m,
+      code: [32m&apos;INVALID_FORMAT&apos;[39m
+    }
+  ],
+  requestId: [32m&apos;req_1752608016158_x146gamji&apos;[39m
+}
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="__tests__/infrastructure/current-infrastructure-validation.test.ts" timestamp="2025-07-15T19:33:36.570Z" hostname="dNkMini.local" tests="5" failures="0" errors="0" skipped="0" time="0.042575833">
+        <testcase classname="__tests__/infrastructure/current-infrastructure-validation.test.ts" name="Current Infrastructure State Validation (RED Phase) &gt; Verifying Identified Problems Exist &gt; should demonstrate that current infrastructure has the problems we identified" time="0.040243958">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/current-infrastructure-validation.test.ts" name="Current Infrastructure State Validation (RED Phase) &gt; Verifying Identified Problems Exist &gt; should verify that Prisma mocking has the structure we expect to fix" time="0.0002245">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/current-infrastructure-validation.test.ts" name="Current Infrastructure State Validation (RED Phase) &gt; Verifying Identified Problems Exist &gt; should verify fs/promises can be imported (this should work after our vitest.setup.ts update)" time="0.000504958">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/current-infrastructure-validation.test.ts" name="Current Infrastructure State Validation (RED Phase) &gt; Verifying Identified Problems Exist &gt; should verify mock functions have proper Vitest capabilities" time="0.000549959">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/current-infrastructure-validation.test.ts" name="Current Infrastructure State Validation (RED Phase) &gt; Infrastructure Fix Success Criteria &gt; should validate that our planned fixes will address the problems" time="0.000322375">
+        </testcase>
+    </testsuite>
+    <testsuite name="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" timestamp="2025-07-15T19:33:36.570Z" hostname="dNkMini.local" tests="11" failures="0" errors="0" skipped="0" time="0.006178417">
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; fs Module Mocking &gt; should have fs.promises mocked with all required methods" time="0.001567125">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; fs Module Mocking &gt; should have extended fs.promises methods mocked" time="0.000762917">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; fs/promises Direct Import Mocking &gt; should allow direct import of fs/promises module" time="0.000349458">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; fs/promises Direct Import Mocking &gt; should have all required methods available via direct import" time="0.000362">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; fs/promises Direct Import Mocking &gt; should have default export available" time="0.000219125">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; Mock Function Capabilities &gt; should allow mockResolvedValue on fs/promises methods" time="0.000229708">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; Mock Function Capabilities &gt; should allow mockRejectedValue on fs/promises methods" time="0.000223458">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; Mock Function Capabilities &gt; should maintain proper mock isolation" time="0.00022425">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; File Operation Simulation &gt; should simulate file existence checks" time="0.000981583">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; File Operation Simulation &gt; should simulate file copy operations" time="0.000238208">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/filesystem-mock-infrastructure.test.ts" name="File System Mock Infrastructure (RED Phase) &gt; File Operation Simulation &gt; should simulate file stat operations" time="0.000316166">
+        </testcase>
+    </testsuite>
+    <testsuite name="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" timestamp="2025-07-15T19:33:36.570Z" hostname="dNkMini.local" tests="10" failures="1" errors="0" skipped="0" time="0.006133">
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Global Prisma Mock Availability &gt; should have all required model mocks available" time="0.000856375">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Global Prisma Mock Availability &gt; should have all CRUD operations mocked for each model" time="0.002730416">
+            <failure message="expected undefined to be defined" type="AssertionError">
+AssertionError: expected undefined to be defined
+ ❯ __tests__/infrastructure/prisma-mock-infrastructure.test.ts:38:44
+ ❯ __tests__/infrastructure/prisma-mock-infrastructure.test.ts:33:20
+ ❯ __tests__/infrastructure/prisma-mock-infrastructure.test.ts:32:14
+            </failure>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Global Prisma Mock Availability &gt; should have special file model operations mocked" time="0.000133833">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Global Prisma Mock Availability &gt; should have userSettings upsert operation mocked" time="0.000061916">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Global Prisma Mock Availability &gt; should have global Prisma operations mocked" time="0.000207875">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Mock Function Capabilities &gt; should allow mockResolvedValue on all mocked functions" time="0.000322292">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Mock Function Capabilities &gt; should allow mockRejectedValue on all mocked functions" time="0.000104083">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Mock Function Capabilities &gt; should maintain mock isolation between tests" time="0.000177833">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Mock Consistency Validation &gt; should not have undefined properties when accessing nested operations" time="0.000162208">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/prisma-mock-infrastructure.test.ts" name="Prisma Mock Infrastructure (RED Phase) &gt; Mock Consistency Validation &gt; should maintain mock state correctly during complex operations" time="0.000376958">
+        </testcase>
+    </testsuite>
+    <testsuite name="__tests__/infrastructure/request-headers-safety.test.ts" timestamp="2025-07-15T19:33:36.572Z" hostname="dNkMini.local" tests="13" failures="0" errors="0" skipped="0" time="0.004074875">
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; Mock Request Object Structure &gt; should create mock request with headers property" time="0.000733292">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; Mock Request Object Structure &gt; should create mock request with socket property for IP access" time="0.000342958">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; Mock Request Object Structure &gt; should allow custom headers in mock request" time="0.000147334">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; Mock Request Object Structure &gt; should handle empty headers gracefully" time="0.000496458">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; Safe Header Access Patterns &gt; should safely access existing headers" time="0.000177125">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; Safe Header Access Patterns &gt; should safely access non-existent headers" time="0.000135875">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; Safe Header Access Patterns &gt; should support optional chaining for headers" time="0.000204708">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; Safe Header Access Patterns &gt; should handle headers access when headers is undefined" time="0.000174">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; API Handler Header Processing &gt; should process content-length header safely" time="0.000334166">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; API Handler Header Processing &gt; should process user-agent header safely" time="0.000176834">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; API Handler Header Processing &gt; should handle missing headers with default values" time="0.000144333">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; IP Address Access Safety &gt; should safely access IP address from socket" time="0.00019575">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/request-headers-safety.test.ts" name="Request Headers Safety Infrastructure (RED Phase) &gt; IP Address Access Safety &gt; should handle missing socket gracefully" time="0.000089">
+        </testcase>
+    </testsuite>
+    <testsuite name="__tests__/infrastructure/standardized-error-responses.test.ts" timestamp="2025-07-15T19:33:36.573Z" hostname="dNkMini.local" tests="13" failures="1" errors="0" skipped="0" time="0.006545333">
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Error Response Structure Standards &gt; should define validation error response format" time="0.001042333">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Error Response Structure Standards &gt; should define authentication error response format" time="0.000173958">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Error Response Structure Standards &gt; should define conflict error response format" time="0.000289709">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Error Response Structure Standards &gt; should define not found error response format" time="0.000091667">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Folder Name Validation Error Format &gt; should expect standardized format for missing folder name" time="0.000332792">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Folder Name Validation Error Format &gt; should expect standardized format for invalid folder name characters" time="0.000165708">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Parent Folder Validation Error Format &gt; should expect standardized format for parent folder not found" time="0.000072125">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Parent Folder Validation Error Format &gt; should expect standardized format for circular folder structure prevention" time="0.00010075">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Conflict Error Format &gt; should expect standardized format for duplicate folder names" time="0.000208083">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Database Error Handling Format &gt; should expect graceful handling of database errors" time="0.000082292">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Database Error Handling Format &gt; should not expose internal database errors to clients" time="0.002779292">
+            <failure message="expected &apos;Connection to database failed&apos; not to match /Connection|database|failed/i" type="AssertionError">
+AssertionError: expected &apos;Connection to database failed&apos; not to match /Connection|database|failed/i
+
+- Expected: 
+/Connection|database|failed/i
+
++ Received: 
+&quot;Connection to database failed&quot;
+
+ ❯ __tests__/infrastructure/standardized-error-responses.test.ts:220:33
+            </failure>
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; File Upload Error Format &gt; should expect standardized format for file validation errors" time="0.000115542">
+        </testcase>
+        <testcase classname="__tests__/infrastructure/standardized-error-responses.test.ts" name="Standardized Error Response Format (RED Phase) &gt; Success Response Format Consistency &gt; should maintain consistent success response structure" time="0.000173375">
+        </testcase>
+    </testsuite>
+</testsuites>

@@ -3,14 +3,24 @@ import { getServerSession } from 'next-auth/next';
 import { getUserSettingsStorage } from '../../../lib/user-settings-storage';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
   try {
+    // Check authentication first
     const session = await getServerSession(req, res, {});
     const userId = session?.user?.id || session?.user?.email;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED',
+        timestamp: new Date().toISOString(),
+        context: {
+          method: req.method || 'UNKNOWN',
+          endpoint: req.url || 'UNKNOWN'
+        }
+      });
+    }
+
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
     }
     const storage = getUserSettingsStorage();
     const settings = req.body;

@@ -4,25 +4,21 @@ import path from 'path';
 export default defineConfig({
   test: {
     include: ['__tests__/**/*.test.ts', '__tests__/**/*.test.tsx', '__tests__/**/*.supertest.ts'],
-    setupFiles: ['vitest.setup.ts'],
+    setupFiles: ['vitest.setup.simple.ts'], // Use simplified setup
     environment: 'jsdom',
-    testTimeout: 15000, // Increase timeout for complex React components
-    pool: 'threads', // Enable thread pool for better performance
+    testTimeout: 30000,
+    pool: 'forks', // Use forks instead of threads for better stability
     poolOptions: {
-      threads: {
-        singleThread: false,
-        minThreads: 1,
-        maxThreads: 4
+      forks: {
+        singleFork: true // Use single fork to avoid issues
       }
     },
-    globals: true, // Enable global test APIs
-    clearMocks: true, // Auto-clear mocks between tests
-    restoreMocks: true, // Restore original implementations after tests
-    unstubEnvs: true, // Auto-cleanup environment variables
-    unstubGlobals: true, // Auto-cleanup global stubs 
+    globals: true,
+    clearMocks: true,
+    restoreMocks: true,
     sequence: {
-      shuffle: false, // Disable shuffling for more predictable test execution
-      concurrent: false // Disable concurrent execution to avoid timing issues
+      shuffle: false,
+      concurrent: false
     }
   },
   resolve: {

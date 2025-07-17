@@ -42,9 +42,7 @@ describe('/api/health', () => {
     await testApiHandler({
       pagesHandler: handler,
       test: async ({ fetch }) => {
-        const response = await fetch({
-          method: 'GET'
-        })
+        const response = await fetch()
 
         expect(response.status).toBe(200)
         const data = await response.json()

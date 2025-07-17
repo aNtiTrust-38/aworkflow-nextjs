@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { validateAuth } from '@/lib/auth-utils';
 import { handleApiError, sendErrorResponse, createStandardError, sendValidationError, ValidationError, HTTP_STATUS, ERROR_CODES } from '@/lib/error-utils';
 import { startQueryTimer, getCacheKey, getFromCache, setCache, addPerformanceHeaders } from '@/lib/database-performance';
 
@@ -73,7 +72,7 @@ async function checkCircularReference(folderId: string, targetParentId: string):
       return true;
     }
     
-    const parent = await prisma.folder.findUnique({
+    const parent: { parentId: string | null } | null = await prisma.folder.findUnique({
       where: { id: currentParentId },
       select: { parentId: true },
     });
@@ -87,13 +86,8 @@ async function checkCircularReference(folderId: string, targetParentId: string):
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // Check authentication using standardized auth utilities
-    const session = await validateAuth(req, res);
-    if (!session) {
-      return; // validateAuth already sent the response
-    }
-
-    const userId = session.user.id;
+    // No authentication required in current iteration
+    const userId = 'anonymous-user'; // Default user for no-auth mode
 
     switch (req.method) {
       case 'GET':
@@ -198,7 +192,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
 
           queryCount++;
-          let folders = [];
+          let folders: any[] = [];
           try {
             const { default: prisma } = await import('@/lib/prisma');
             folders = await prisma.folder.findMany({

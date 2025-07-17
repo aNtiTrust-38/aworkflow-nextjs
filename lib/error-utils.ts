@@ -18,6 +18,13 @@ export interface ValidationError {
   message: string;
   code?: string;
   value?: any;
+  expectedFormat?: string;
+  maxSize?: number;
+  minLength?: number;
+  maxLength?: number;
+  minValue?: number;
+  maxValue?: number;
+  suggestion?: string;
 }
 
 // Security headers to include in all error responses
@@ -147,7 +154,7 @@ export function handleApiError(
   userId?: string
 ): void {
   let statusCode = 500;
-  let errorCode = ERROR_CODES.INTERNAL_ERROR;
+  let errorCode: string = ERROR_CODES.INTERNAL_ERROR;
   const errorMessage = sanitizeErrorMessage(error);
 
   // Determine appropriate status code and error code based on error type

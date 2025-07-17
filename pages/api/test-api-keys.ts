@@ -247,7 +247,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Check authentication
     const session = await getServerSession(req, res, {});
     if (!session || !session.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED',
+        timestamp: new Date().toISOString(),
+        context: {
+          method: req.method || 'UNKNOWN',
+          endpoint: req.url || 'UNKNOWN'
+        }
+      });
     }
 
     if (req.method !== 'POST') {

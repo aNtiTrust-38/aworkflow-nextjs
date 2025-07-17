@@ -7,7 +7,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const session = await getServerSession(req, res, {});
     const userId = session?.user?.id || session?.user?.email;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({
+        error: 'Unauthorized',
+        code: 'AUTH_REQUIRED',
+        timestamp: new Date().toISOString(),
+        context: {
+          method: req.method || 'UNKNOWN',
+          endpoint: req.url || 'UNKNOWN'
+        }
+      });
     }
     const storage = getUserSettingsStorage();
     const settings = await storage.getCompleteSettings(userId);
